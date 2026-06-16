@@ -1,0 +1,47 @@
+# ===============
+# Entornos
+# ===============
+.env
+.env.*
+!.env.example
+
+# ===============
+# Spring Boot (Inventory)
+# ===============
+target/
+*.jar
+*.war
+# Ignorar perfiles locales con datos sensibles
+application-local.properties
+application-local.yml
+application-secret.properties
+application-secret.yml
+application-prod.properties
+application-prod.yml
+
+# ===============
+# Node.js (Auth)
+# ===============
+node_modules/
+dist/
+npm-debug.log*
+yarn-error.log
+
+# ===============
+# Python / Django (Purchases)
+# ===============
+__pycache__/
+*.py[cod]
+*$py.class
+*.sqlite3
+venv/
+env/
+.venv/
+
+# ===============
+# IDEs & OS
+# ===============
+.vscode/
+.idea/
+.DS_Store
+*.swp
