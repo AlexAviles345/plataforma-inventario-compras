@@ -53,3 +53,8 @@ Todos los eventos publicados en Kafka deben compartir una envoltura (wrapper) es
 Es estrictamente necesario mantener la seguridad y claridad de las configuraciones en todos los repositorios. Para esto:
 - **Para servicios basados en Node.js (Auth) y Python (Purchases)**: Todo microservicio debe contar con un archivo de ejemplo llamado `.env.example` con las variables requeridas (sin incluir contraseñas reales). Los archivos `.env` que contengan secretos reales **jamás** deben subirse al repositorio.
 - **Para servicios basados en Spring Boot (Inventory)**: Las propiedades globales se mantendrán en el archivo principal `application.properties` o `application.yml`. Los secretos y configuraciones locales deben manejarse utilizando **Perfiles de Spring** (por ejemplo, creando un archivo `application-local.properties`). Este archivo de perfil con datos sensibles **no debe ser versionado** bajo ninguna circunstancia.
+
+## 7. Documentación Interna por Servicio
+Cada microservicio debe ser autocontenido no solo a nivel de código, sino también en su documentación. 
+- **Obligatorio:** Cada microservicio debe contar con su propio archivo `README.md` personalizado en la raíz de su carpeta.
+- **Contenido del README:** Debe detallar explícitamente los pasos para inicializar ese servicio específico en solitario. Esto incluye instalación de dependencias, comandos para levantamiento en local, variables de entorno necesarias (o perfiles a usar) y scripts para ejecutar las pruebas.
