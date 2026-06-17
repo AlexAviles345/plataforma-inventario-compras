@@ -17,3 +17,9 @@ El servicio de Autenticación actúa como **productor** de eventos para mantener
 - `UserUpdated`: Publicado cuando se actualiza la información de un usuario existente.
 
 Estos eventos permiten que los microservicios de Inventario y Compras mantengan sus propias copias locales (proyecciones) de los usuarios para no depender de consultas síncronas.
+
+## Endpoints (Mínimos Recomendados)
+Para cumplir con el propósito del proyecto, este servicio debe exponer al menos los siguientes endpoints:
+- `POST /api/auth/login`: Autentica a un usuario validando credenciales y retorna un token JWT firmado.
+- `POST /api/auth/users`: Crea un nuevo usuario en la base de datos local y emite el evento `UserCreated` hacia Kafka.
+- `PUT /api/auth/users/{id}`: Actualiza la información de un usuario y emite el evento `UserUpdated` hacia Kafka.

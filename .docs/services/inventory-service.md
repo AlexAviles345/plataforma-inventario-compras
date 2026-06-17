@@ -22,3 +22,9 @@ El microservicio de Inventario actúa tanto como **consumidor** como **productor
   - `ProductCreated`: Emitido cuando se registra un nuevo producto en el inventario.
   - `ProductUpdated`: Emitido cuando se modifica un producto existente.
 Estos eventos son consumidos posteriormente por el microservicio de Compras.
+
+## Endpoints (Mínimos Recomendados)
+Para demostrar la autonomía del servicio y el uso de las proyecciones, se deben implementar mínimamente los siguientes endpoints:
+- `GET /api/inventory/products`: Lista los productos disponibles. Al devolver la respuesta, utiliza la `UsersProjection` para adjuntar qué usuario registró o modificó cada producto sin consultar de forma síncrona a Auth.
+- `POST /api/inventory/products`: Registra un nuevo producto (requiere token JWT válido) y publica el evento `ProductCreated` en Kafka.
+- `PUT /api/inventory/products/{id}`: Actualiza un producto existente (requiere token JWT válido) y publica el evento `ProductUpdated` en Kafka.
