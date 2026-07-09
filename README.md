@@ -38,9 +38,8 @@ Consulta la [Guía de Configuración de Docker](./.docs/infrastructure/docker-se
 ```
 
 ### 5. Inicializar API Gateway
-```bash
-# Pasos para levantar el API Gateway
-```
+El Gateway es el punto de acceso centralizado (NestJS).
+Consulta el [README del API Gateway](./api-gateway/README.md) para ver los comandos de instalación, configuración de `.env` y ejecución.
 
 ## Pruebas y Validación
 *Agrega aquí cómo ejecutar las pruebas y validar que todos los servicios y Kafka se están comunicando correctamente.*
