@@ -18,10 +18,9 @@ Plataforma interna para gestionar las operaciones principales (Autenticación, I
 
 *Agrega aquí los pasos específicos para levantar la plataforma.*
 
-### 1. Levantar Infraestructura Base
-```bash
-# Ejemplo: docker-compose up -d
-```
+### 1. Levantar Infraestructura Base (Bases de Datos y Kafka)
+Para evitar la instalación nativa de PostgreSQL, MySQL y Apache Kafka, puedes levantar toda la infraestructura base mediante Docker.
+Consulta la [Guía de Configuración de Docker](./.docs/infrastructure/docker-setup.md) para ver los comandos y credenciales.
 
 ### 2. Inicializar Microservicio de Autenticación (Auth)
 ```bash
