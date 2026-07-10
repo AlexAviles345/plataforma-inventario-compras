@@ -18,10 +18,9 @@ Plataforma interna para gestionar las operaciones principales (Autenticación, I
 
 *Agrega aquí los pasos específicos para levantar la plataforma.*
 
-### 1. Levantar Infraestructura Base
-```bash
-# Ejemplo: docker-compose up -d
-```
+### 1. Levantar Infraestructura Base (Bases de Datos y Kafka)
+Para evitar la instalación nativa de PostgreSQL, MySQL y Apache Kafka, puedes levantar toda la infraestructura base mediante Docker.
+Consulta la [Guía de Configuración de Docker](./.docs/infrastructure/docker-setup.md) para ver los comandos y credenciales.
 
 ### 2. Inicializar Microservicio de Autenticación (Auth)
 ```bash
@@ -39,9 +38,8 @@ Plataforma interna para gestionar las operaciones principales (Autenticación, I
 ```
 
 ### 5. Inicializar API Gateway
-```bash
-# Pasos para levantar el API Gateway
-```
+El Gateway es el punto de acceso centralizado (NestJS).
+Consulta el [README del API Gateway](./api-gateway/README.md) para ver los comandos de instalación, configuración de `.env` y ejecución.
 
 ## Pruebas y Validación
 *Agrega aquí cómo ejecutar las pruebas y validar que todos los servicios y Kafka se están comunicando correctamente.*
