@@ -1,6 +1,22 @@
 name: Backend foundations and infrastructure
 on: [push, pull_request]
 jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/backend/inventory-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: apps/backend/inventory-service/pom.xml
+      - run: chmod +x mvnw
+      - run: ./mvnw -B -ntp verify
+      - run: docker build -t techdistribution-inventory .
   auth:
     runs-on: ubuntu-latest
     defaults:

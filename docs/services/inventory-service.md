@@ -1,6 +1,6 @@
 # Inventory: contrato de implementación
 
-Estado: planificado, aún sin código. Spring Boot, MySQL, consumidor de usuarios y productor de productos. No consulta por HTTP a Auth/Compras.
+Estado: base Spring Boot ejecutable con configuración, salud, Actuator, OpenAPI, Docker y pruebas. El dominio, MySQL, consumidor de usuarios y productor de productos siguen planificados. No consulta por HTTP a Auth/Compras.
 
 `Products`: UUID, sku único, name, unit `UNIT`, stockOnHand entero >=0, active, version, createdBy/updatedBy UUID y timestamps UTC. Stock inicial/correcciones explícitas las administra INVENTORY_MANAGER o ADMIN con versión esperada y auditoría. El MVP no contabiliza automáticamente recepciones de compras. No permitir escrituras de stock basadas en el dato atrasado de una proyección ajena.
 

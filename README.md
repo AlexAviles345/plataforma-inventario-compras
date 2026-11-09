@@ -2,7 +2,7 @@
 
 Plataforma interna con Auth (NestJS/PostgreSQL), Inventory (Spring Boot/MySQL), Purchases (Django/PostgreSQL), Gateway NestJS y sincronización de proyecciones por Kafka.
 
-**Estado actual:** Gateway, infraestructura local, contratos y planificación implementados. Auth cuenta con una base ejecutable y validada; sus módulos de dominio, Inventory y Purchases siguen pendientes. [Plan y criterios de aceptación](docs/planning.md), [arquitectura](docs/architecture/architecture.md), [reglas comunes](docs/standards/guidelines.md).
+**Estado actual:** Gateway, infraestructura local, contratos y planificación implementados. Auth e Inventory cuentan con bases ejecutables y validadas; sus módulos de dominio y Purchases siguen pendientes. [Plan y criterios de aceptación](docs/planning.md), [arquitectura](docs/architecture/architecture.md), [reglas comunes](docs/standards/guidelines.md).
 
 ## Estructura del repositorio
 
@@ -17,7 +17,7 @@ infrastructure/  Recursos de infraestructura y aprovisionamiento local
 
 Cada servicio o frontend nuevo vive dentro de `apps/` con su configuración, dependencias, pruebas y README propios. Los contratos compartidos no dependen de un lenguaje o framework concreto.
 
-## Entorno local
+## Entorno localMemoriaConsumoRepository
 
 Requisitos actuales: Docker con Compose y Node 24.x/npm 11.x. Java/Maven y Python se requieren cuando se implementen sus servicios; sus versiones se fijarán en esos módulos.
 

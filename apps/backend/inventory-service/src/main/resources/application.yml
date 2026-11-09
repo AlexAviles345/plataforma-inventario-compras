@@ -1,0 +1,35 @@
+server:
+  port: ${PORT:8081}
+  shutdown: graceful
+
+debug: false
+
+spring:
+  application:
+    name: inventory-service
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+
+springdoc:
+  api-docs:
+    enabled: ${DOCS_ENABLED:true}
+    path: /api/inventory/openapi.json
+  swagger-ui:
+    enabled: ${DOCS_ENABLED:true}
+    path: /docs
+    disable-swagger-default-url: true
+
+info:
+  app:
+    name: ${spring.application.name}
