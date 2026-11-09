@@ -114,6 +114,14 @@ Los servicios de datos esenciales no deben quedar detrás de perfiles opcionales
 El archivo actual `docker-compose.example.yml` sigue dedicado a infraestructura
 local hasta que los dominios tengan persistencia implementada.
 
+## Jenkins administrativo
+
+La futura integración de [Jenkins con GitHub](jenkins-github.md) no comparte el
+virtual host de la aplicación. Si Nginx publica Jenkins, usa un dominio y una red
+administrativa separados; la UI queda restringida y solo el endpoint de webhook
+necesario es accesible desde GitHub. Jenkins no atraviesa el API Gateway ni forma
+parte del Compose runtime de la plataforma.
+
 ## Aceptación antes de producción
 
 1. Solo 80/443 son accesibles desde fuera de la red privada.

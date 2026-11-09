@@ -5,6 +5,8 @@ La plataforma de TechDistribution está diseñada utilizando microservicios hete
 
 Estado: Gateway e infraestructura implementados; Auth, Inventory y Purchases tienen bases ejecutables, mientras sus dominios siguen planificados. [Secuencia y aceptación del MVP](../planning.md), [contrato JWT y RBAC](../standards/guidelines.md), [outbox, inbox y recuperación](event-driven-communication.md). Compras registra órdenes y conserva snapshots históricos; recepción y actualización automática de stock quedan fuera del MVP.
 
+La entrega futura combinará GitHub Actions para checks rápidos y [Jenkins conectado con GitHub](../infrastructure/jenkins-github.md) para integración completa, publicación de imágenes y despliegues. Jenkins es infraestructura administrativa y no participa en el tráfico runtime.
+
 ## Componentes Principales
 1. **Nginx (futuro)**: Punto de entrada HTTP(S), terminación TLS, frontend y proxy hacia el Gateway. No aplica reglas de negocio.
 2. **Frontend(s) (futuro)**: Aplicaciones cliente servidas o enrutadas por Nginx; consumen exclusivamente el Gateway.
@@ -26,6 +28,7 @@ Motores de base de datos asignados:
 Esta arquitectura demuestra los siguientes conceptos clave:
 - API Gateway.
 - Nginx como capa edge y terminación TLS.
+- CI en GitHub Actions y futura entrega continua mediante Jenkins.
 - Microservicios heterogéneos (NestJS, Spring Boot y Django).
 - JWT centralizado con expiraciones por sistema.
 - Comunicación asíncrona mediante Kafka.

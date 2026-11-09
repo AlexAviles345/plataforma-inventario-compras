@@ -1,8 +1,8 @@
 # TechDistribution — Inventario y Compras
 
-Plataforma interna con Auth (NestJS/PostgreSQL), Inventory (Spring Boot/MySQL), Purchases (Django/PostgreSQL), Gateway NestJS, futura capa edge Nginx y sincronización de proyecciones por Kafka.
+Plataforma interna con Auth (NestJS/PostgreSQL), Inventory (Spring Boot/MySQL), Purchases (Django/PostgreSQL), Gateway NestJS, futura capa edge Nginx, CI en GitHub Actions, futura entrega con Jenkins y sincronización de proyecciones por Kafka.
 
-**Estado actual:** Gateway, infraestructura local, contratos y planificación implementados. Auth, Inventory y Purchases cuentan con bases ejecutables y validadas; sus módulos de dominio y Nginx siguen pendientes. [Plan y criterios de aceptación](docs/planning.md), [arquitectura](docs/architecture/architecture.md), [Nginx edge](docs/infrastructure/nginx-edge.md), [reglas comunes](docs/standards/guidelines.md), [respuestas HTTP](docs/standards/api-responses.md), [tokens y sesiones](docs/standards/jwt-and-sessions.md).
+**Estado actual:** Gateway, infraestructura local, contratos y planificación implementados. Auth, Inventory y Purchases cuentan con bases ejecutables y validadas; sus módulos de dominio, Nginx y Jenkins siguen pendientes. [Plan y criterios de aceptación](docs/planning.md), [arquitectura](docs/architecture/architecture.md), [Nginx edge](docs/infrastructure/nginx-edge.md), [Jenkins y GitHub](docs/infrastructure/jenkins-github.md), [reglas comunes](docs/standards/guidelines.md), [respuestas HTTP](docs/standards/api-responses.md), [tokens y sesiones](docs/standards/jwt-and-sessions.md).
 
 ## Estructura del repositorio
 
@@ -42,4 +42,4 @@ npm run test:e2e -- --runInBand
 npm audit
 ```
 
-CI valida Gateway, imagen Docker e infraestructura, incluida publicación/consumo tras recrear Kafka. La prueba completa login→usuario→producto→proyección→orden se implementará en el último hito del [plan](docs/planning.md). No se considera validada la plataforma completa por pasar únicamente las pruebas del Gateway.
+GitHub Actions valida actualmente cada backend, sus imágenes y la infraestructura, incluida publicación/consumo tras recrear Kafka. En el futuro, [Jenkins conectado con GitHub](docs/infrastructure/jenkins-github.md) realizará integración completa, publicación de imágenes y despliegues sin sustituir los checks rápidos de pull requests. La prueba completa login→usuario→producto→proyección→orden se implementará en el último hito del [plan](docs/planning.md). No se considera validada la plataforma completa por pasar únicamente las pruebas del Gateway.
