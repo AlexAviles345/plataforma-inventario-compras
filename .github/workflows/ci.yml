@@ -1,6 +1,26 @@
 name: Backend foundations and infrastructure
 on: [push, pull_request]
 jobs:
+  purchases:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/backend/purchases-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: apps/backend/purchases-service/.python-version
+          cache: pip
+          cache-dependency-path: apps/backend/purchases-service/requirements-dev.txt
+      - run: python -m pip install --requirement requirements-dev.txt
+      - run: python -m ruff check .
+      - run: python -m ruff format --check .
+      - run: python manage.py check
+      - run: python manage.py makemigrations --check --dry-run
+      - run: python -Wa manage.py test
+      - run: python -m pip check
+      - run: docker build -t techdistribution-purchases .
   inventory:
     runs-on: ubuntu-latest
     defaults:
