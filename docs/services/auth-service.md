@@ -21,6 +21,6 @@ Login recibe `{email,password,system}`. Verificar usuario activo, contraseña y 
 | `PUT /api/auth/systems/{code}` | ADMIN | Cambiar TTL validado para futuras emisiones |
 | `GET /api/auth/openapi.json` | Desarrollo | Schema con paths completos y servidor `/` |
 
-Usar migraciones. Guardar Users/asignaciones, versión y outbox en una transacción. Producir `UserCreated`/`UserUpdated` con snapshot público según [schema](../contracts/user-event.schema.json). Cambios de email, nombre, active o asignaciones generan evento; nunca distribuir el hash. Implementar publicador con orden por agregado y reintentos según [protocolo Kafka](../architecture/event-driven-communication.md).
+Usar migraciones. Guardar Users/asignaciones, versión y outbox en una transacción. Producir `UserCreated`/`UserUpdated` con snapshot público según [schema](../../contracts/events/user-event.schema.json). Cambios de email, nombre, active o asignaciones generan evento; nunca distribuir el hash. Implementar publicador con orden por agregado y reintentos según [protocolo Kafka](../architecture/event-driven-communication.md).
 
 Aceptación: probar login por sistema/rol, expiración, aislamiento de permisos, desactivación, bootstrap idempotente, concurrencia, secretos ausentes en eventos y recuperación del outbox con Kafka caído. README propio debe indicar instalación, migraciones, bootstrap, variables, ejecución y pruebas.

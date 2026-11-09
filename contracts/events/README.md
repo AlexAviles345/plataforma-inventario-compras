@@ -30,4 +30,4 @@ Ejemplo UserCreated:
 }
 ```
 
-La entrega, inbox/outbox, DLQ y reconstrucción se rigen por el [protocolo](../architecture/event-driven-communication.md). Una ampliación incompatible requiere schema nuevo, consumidores compatibles y migración; no cambiar silenciosamente la semántica de v1.
+La entrega, inbox/outbox, DLQ y reconstrucción se rigen por el [protocolo](../../docs/architecture/event-driven-communication.md). Una ampliación incompatible requiere schema nuevo, consumidores compatibles y migración; no cambiar silenciosamente la semántica de v1.

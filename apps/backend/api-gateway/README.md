@@ -1,11 +1,11 @@
 # API Gateway
 
-NestJS 11; Node 24.9+ de la rama 24.x y npm 11.x (versiones verificadas por engines y `.nvmrc`). Proxy HTTP para Auth, Inventory y Purchases. [Contrato de rutas y seguridad](../.docs/services/api-gateway.md).
+NestJS 11; Node 24.9+ de la rama 24.x y npm 11.x (versiones verificadas por engines y `.nvmrc`). Proxy HTTP para Auth, Inventory y Purchases. [Contrato de rutas y seguridad](../../../docs/services/api-gateway.md).
 
 ## Inicialización
 
 ```powershell
-cd api-gateway
+cd apps/backend/api-gateway
 npm ci --ignore-scripts
 Copy-Item .env.example .env
 node -e "console.log(require('node:crypto').randomBytes(48).toString('base64url'))"

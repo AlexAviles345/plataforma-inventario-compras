@@ -13,6 +13,6 @@ Estado: planificado, aún sin código. Spring Boot, MySQL, consumidor de usuario
 | `PUT /api/inventory/products/{id}` | Igual | expectedVersion obligatorio; 409 ante conflicto; desactivación lógica |
 | `GET /api/inventory/openapi.json` | Desarrollo | Springdoc en esta ruta; paths `/api/inventory/...`, server `/` |
 
-Verificar JWT y RBAC localmente, sin confiar exclusivamente en x-user headers. Cada cambio confirma entidad + outbox y publica `ProductCreated`/`ProductUpdated` con snapshot completo según [schema](../contracts/product-event.schema.json). No borrar físicamente productos referenciados por compras: emitir active:false.
+Verificar JWT y RBAC localmente, sin confiar exclusivamente en x-user headers. Cada cambio confirma entidad + outbox y publica `ProductCreated`/`ProductUpdated` con snapshot completo según [schema](../../contracts/events/product-event.schema.json). No borrar físicamente productos referenciados por compras: emitir active:false.
 
 Aceptación: migraciones, validación de SKU/stock, control concurrente, permisos de sistema, inbox/proyección atómica, eventos duplicados y desordenados, recuperación outbox, DLQ y reconstrucción desde snapshot. Configuración Spring por placeholders/perfiles; secretos locales fuera de git. README propio debe incluir migraciones y pruebas.

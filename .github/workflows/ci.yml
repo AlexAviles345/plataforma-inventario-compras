@@ -5,14 +5,14 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: api-gateway
+        working-directory: apps/backend/api-gateway
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version-file: api-gateway/.nvmrc
+          node-version-file: apps/backend/api-gateway/.nvmrc
           cache: npm
-          cache-dependency-path: api-gateway/package-lock.json
+          cache-dependency-path: apps/backend/api-gateway/package-lock.json
       - run: npm ci --ignore-scripts
       - run: npm run lint
       - run: npm run build

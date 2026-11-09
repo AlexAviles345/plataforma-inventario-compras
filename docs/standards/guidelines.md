@@ -39,7 +39,7 @@ Los servicios de dominio no se consultan por HTTP ni acceden a bases ajenas. El 
 
 Solo el propietario modifica entidades principales. La aplicación de negocio lee sus proyecciones; únicamente sus consumidores y procesos de reconstrucción pueden escribirlas. El publicador confirma entidad + outbox en la misma transacción. El consumidor confirma proyección + deduplicación en otra transacción local antes de confirmar offsets. [Protocolo de entrega, recuperación y grupos](../architecture/event-driven-communication.md).
 
-Los contratos versionados están en [contracts](../contracts). Todos los eventos son snapshots completos de la entidad pública, identificados por `eventId`, con `schemaVersion: 1`, `entityVersion` monotónica, `aggregateId`, `timestamp` UTC y `correlationId`. La key Kafka es `aggregateId`; el publicador mantiene orden por agregado. `data.userId` o `data.productId` coincide con `aggregateId`. Kafka ordena dentro de una partición, no garantiza por sí solo orden de negocio entre productores/reintentos.
+Los contratos versionados están en [contracts](../../contracts/events). Todos los eventos son snapshots completos de la entidad pública, identificados por `eventId`, con `schemaVersion: 1`, `entityVersion` monotónica, `aggregateId`, `timestamp` UTC y `correlationId`. La key Kafka es `aggregateId`; el publicador mantiene orden por agregado. `data.userId` o `data.productId` coincide con `aggregateId`. Kafka ordena dentro de una partición, no garantiza por sí solo orden de negocio entre productores/reintentos.
 
 ## Persistencia, concurrencia y configuración
 
