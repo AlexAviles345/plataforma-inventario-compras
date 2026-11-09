@@ -185,7 +185,9 @@ Conflicto de negocio:
 | 400 | `VALIDATION_ERROR` | Body, query o parámetros inválidos |
 | 401 | `AUTHENTICATION_REQUIRED` | Token ausente |
 | 401 | `INVALID_TOKEN` | Token inválido o expirado |
+| 401 | `INVALID_REFRESH_TOKEN` | Sesión renovable inválida, sin revelar la causa |
 | 403 | `FORBIDDEN` | Identidad válida sin permiso |
+| 403 | `CSRF_VALIDATION_FAILED` | Prueba CSRF ausente o inválida |
 | 404 | `RESOURCE_NOT_FOUND` | Recurso del dominio inexistente |
 | 409 | `VERSION_CONFLICT` | Fallo de control optimista |
 | 409 | `IDEMPOTENCY_CONFLICT` | Misma key con otra solicitud |

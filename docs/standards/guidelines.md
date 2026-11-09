@@ -2,11 +2,11 @@
 
 ## HTTP y autenticación
 
-Todas las rutas de negocio conservan el prefijo `/api/<dominio>` tanto en el Gateway como en el servicio destino. No hay reescritura ni registro público. El único endpoint de negocio anónimo es `POST /api/auth/login`; los esquemas OpenAPI exactos son públicos solo en desarrollo. [Matriz de rutas y configuración](../services/api-gateway.md).
+Todas las rutas de negocio conservan el prefijo `/api/<dominio>` tanto en el Gateway como en el servicio destino. No hay reescritura ni registro público. El único endpoint de negocio sin credencial en el MVP actual es `POST /api/auth/login`; los esquemas OpenAPI exactos son públicos solo en desarrollo. [Matriz de rutas y configuración](../services/api-gateway.md).
 
 Todas las respuestas JSON de negocio cumplen el [estándar de respuestas HTTP](api-responses.md): envoltura única, status HTTP coherente, errores con código estable y paginación común. El Gateway conserva las respuestas de dominio y solo genera la envoltura cuando el error se origina en él.
 
-Auth emite el JWT. Gateway y cada servicio verifican firma HS256, algoritmo permitido, emisor `techdistribution-auth`, audiencia `techdistribution-api`, expiración y contrato completo. Cada servicio aplica además el RBAC y restricciones del recurso. `Authorization` se conserva; los headers `x-user-*` solo son contexto derivado, nunca una prueba de autenticación. Las aplicaciones de dominio quedan en red privada. El Gateway elimina los headers entrantes `x-user-*`, `x-forwarded-*` y `Forwarded`; no confía en proxies externos por defecto.
+Auth emite el JWT. Gateway y cada servicio verifican firma HS256, algoritmo permitido, emisor `techdistribution-auth`, audiencia `techdistribution-api`, expiración y contrato completo conforme al [estándar de tokens y sesiones](jwt-and-sessions.md). Cada servicio aplica además el RBAC y restricciones del recurso. `Authorization` se conserva; los headers `x-user-*` solo son contexto derivado, nunca una prueba de autenticación. Las aplicaciones de dominio quedan en red privada. El Gateway elimina los headers entrantes `x-user-*`, `x-forwarded-*` y `Forwarded`; no confía en proxies externos por defecto.
 
 Payload de acceso obligatorio, además de `iss` y `aud`:
 
@@ -25,7 +25,7 @@ Payload de acceso obligatorio, además de `iss` y `aud`:
 
 `sub` es UUID y coincide con el identificador publicado por Kafka. `role` es singular: `ADMIN`, `INVENTORY_MANAGER` o `PURCHASES_AGENT`. `system` es `INVENTORY` o `PURCHASES`: incluso un administrador necesita un token del sistema destino. El Gateway deriva `x-user-roles` como array JSON de un elemento, por compatibilidad con el nombre del header, y agrega `x-user-id` y `x-user-system`. No se acepta un claim `roles` como sustituto de `role`.
 
-`iat` y `exp` son enteros positivos en segundos UTC; `exp > iat`, no expirado y duración máxima de 900 segundos por defecto (`JWT_MAX_TTL_SECONDS`, hasta 3600). `iat` permite hasta 30 segundos de adelanto de reloj. Auth configura por sistema una duración menor o igual al límite común y los hosts sincronizan reloj. No hay refresh token en el MVP: se vuelve a autenticar al expirar. No registrar tokens, contraseñas ni hashes en logs/eventos.
+`iat` y `exp` son enteros positivos en segundos UTC; `exp > iat`, no expirado y duración máxima de 900 segundos por defecto (`JWT_MAX_TTL_SECONDS`, hasta 3600). `iat` permite hasta 30 segundos de adelanto de reloj. Auth configura por sistema una duración menor o igual al límite común y los hosts sincronizan reloj. Refresh no está habilitado en el MVP: se vuelve a autenticar al expirar. Su contrato futuro ya está definido y establece una credencial opaca que solo Auth interpreta; los servicios de dominio nunca la aceptan. No registrar tokens, contraseñas ni hashes en logs/eventos.
 
 | Operación | ADMIN | INVENTORY_MANAGER | PURCHASES_AGENT |
 | --- | --- | --- | --- |

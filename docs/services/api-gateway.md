@@ -12,7 +12,9 @@ NestJS 11 sobre Node 24, proxy HTTP con `http-proxy-middleware`. Reenvía stream
 | `/docs` | UI del Gateway | Habilitada exclusivamente en desarrollo |
 | `GET /health/live`, `GET /health/ready` | Gateway | Públicos; readiness del Gateway, sin sondeo de dominios |
 
-Los tokens cumplen el [contrato común](../standards/guidelines.md), incluido `role` singular. Las identidades entrantes se eliminan, se derivan de claims validados y se reenvían como contexto; el destino vuelve a verificar JWT. No se confía en headers Forwarded ni se habilita `trust proxy`. No hay `/register` anónimo ni alias sin `/api`.
+Los tokens cumplen el [contrato de access tokens y sesiones](../standards/jwt-and-sessions.md), incluido `role` singular. Las identidades entrantes se eliminan, se derivan de claims validados y se reenvían como contexto; el destino vuelve a verificar JWT. No se confía en headers Forwarded ni se habilita `trust proxy`. No hay `/register` anónimo ni alias sin `/api`.
+
+Refresh no está habilitado actualmente. Cuando se implemente, el Gateway permitirá explícitamente `POST /api/auth/refresh` y `POST /api/auth/logout` con cookie y CSRF, sin intentar interpretar el refresh token. También deberá habilitar credenciales CORS solo para orígenes explícitos, aplicar límites específicos y conservar `POST /api/auth/login` como la única ruta verdaderamente anónima. Inventory y Purchases nunca recibirán esa credencial.
 
 Cada esquema debe declarar `servers: [{"url":"/"}]`, paths completos `/api/<dominio>/...` y bearer security para sus operaciones protegidas. Auth configura `jsonDocumentUrl` de Nest; Inventory configura `springdoc.api-docs.path`; Purchases registra una vista de schema de DRF en la ruta acordada. El Gateway muestra los documentos, sin inferir ni reescribir sus operaciones. Los servicios deben deshabilitar sus esquemas públicos en producción también.
 
