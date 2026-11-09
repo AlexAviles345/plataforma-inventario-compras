@@ -1,0 +1,22 @@
+{
+  "name": "inventory-purchases-platform",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Orquestación local de TechDistribution",
+  "engines": {
+    "node": ">=24.9 <25",
+    "npm": ">=11 <12"
+  },
+  "scripts": {
+    "dev": "node tools/dev.mjs --with-infra",
+    "dev:apps": "node tools/dev.mjs",
+    "dev:check": "node tools/dev.mjs --check",
+    "dev:infra": "node tools/infra.mjs up",
+    "dev:status": "node tools/infra.mjs status",
+    "dev:logs": "node tools/infra.mjs logs",
+    "dev:down": "node tools/infra.mjs down"
+  },
+  "devDependencies": {
+    "concurrently": "10.0.1"
+  }
+}

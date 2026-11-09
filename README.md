@@ -17,9 +17,54 @@ infrastructure/  Recursos de infraestructura y aprovisionamiento local
 
 Cada servicio o frontend nuevo vive dentro de `apps/` con su configuración, dependencias, pruebas y README propios. Los contratos compartidos no dependen de un lenguaje o framework concreto.
 
-## Entorno localMemoriaConsumoRepository
+## Entorno local
 
 Requisitos actuales: Docker con Compose, Node 24.x/npm 11.x, JDK 21 o posterior compatible y Python 3.14. Inventory usa Maven Wrapper, por lo que no requiere Maven global.
+
+La raíz incluye un supervisor multiplataforma para ejecutar todos los backends y
+los futuros frontends con logs identificados. Primero instala su única dependencia:
+
+```bash
+npm install --ignore-scripts --no-audit
+npm run dev:check
+```
+
+Comandos disponibles:
+
+| Comando | Acción |
+| --- | --- |
+| `npm run dev` | Inicia bases/Kafka, aplica migraciones locales y levanta todas las aplicaciones |
+| `npm run dev:apps` | Levanta aplicaciones sin iniciar Docker |
+| `npm run dev:infra` | Inicia únicamente PostgreSQL, MySQL y Kafka |
+| `npm run dev:status` | Muestra el estado de la infraestructura |
+| `npm run dev:logs` | Sigue los últimos logs de infraestructura |
+| `npm run dev:down` | Detiene contenedores sin borrar volúmenes |
+
+`Ctrl+C` detiene conjuntamente Gateway, Auth, Inventory, Purchases y frontends. La
+infraestructura iniciada en segundo plano permanece activa hasta ejecutar
+`npm run dev:down`. `npm run dev` requiere Docker Desktop iniciado;
+`npm run dev:apps` no.
+
+Cuando los healthchecks responden, el supervisor muestra una tabla con el estado,
+puerto y enlaces de cada backend. Swagger está disponible en desarrollo en:
+
+| Servicio | Puerto | Swagger |
+| --- | ---: | --- |
+| API Gateway (documentación agregada) | 3000 | <http://localhost:3000/docs> |
+| Auth | 3001 | <http://localhost:3001/docs> |
+| Inventory | 8081 | <http://localhost:8081/docs> |
+| Purchases | 8000 | <http://localhost:8000/docs> |
+
+El supervisor detecta un frontend si existe `apps/frontend/package.json` o un
+`package.json` dentro de un subdirectorio inmediato de `apps/frontend`, con script
+`dev` o `start:dev`. Sus dependencias deben instalarse previamente con `npm ci`.
+El recorrido futuro con Nginx se añadirá como `npm run dev:edge` cuando exista el
+[Compose de aplicaciones](docs/infrastructure/nginx-edge.md).
+
+Antes del primer arranque de cada servicio deben estar instaladas sus dependencias.
+Gateway requiere además su `.env` con un `JWT_SECRET` seguro. El comando
+`npm run dev:check` informa cualquier requisito faltante o puerto ocupado sin
+iniciar procesos.
 
 ```bash
 docker compose -f docker-compose.example.yml up -d --wait postgres-auth postgres-purchases mysql-inventory kafka

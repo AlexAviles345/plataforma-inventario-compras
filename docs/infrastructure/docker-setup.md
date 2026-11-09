@@ -19,6 +19,18 @@ docker compose -f docker-compose.example.yml run --rm kafka-init
 
 Las mismas instrucciones funcionan en PowerShell y Bash. El último comando crea tópicos idempotentemente, después del healthcheck Kafka. Una copia local `docker-compose.yml` sigue ignorada si se requieren adaptaciones; nunca subir secretos reales a ninguna variante.
 
+Como alternativa, el supervisor de la raíz ofrece los mismos ciclos habituales:
+
+```bash
+npm run dev:infra
+npm run dev:status
+npm run dev:logs
+npm run dev:down
+```
+
+`npm run dev` inicia primero esta infraestructura y después todas las aplicaciones;
+`npm run dev:apps` omite Docker. Ninguno de los comandos elimina volúmenes.
+
 Luego, ejecuta el siguiente comando:
 
 ```bash
