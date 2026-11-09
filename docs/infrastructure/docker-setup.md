@@ -1,6 +1,6 @@
 # Configuración de Infraestructura Local (Docker)
 
-El archivo versionado `docker-compose.example.yml` levanta las bases y Kafka para desarrollo local. Sus credenciales son de demostración, no secretos de despliegue. Los puertos se publican solo en `127.0.0.1`. Los servicios de dominio se implementarán según el [plan](../planning.md).
+El archivo versionado `docker-compose.example.yml` levanta las bases y Kafka para desarrollo local. Sus credenciales son de demostración, no secretos de despliegue. Los puertos se publican solo en `127.0.0.1`. Los servicios de dominio se implementarán según el [plan](../planning.md). El futuro Compose de aplicaciones incorporará [Nginx como perfil edge](nginx-edge.md); el archivo actual todavía no levanta aplicaciones ni Nginx.
 
 ## Requisitos Previos
 
