@@ -1,6 +1,26 @@
-name: Gateway and infrastructure
+name: Backend foundations and infrastructure
 on: [push, pull_request]
 jobs:
+  auth:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/backend/auth-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: apps/backend/auth-service/.nvmrc
+          cache: npm
+          cache-dependency-path: apps/backend/auth-service/package-lock.json
+      - run: npm ci --ignore-scripts
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run build
+      - run: npm test -- --runInBand
+      - run: npm run test:e2e -- --runInBand
+      - run: npm audit --registry=https://registry.npmjs.org/ --omit=dev --audit-level=high
+      - run: docker build -t techdistribution-auth .
   gateway:
     runs-on: ubuntu-latest
     defaults:
@@ -18,7 +38,7 @@ jobs:
       - run: npm run build
       - run: npm test -- --runInBand
       - run: npm run test:e2e -- --runInBand
-      - run: npm audit --omit=dev --audit-level=high
+      - run: npm audit --registry=https://registry.npmjs.org/ --omit=dev --audit-level=high
       - run: docker build -t techdistribution-gateway .
   infrastructure:
     runs-on: ubuntu-latest

@@ -46,7 +46,7 @@ La comunicación entre los microservicios se realizará de forma asíncrona medi
 ---
 
 ## Características Arquitectónicas Demostradas
-Esta arquitectura busca demostrar los siguientes conceptos. Actualmente están implementados el Gateway y la infraestructura; los servicios de dominio siguen el [plan](planning.md):
+Esta arquitectura busca demostrar los siguientes conceptos. Actualmente están implementados el Gateway, la infraestructura y la base ejecutable de Auth; los módulos de dominio siguen el [plan](planning.md):
 
 - **API Gateway** como punto único de entrada.
 - **Microservicios heterogéneos** con distintos stacks tecnológicos.

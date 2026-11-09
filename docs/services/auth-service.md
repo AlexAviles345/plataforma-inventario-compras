@@ -1,6 +1,6 @@
 # Auth: contrato de implementación
 
-Estado: planificado, aún sin código. NestJS, PostgreSQL y productor Kafka. No consulta a otros dominios por HTTP.
+Estado: base NestJS ejecutable con configuración validada, salud, OpenAPI, Docker y pruebas. El dominio, PostgreSQL y el productor Kafka siguen planificados. No consulta a otros dominios por HTTP.
 
 ## Datos y seguridad
 
