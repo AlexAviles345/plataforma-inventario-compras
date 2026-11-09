@@ -1,23 +1,32 @@
-# Microservicio de Compras
+# Purchases: contrato de implementación
 
-## Tecnología
-Este microservicio será desarrollado utilizando **Django Rest Framework**.
+Estado: planificado, aún sin código. Django REST Framework, PostgreSQL y consumidores de usuarios/productos. En el MVP registra órdenes a proveedores; recepción, reservas y modificaciones automáticas de stock quedan fuera del alcance. Por ello no produce eventos de stock ni requiere sagas.
 
-## Responsabilidad Principal
-Es el sistema autónomo encargado de registrar y gestionar las órdenes de compra realizadas a los proveedores.
+Configurar los routers DRF con `trailing_slash=False`: las rutas del contrato son exactas y el Gateway no sigue redirects para añadir barras.
 
-## Entidades y Base de Datos
-El servicio maneja su propia base de datos (utilizando **PostgreSQL**), garantizando su autonomía con las siguientes tablas:
-- **`PurchaseOrders` (Principal)**: Tabla central encargada de registrar y almacenar las órdenes de compra.
-- **`UsersProjection`**: Tabla que dispone localmente de la información básica de los usuarios de la plataforma, utilizada para validar usuarios vinculados a las compras sin depender de consultas en tiempo real al servicio de Auth.
-- **`ProductsProjection`**: Tabla que almacena una copia simplificada de los productos registrados en el Inventario. Permite validar los productos que se agregan a las órdenes de compra sin consultar de forma síncrona al servicio de Inventario.
+## Datos e invariantes
 
-## Comunicación y Eventos (Kafka)
-El microservicio de Compras actúa exclusivamente como **consumidor** de eventos en la arquitectura descrita:
-- Escucha los eventos `UserCreated` y `UserUpdated` del microservicio de Autenticación para actualizar automáticamente su tabla `UsersProjection`.
-- Escucha los eventos `ProductCreated` y `ProductUpdated` del microservicio de Inventario para mantener sincronizada su tabla `ProductsProjection`.
+`PurchaseOrders`: UUID, requesterId del JWT, supplierName obligatorio (1–200 caracteres), currency `MXN`, status DRAFT/SUBMITTED/CANCELLED, version y timestamps UTC. `PurchaseOrderLines`: UUID, orderId, productId, skuSnapshot, nameSnapshot, unit `UNIT`, quantity entero >0 y unitPrice decimal exacto positivo (18,2), recibido como string. Rechazar más de dos decimales y desbordamientos; total calculado en servidor con Decimal. Producto repetido en la orden: 400. Al menos una línea; máximo 100.
 
-## Endpoints (Mínimos Recomendados)
-Para evidenciar el total desacoplamiento, el servicio debe exponer los siguientes endpoints que no realizarán llamadas HTTP a ningún otro servicio:
-- `GET /api/purchases/orders`: Lista el historial de órdenes de compra, enriqueciendo la respuesta con los datos locales del comprador (desde `UsersProjection`) y de los productos (desde `ProductsProjection`).
-- `POST /api/purchases/orders`: Registra una nueva orden de compra. Validará internamente que el token JWT tenga permisos, que el usuario exista en `UsersProjection` y que los productos a comprar existan usando únicamente `ProductsProjection`.
+Capturar sku/nombre/unidad al crear o editar líneas desde ProductsProjection; al enviar congelar esos valores y precios. Las consultas históricas usan esos snapshots, aunque cambie el catálogo. Datos actuales de proyecciones pueden mostrarse aparte, sin sustituir históricos.
+
+Transiciones: DRAFT→SUBMITTED; DRAFT o SUBMITTED→CANCELLED. SUBMITTED/CANCELLED no admiten edición de líneas. CANCELLED es terminal. Toda escritura usa expectedVersion, actor y auditoría, sin perder actualizaciones concurrentes. ADMIN puede operar cualquier orden; PURCHASES_AGENT solo sus propias órdenes; el API no acepta requesterId arbitrario.
+
+POST de creación requiere `Idempotency-Key` UUID. Guardar `(requesterId,key)`, hash canónico del request y respuesta en la misma transacción de la orden con unicidad. Repetir el mismo request devuelve el resultado original; cambiar el cuerpo con la misma key devuelve 409. Conservar las keys al menos durante la vida de la orden. Validaciones rechazadas antes del commit no consumen la key. Submit/cancel verifican versión y estado; repetir una transición ya aplicada con la misma key devuelve su respuesta original.
+
+## Proyecciones y HTTP
+
+Usuarios: grupo `purchases.auth-users.v1`. Productos: grupo `purchases.inventory-products.v1`. Nunca compartir grupo con Inventory. Inbox y proyección se guardan atómicamente antes del offset. Ver [contratos](../contracts) y [recuperación](../architecture/event-driven-communication.md).
+
+Verificar JWT completo de PURCHASES y RBAC. Usuario conocido inactivo: 403. Producto conocido inactivo: 409 PRODUCT_INACTIVE. UUID válido ausente en proyección: `409 PROJECTION_NOT_READY`, Retry-After 2; sin HTTP a propietarios y sin afirmar que nunca existió. SKU y stock de la proyección no garantizan disponibilidad presente, y no se usan para descontar existencias.
+
+| Endpoint | Comportamiento |
+| --- | --- |
+| `GET /api/purchases/orders` | Listado paginado; agente solo sus órdenes |
+| `POST /api/purchases/orders` | Crear DRAFT con Idempotency-Key; 201 |
+| `PUT /api/purchases/orders/{id}` | Editar DRAFT con expectedVersion |
+| `POST /api/purchases/orders/{id}/submit` | Congelar orden DRAFT; key y versión obligatorias |
+| `POST /api/purchases/orders/{id}/cancel` | Cancelar; key y versión obligatorias |
+| `GET /api/purchases/openapi.json` | Schema DRF de desarrollo, paths completos y server `/` |
+
+Aceptación: migraciones, permisos/propiedad, dinero exacto, snapshots históricos, transiciones, conflictos concurrentes, idempotencia incluso con solicitudes simultáneas, proyecciones atrasadas/inactivas, duplicados/DLQ/bootstrap y ausencia de llamadas HTTP a dominios. README propio con instalación, migraciones, configuración y pruebas.

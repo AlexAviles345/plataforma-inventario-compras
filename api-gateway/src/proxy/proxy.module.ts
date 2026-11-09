@@ -10,7 +10,7 @@ import { JwtAuthGuard } from '../auth/jwt.guard';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        secret: config.get<string>('JWT_SECRET'),
+        secret: config.getOrThrow<string>('JWT_SECRET'),
       }),
     }),
   ],

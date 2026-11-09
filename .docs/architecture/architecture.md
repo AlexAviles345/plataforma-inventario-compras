@@ -1,7 +1,9 @@
 # Arquitectura del Sistema: TechDistribution
 
 ## Visión General
-La plataforma de TechDistribution está diseñada utilizando una arquitectura basada en microservicios heterogéneos, integrados mediante un API Gateway y con comunicación asíncrona a través de Apache Kafka. El objetivo principal es garantizar la independencia de cada dominio, reducir el acoplamiento y centralizar la autenticación.
+La plataforma de TechDistribution está diseñada utilizando microservicios heterogéneos, integrados mediante un API Gateway y eventos Kafka. Auth emite tokens; Gateway y cada servicio los validan independientemente y cada dominio autoriza sus operaciones. La independencia depende de entrega recuperable de eventos y de la vigencia de las proyecciones, no implica consistencia inmediata.
+
+Estado: Gateway e infraestructura implementados; Auth, Inventory y Purchases planificados. [Secuencia y aceptación del MVP](../planning.md), [contrato JWT y RBAC](../standards/guidelines.md), [outbox, inbox y recuperación](event-driven-communication.md). Compras registra órdenes y conserva snapshots históricos; recepción y actualización automática de stock quedan fuera del MVP.
 
 ## Componentes Principales
 1. **API Gateway**: Actúa como el único punto de entrada para los clientes. Su función es centralizar el acceso y enrutar las peticiones hacia los distintos microservicios.

@@ -1,30 +1,18 @@
-# Microservicio de Inventario
+# Inventory: contrato de implementación
 
-## Tecnología
-Este microservicio será desarrollado utilizando **Spring Boot**.
+Estado: planificado, aún sin código. Spring Boot, MySQL, consumidor de usuarios y productor de productos. No consulta por HTTP a Auth/Compras.
 
-## Responsabilidad Principal
-Es el sistema autónomo responsable de gestionar la información del catálogo de productos y sus respectivas existencias.
+`Products`: UUID, sku único, name, unit `UNIT`, stockOnHand entero >=0, active, version, createdBy/updatedBy UUID y timestamps UTC. Stock inicial/correcciones explícitas las administra INVENTORY_MANAGER o ADMIN con versión esperada y auditoría. El MVP no contabiliza automáticamente recepciones de compras. No permitir escrituras de stock basadas en el dato atrasado de una proyección ajena.
 
-## Entidades y Base de Datos
-El servicio opera con su propia base de datos independiente (utilizando **MySQL**) y maneja las siguientes entidades:
-- **`Products` (Principal)**: Tabla responsable de almacenar la información detallada de los productos y sus existencias.
-- **`UsersProjection`**: Es una tabla de proyección local que contiene una copia simplificada de los usuarios. Esta proyección permite identificar qué usuario creó o modificó un producto sin necesidad de realizar una consulta síncrona al microservicio de Autenticación.
+`UsersProjection`: snapshot público y versión de usuario proveniente de Auth; solo consumidores/importadores la escriben. Grupo `inventory.auth-users.v1`, tópico `auth.users.events`. Un usuario conocido inactivo se rechaza; una referencia aún ausente devuelve `409 PROJECTION_NOT_READY`, según el [protocolo común](../architecture/event-driven-communication.md).
 
-## Comunicación y Eventos (Kafka)
-El microservicio de Inventario actúa tanto como **consumidor** como **productor** de eventos:
+| Endpoint | Acceso | Resultado |
+| --- | --- | --- |
+| `GET /api/inventory/products` | INVENTORY_MANAGER/ADMIN, token INVENTORY | Catálogo paginado; autor desde proyección local |
+| `POST /api/inventory/products` | Igual | 201, SKU único, creador del JWT |
+| `PUT /api/inventory/products/{id}` | Igual | expectedVersion obligatorio; 409 ante conflicto; desactivación lógica |
+| `GET /api/inventory/openapi.json` | Desarrollo | Springdoc en esta ruta; paths `/api/inventory/...`, server `/` |
 
-### Consumidor
-- Escucha los eventos `UserCreated` y `UserUpdated` provenientes del servicio de Autenticación mediante Kafka para mantener actualizada su tabla local `UsersProjection`.
+Verificar JWT y RBAC localmente, sin confiar exclusivamente en x-user headers. Cada cambio confirma entidad + outbox y publica `ProductCreated`/`ProductUpdated` con snapshot completo según [schema](../contracts/product-event.schema.json). No borrar físicamente productos referenciados por compras: emitir active:false.
 
-### Productor
-- Publica eventos de dominio cuando la información de los productos cambia en su base de datos:
-  - `ProductCreated`: Emitido cuando se registra un nuevo producto en el inventario.
-  - `ProductUpdated`: Emitido cuando se modifica un producto existente.
-Estos eventos son consumidos posteriormente por el microservicio de Compras.
-
-## Endpoints (Mínimos Recomendados)
-Para demostrar la autonomía del servicio y el uso de las proyecciones, se deben implementar mínimamente los siguientes endpoints:
-- `GET /api/inventory/products`: Lista los productos disponibles. Al devolver la respuesta, utiliza la `UsersProjection` para adjuntar qué usuario registró o modificó cada producto sin consultar de forma síncrona a Auth.
-- `POST /api/inventory/products`: Registra un nuevo producto (requiere token JWT válido) y publica el evento `ProductCreated` en Kafka.
-- `PUT /api/inventory/products/{id}`: Actualiza un producto existente (requiere token JWT válido) y publica el evento `ProductUpdated` en Kafka.
+Aceptación: migraciones, validación de SKU/stock, control concurrente, permisos de sistema, inbox/proyección atómica, eventos duplicados y desordenados, recuperación outbox, DLQ y reconstrucción desde snapshot. Configuración Spring por placeholders/perfiles; secretos locales fuera de git. README propio debe incluir migraciones y pruebas.

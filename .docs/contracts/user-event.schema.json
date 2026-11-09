@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://techdistribution.local/contracts/user-event.schema.json",
+  "title": "Public user snapshot v1",
+  "type": "object",
+  "allOf": [
+    {"$ref": "event-envelope.schema.json"},
+    {
+      "properties": {
+        "eventType": {"enum": ["UserCreated", "UserUpdated"]},
+        "data": {
+          "type": "object",
+          "required": ["userId", "email", "displayName", "active", "assignments"],
+          "properties": {
+            "userId": {"type": "string", "format": "uuid"},
+            "email": {"type": "string", "format": "email"},
+            "displayName": {"type": "string", "minLength": 1, "maxLength": 200},
+            "active": {"type": "boolean"},
+            "assignments": {
+              "type": "array", "maxItems": 2, "uniqueItems": true,
+              "items": {
+                "type": "object", "required": ["system", "role"],
+                "oneOf": [
+                  {"properties": {"system": {"const": "INVENTORY"}, "role": {"enum": ["ADMIN", "INVENTORY_MANAGER"]}}},
+                  {"properties": {"system": {"const": "PURCHASES"}, "role": {"enum": ["ADMIN", "PURCHASES_AGENT"]}}}
+                ],
+                "properties": {"system": {"type": "string"}, "role": {"type": "string"}},
+                "additionalProperties": false
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    }
+  ]
+}

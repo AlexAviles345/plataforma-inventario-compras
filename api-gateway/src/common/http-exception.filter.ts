@@ -4,20 +4,38 @@ import {
   ArgumentsHost,
   HttpException,
 } from '@nestjs/common';
-import { Response } from 'express';
+import { ServerResponse } from 'node:http';
+
+export function sendGatewayError(
+  response: ServerResponse,
+  status: number,
+  message: string,
+): void {
+  if (response.writableEnded || response.destroyed) return;
+  if (response.headersSent) {
+    response.destroy();
+    return;
+  }
+  response.statusCode = status;
+  response.setHeader('Content-Type', 'application/json; charset=utf-8');
+  response.end(
+    JSON.stringify({
+      error: true,
+      source: 'gateway',
+      statusCode: status,
+      message,
+      timestamp: new Date().toISOString(),
+    }),
+  );
+}
 
 @Catch(HttpException)
 export class GatewayExceptionFilter implements ExceptionFilter {
-  catch(exception: HttpException, host: ArgumentsHost) {
-    const ctx = host.switchToHttp();
-    const response = ctx.getResponse<Response>();
-    const status = exception.getStatus();
-
-    response.status(status).json({
-      error: true,
-      source: 'gateway',
-      message: exception.message,
-      timestamp: new Date().toISOString(),
-    });
+  catch(exception: HttpException, host: ArgumentsHost): void {
+    sendGatewayError(
+      host.switchToHttp().getResponse<ServerResponse>(),
+      exception.getStatus(),
+      exception.message,
+    );
   }
 }

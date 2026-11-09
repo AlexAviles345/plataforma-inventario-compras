@@ -1,0 +1,41 @@
+name: Gateway and infrastructure
+on: [push, pull_request]
+jobs:
+  gateway:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api-gateway
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: api-gateway/.nvmrc
+          cache: npm
+          cache-dependency-path: api-gateway/package-lock.json
+      - run: npm ci --ignore-scripts
+      - run: npm run lint
+      - run: npm run build
+      - run: npm test -- --runInBand
+      - run: npm run test:e2e -- --runInBand
+      - run: npm audit --omit=dev --audit-level=high
+      - run: docker build -t techdistribution-gateway .
+  infrastructure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose -f docker-compose.example.yml config --quiet
+      - run: docker compose -f docker-compose.example.yml up -d --wait postgres-auth postgres-purchases mysql-inventory kafka
+      - run: docker compose -f docker-compose.example.yml run --rm kafka-init
+      - name: Verify Kafka persistence across container recreation
+        shell: bash
+        run: |
+          broker() { docker compose -f docker-compose.example.yml exec -T kafka "$@"; }
+          broker kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic ci.persistence --partitions 1 --replication-factor 1
+          printf 'persisted\n' | broker kafka-console-producer --bootstrap-server kafka:29092 --topic ci.persistence
+          docker compose -f docker-compose.example.yml up -d --wait --force-recreate kafka
+          broker kafka-console-consumer --bootstrap-server kafka:29092 --topic ci.persistence --from-beginning --max-messages 1 --timeout-ms 15000 | grep -Fx persisted
+      - if: always()
+        run: docker compose -f docker-compose.example.yml logs --tail=100
+      - if: always()
+        run: docker compose -f docker-compose.example.yml down -v

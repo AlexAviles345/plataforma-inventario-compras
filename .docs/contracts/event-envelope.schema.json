@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://techdistribution.local/contracts/event-envelope.schema.json",
+  "title": "Domain event v1",
+  "type": "object",
+  "required": ["eventId", "eventType", "schemaVersion", "aggregateId", "entityVersion", "timestamp", "correlationId", "data"],
+  "properties": {
+    "eventId": {"type": "string", "format": "uuid"},
+    "eventType": {"enum": ["UserCreated", "UserUpdated", "ProductCreated", "ProductUpdated"]},
+    "schemaVersion": {"const": 1},
+    "aggregateId": {"type": "string", "format": "uuid"},
+    "entityVersion": {"type": "integer", "minimum": 1},
+    "timestamp": {"type": "string", "format": "date-time", "pattern": "Z$"},
+    "correlationId": {"type": "string", "format": "uuid"},
+    "data": {"type": "object"}
+  },
+  "additionalProperties": false
+}

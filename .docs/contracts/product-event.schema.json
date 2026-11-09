@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://techdistribution.local/contracts/product-event.schema.json",
+  "title": "Public product snapshot v1",
+  "type": "object",
+  "allOf": [
+    {"$ref": "event-envelope.schema.json"},
+    {
+      "properties": {
+        "eventType": {"enum": ["ProductCreated", "ProductUpdated"]},
+        "data": {
+          "type": "object",
+          "required": ["productId", "sku", "name", "unit", "stockOnHand", "active", "createdBy", "updatedBy"],
+          "properties": {
+            "productId": {"type": "string", "format": "uuid"},
+            "sku": {"type": "string", "minLength": 1, "maxLength": 64},
+            "name": {"type": "string", "minLength": 1, "maxLength": 200},
+            "unit": {"const": "UNIT"},
+            "stockOnHand": {"type": "integer", "minimum": 0},
+            "active": {"type": "boolean"},
+            "createdBy": {"type": "string", "format": "uuid"},
+            "updatedBy": {"type": "string", "format": "uuid"}
+          },
+          "additionalProperties": false
+        }
+      }
+    }
+  ]
+}

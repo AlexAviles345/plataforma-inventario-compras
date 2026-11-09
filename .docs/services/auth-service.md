@@ -1,25 +1,26 @@
-# Microservicio de Autenticación (Auth)
+# Auth: contrato de implementación
 
-## Tecnología
-Este microservicio será desarrollado utilizando **NestJS**.
+Estado: planificado, aún sin código. NestJS, PostgreSQL y productor Kafka. No consulta a otros dominios por HTTP.
 
-## Responsabilidad Principal
-Es el sistema autónomo encargado de la administración centralizada de usuarios, permisos y la emisión de tokens JWT para toda la plataforma.
+## Datos y seguridad
 
-## Entidades y Base de Datos
-El servicio cuenta con su propia base de datos independiente (utilizando **PostgreSQL**) con las siguientes tablas:
-- **`Users` (Principal)**: Almacena la información central de todos los usuarios del sistema.
-- **`Systems`**: Define los sistemas disponibles en la plataforma (Inventario y Compras) junto con sus políticas de autenticación, lo que incluye los tiempos de expiración de los tokens JWT específicos para cada sistema.
+`Users`: UUID, email normalizado único, displayName, hash de contraseña Argon2id, active, version y timestamps UTC. `Systems`: código INVENTORY/PURCHASES único y duración de token positiva <=900 segundos por defecto, limitada por `JWT_MAX_TTL_SECONDS`. `UserSystems`: asignaciones únicas usuario/sistema/rol conforme a la matriz común. Contraseñas y hashes nunca se incluyen en respuestas, eventos ni logs.
 
-## Comunicación y Eventos (Kafka)
-El servicio de Autenticación actúa como **productor** de eventos para mantener sincronizadas las proyecciones en los demás servicios. Cada vez que ocurre un cambio en la entidad principal de usuarios, el servicio emite los siguientes eventos a Apache Kafka:
-- `UserCreated`: Publicado cuando se crea un nuevo usuario.
-- `UserUpdated`: Publicado cuando se actualiza la información de un usuario existente.
+Bootstrap: comando administrativo local idempotente, fuera del HTTP público, crea el primer ADMIN desde variables temporales/secreto interactivo. No usar contraseña por defecto y no recrear/reactivar administradores existentes automáticamente. Registrar auditoría del bootstrap sin credenciales. Solo administradores gestionan usuarios/asignaciones; impedir desactivar al último administrador activo.
 
-Estos eventos permiten que los microservicios de Inventario y Compras mantengan sus propias copias locales (proyecciones) de los usuarios para no depender de consultas síncronas.
+Login recibe `{email,password,system}`. Verificar usuario activo, contraseña y asignación explícita al sistema. Credenciales incorrectas, usuario desconocido/inactivo y falta de asignación devuelven un mensaje genérico 401. Rate limiting adicional por cuenta/IP en Auth cuando se implemente. Emitir HS256 con todos los claims del [contrato común](../standards/guidelines.md); TTL por sistema, sin refresh token. Actualización de contraseña/desactivación no promete revocación inmediata de JWT ya emitidos; documentar vigencia máxima y eventos de estado.
 
-## Endpoints (Mínimos Recomendados)
-Para cumplir con el propósito del proyecto, este servicio debe exponer al menos los siguientes endpoints:
-- `POST /api/auth/login`: Autentica a un usuario validando credenciales y retorna un token JWT firmado.
-- `POST /api/auth/users`: Crea un nuevo usuario en la base de datos local y emite el evento `UserCreated` hacia Kafka.
-- `PUT /api/auth/users/{id}`: Actualiza la información de un usuario y emite el evento `UserUpdated` hacia Kafka.
+## HTTP
+
+| Endpoint | Permiso | Comportamiento |
+| --- | --- | --- |
+| `POST /api/auth/login` | Público | Credenciales/sistema → accessToken, tokenType Bearer, expiresIn |
+| `POST /api/auth/users` | ADMIN | Crear usuario/asignaciones; 201; email duplicado 409 |
+| `PUT /api/auth/users/{id}` | ADMIN | Actualizar con expectedVersion; conflicto 409; desactivar con active:false |
+| `GET /api/auth/systems` | ADMIN | Consultar sistemas y TTL |
+| `PUT /api/auth/systems/{code}` | ADMIN | Cambiar TTL validado para futuras emisiones |
+| `GET /api/auth/openapi.json` | Desarrollo | Schema con paths completos y servidor `/` |
+
+Usar migraciones. Guardar Users/asignaciones, versión y outbox en una transacción. Producir `UserCreated`/`UserUpdated` con snapshot público según [schema](../contracts/user-event.schema.json). Cambios de email, nombre, active o asignaciones generan evento; nunca distribuir el hash. Implementar publicador con orden por agregado y reintentos según [protocolo Kafka](../architecture/event-driven-communication.md).
+
+Aceptación: probar login por sistema/rol, expiración, aislamiento de permisos, desactivación, bootstrap idempotente, concurrencia, secretos ausentes en eventos y recuperación del outbox con Kafka caído. README propio debe indicar instalación, migraciones, bootstrap, variables, ejecución y pruebas.

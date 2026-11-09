@@ -21,9 +21,9 @@ Aunque cada dominio funcionará como un sistema autónomo con su propia base de 
 
 | Microservicio | Tecnología | Base de Datos | Entidades Principales | Proyecciones Locales (Solo Lectura) |
 |---------------|------------|---------------|-----------------------|-------------------------------------|
-| **Auth**      | NestJS     | PostgreSQL    | `Users`, `Systems`    | *(Ninguna)* |
-| **Inventory** | Spring Boot| MySQL         | `Products`            | `UsersProjection` |
-| **Purchases** | Django REST| PostgreSQL    | `PurchaseOrders`      | `UsersProjection`, `ProductsProjection` |
+| **Auth**      | NestJS     | PostgreSQL    | `Users`, `Systems`, `UserSystems`, `Outbox` | *(Ninguna)* |
+| **Inventory** | Spring Boot| MySQL         | `Products`, `Outbox` | `UsersProjection` |
+| **Purchases** | Django REST| PostgreSQL    | `PurchaseOrders`, `PurchaseOrderLines`, `IdempotencyKeys` | `UsersProjection`, `ProductsProjection` |
 
 ---
 
@@ -46,11 +46,11 @@ La comunicación entre los microservicios se realizará de forma asíncrona medi
 ---
 
 ## Características Arquitectónicas Demostradas
-Con esta arquitectura, el proyecto es capaz de demostrar el dominio de los siguientes conceptos avanzados:
+Esta arquitectura busca demostrar los siguientes conceptos. Actualmente están implementados el Gateway y la infraestructura; los servicios de dominio siguen el [plan](planning.md):
 
 - **API Gateway** como punto único de entrada.
 - **Microservicios heterogéneos** con distintos stacks tecnológicos.
-- **Autorización JWT centralizada** con expiraciones dinámicas por sistema.
+- **Emisión JWT centralizada y autorización local** con expiraciones por sistema.
 - **Comunicación asíncrona (Message Broker)** mediante Kafka.
 - **Consistencia Eventual** en sistemas distribuidos.
 - Uso de **Proyecciones Locales** para evitar bloqueos y acoplamiento.

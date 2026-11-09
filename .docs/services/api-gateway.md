@@ -1,38 +1,25 @@
-# Microservicio de API Gateway
+# API Gateway
 
-## Tecnología
-Este microservicio está desarrollado utilizando **NestJS** y actúa como un proxy inverso haciendo uso de la librería **http-proxy-middleware**.
+NestJS 11 sobre Node 24, proxy HTTP con `http-proxy-middleware`. Reenvía streams sin parser de body y conserva URI, query, método, Authorization y bytes del cuerpo. Una instancia de proxy por servicio. Sin acceso a Kafka ni bases.
 
-## Responsabilidad Principal
-Es el **único punto de entrada** a la plataforma TechDistribution. Su objetivo principal es recibir todas las peticiones HTTP de los clientes web o móviles, validarlas y enrutarlas al microservicio correspondiente, aislando así la infraestructura interna del exterior.
+| Ruta pública e interna | Destino local | Acceso |
+| --- | --- | --- |
+| `POST /api/auth/login` | `http://localhost:3001` | Público; 10 intentos/minuto por IP |
+| `/api/auth/*` restante | `http://localhost:3001` | JWT válido; Auth aplica permisos |
+| `/api/inventory/*` | `http://localhost:8081` | JWT de INVENTORY |
+| `/api/purchases/*` | `http://localhost:8000` | JWT de PURCHASES |
+| `GET /api/{auth,inventory,purchases}/openapi.json` | Servicio correspondiente, misma URI | Público exclusivamente en desarrollo |
+| `/docs` | UI del Gateway | Habilitada exclusivamente en desarrollo |
+| `GET /health/live`, `GET /health/ready` | Gateway | Públicos; readiness del Gateway, sin sondeo de dominios |
 
-## Funciones Clave
+Los tokens cumplen el [contrato común](../standards/guidelines.md), incluido `role` singular. Las identidades entrantes se eliminan, se derivan de claims validados y se reenvían como contexto; el destino vuelve a verificar JWT. No se confía en headers Forwarded ni se habilita `trust proxy`. No hay `/register` anónimo ni alias sin `/api`.
 
-### 1. Enrutamiento Inverso (Proxy)
-El Gateway expone rutas genéricas y redirige el tráfico hacia la red interna de microservicios sin alterar la estructura original de las URIs:
-- Todas las peticiones a `/auth/*` se envían al microservicio de Autenticación.
-- Todas las peticiones a `/inventory/*` se envían al microservicio de Inventario.
-- Todas las peticiones a `/purchases/*` se envían al microservicio de Compras.
+Cada esquema debe declarar `servers: [{"url":"/"}]`, paths completos `/api/<dominio>/...` y bearer security para sus operaciones protegidas. Auth configura `jsonDocumentUrl` de Nest; Inventory configura `springdoc.api-docs.path`; Purchases registra una vista de schema de DRF en la ruta acordada. El Gateway muestra los documentos, sin inferir ni reescribir sus operaciones. Los servicios deben deshabilitar sus esquemas públicos en producción también.
 
-### 2. Autenticación Descentralizada y Guardián Global
-Aunque el microservicio `Auth` es el dueño de los usuarios y creador de los tokens, el API Gateway cuenta con su propio **JwtAuthGuard**.
-- **Validación Matemática:** El Gateway valida la firma del token JWT utilizando la clave secreta compartida, verificando su autenticidad y expiración **sin realizar llamadas síncronas (HTTP)** al microservicio de Autenticación.
-- **Inyección de Identidad (Headers):** Una vez validado el token, el Gateway extrae la información del payload (como el ID del usuario y sus roles) y los inyecta en las cabeceras HTTP de la petición proxyada (`x-user-id` y `x-user-roles`). De esta manera, los microservicios destino confían ciegamente en la identidad provista por el Gateway.
+Configuración validada al iniciar: ver [`.env.example`](../../api-gateway/.env.example). URLs de destino deben ser orígenes HTTP(S) sin credenciales ni paths. JWT_SECRET aleatorio de al menos 32 bytes. Emisor y audiencia deben coincidir en Auth y validadores. `DOCS_ENABLED` debe ser false en producción. CORS usa una lista explícita de orígenes; no reemplaza autenticación.
 
-### 3. Consolidación de Documentación (Swagger UI)
-Para facilitar las pruebas de la plataforma sin tener que acceder puerto por puerto, el Gateway expone una interfaz unificada de **Swagger UI** en la ruta `/docs`.
-Mediante la función "TopBar" (menú desplegable), el Gateway lee y renderiza los archivos JSON/OpenAPI autogenerados y expuestos directamente por cada microservicio, agrupando:
-- La documentación del Auth Service (NestJS).
-- La documentación del Inventory Service (Spring Boot).
-- La documentación del Purchases Service (Django).
+Plazo total por operación: 10 segundos por defecto, configurable hasta 120 segundos. Un upstream inaccesible devuelve 502 y uno que excede el plazo 504. Cuerpo máximo 1 MiB por defecto, aplicado tanto con Content-Length como chunked; 413 si se excede. No se reintentan escrituras ni se siguen redirects internos. Si ya comenzó una respuesta y ocurre un fallo/timeout se cierra la conexión; no se puede cambiar su status.
 
-## Variables de Entorno
-El Gateway necesita conocer las URLs internas de los microservicios destino y el secreto para validar los tokens. El archivo `.env` debe estructurarse de la siguiente manera:
+Los errores originados aquí usan `{error:true, source:"gateway", statusCode, message, timestamp}`. Los errores de dominio mantienen cuerpo y status originales. `X-Request-Id` se genera por petición, se devuelve al cliente y se propaga al servicio; nunca contiene tokens. Logs de acceso estructurados indican método, ruta sin query, status, duración y requestId.
 
-```env
-PORT=3000
-JWT_SECRET=tu_super_secreto_compartido
-AUTH_SERVICE_URL=http://localhost:3001
-INVENTORY_SERVICE_URL=http://localhost:3002
-PURCHASES_SERVICE_URL=http://localhost:3003
-```
+El limitador de login reside en memoria: una instancia para desarrollo/MVP. Antes de replicar, usar store compartido; antes de agregar un ingress, configurar explícitamente sus redes confiables y verificar IPs. TLS termina en el ingress de despliegue; no exponer directamente los puertos de dominio. El [Dockerfile](../../api-gateway/Dockerfile) ejecuta con usuario sin privilegios y documentación deshabilitada.

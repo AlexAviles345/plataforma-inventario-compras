@@ -1,60 +1,50 @@
-# Lineamientos y Reglas Arquitectónicas Estrictas
+# Contratos y reglas de implementación
 
-Para garantizar el correcto funcionamiento del sistema distribuido de TechDistribution y mantener la independencia de los microservicios, todos los desarrollos deben apegarse estrictamente a las siguientes reglas:
+## HTTP y autenticación
 
-## 1. Estructura del Payload JWT
-Dado que cada microservicio validará los tokens de forma independiente sin consultar al servicio de Auth en cada petición, el payload del JSON Web Token (JWT) **debe** contener la siguiente información mínima y estandarizada:
+Todas las rutas de negocio conservan el prefijo `/api/<dominio>` tanto en el Gateway como en el servicio destino. No hay reescritura ni registro público. El único endpoint de negocio anónimo es `POST /api/auth/login`; los esquemas OpenAPI exactos son públicos solo en desarrollo. [Matriz de rutas y configuración](../services/api-gateway.md).
+
+Auth emite el JWT. Gateway y cada servicio verifican firma HS256, algoritmo permitido, emisor `techdistribution-auth`, audiencia `techdistribution-api`, expiración y contrato completo. Cada servicio aplica además el RBAC y restricciones del recurso. `Authorization` se conserva; los headers `x-user-*` solo son contexto derivado, nunca una prueba de autenticación. Las aplicaciones de dominio quedan en red privada. El Gateway elimina los headers entrantes `x-user-*`, `x-forwarded-*` y `Forwarded`; no confía en proxies externos por defecto.
+
+Payload de acceso obligatorio, además de `iss` y `aud`:
 
 ```json
 {
-  "sub": "UUID_del_usuario",
+  "sub": "767cc714-0614-4ab9-9510-c4772b403fed",
   "email": "usuario@techdistribution.com",
-  "role": "ADMIN | INVENTORY_MANAGER | PURCHASES_AGENT",
-  "system": "INVENTORY | PURCHASES",
-  "iat": 1684321000,
-  "exp": 1684324600
+  "role": "INVENTORY_MANAGER",
+  "system": "INVENTORY",
+  "iat": 1794182400,
+  "exp": 1794183300,
+  "iss": "techdistribution-auth",
+  "aud": "techdistribution-api"
 }
 ```
-- **`sub` (Subject)**: El identificador único del usuario (obligatoriamente el mismo UUID que se distribuye por Kafka).
-- **`system`**: Identificador del sistema para el cual este token fue emitido. Si un token fue emitido para `INVENTORY`, el microservicio de Compras debe rechazarlo inmediatamente.
-- **`role`**: Los permisos del usuario para que el microservicio pueda aplicar su propio control de acceso (RBAC).
-- **`exp`**: Tiempo de expiración, el cual variará dependiendo del sistema configurado en la tabla `Systems` de Auth.
 
-## 2. Prohibición de Peticiones Síncronas entre Servicios
-**Regla Estricta:** Ningún microservicio puede realizar peticiones HTTP (REST, GraphQL, etc.) a otro microservicio. 
-- Si un servicio necesita datos de otro, debe obtenerlos de sus **proyecciones locales** alimentadas vía Kafka.
-- Esto evita cuellos de botella, latencia en cascada y la dependencia de disponibilidad (Single Point of Failure).
+`sub` es UUID y coincide con el identificador publicado por Kafka. `role` es singular: `ADMIN`, `INVENTORY_MANAGER` o `PURCHASES_AGENT`. `system` es `INVENTORY` o `PURCHASES`: incluso un administrador necesita un token del sistema destino. El Gateway deriva `x-user-roles` como array JSON de un elemento, por compatibilidad con el nombre del header, y agrega `x-user-id` y `x-user-system`. No se acepta un claim `roles` como sustituto de `role`.
 
-## 3. Estructura Estándar de Eventos Kafka
-Todos los eventos publicados en Kafka deben compartir una envoltura (wrapper) estándar para facilitar el consumo genérico, el trazado de errores y el ordenamiento:
+`iat` y `exp` son enteros positivos en segundos UTC; `exp > iat`, no expirado y duración máxima de 900 segundos por defecto (`JWT_MAX_TTL_SECONDS`, hasta 3600). `iat` permite hasta 30 segundos de adelanto de reloj. Auth configura por sistema una duración menor o igual al límite común y los hosts sincronizan reloj. No hay refresh token en el MVP: se vuelve a autenticar al expirar. No registrar tokens, contraseñas ni hashes en logs/eventos.
 
-```json
-{
-  "eventId": "UUID_del_evento",
-  "eventType": "UserCreated",
-  "aggregateId": "UUID_de_la_entidad",
-  "timestamp": "2026-06-16T15:30:00Z",
-  "data": {
-    // Campos específicos del evento (ej. nombre, email, etc.)
-  }
-}
-```
-- Cada servicio que consuma eventos debe manejar la **idempotencia** utilizando el `eventId`, para evitar procesar un mismo evento más de una vez en caso de reintentos.
+| Operación | ADMIN | INVENTORY_MANAGER | PURCHASES_AGENT |
+| --- | --- | --- | --- |
+| Administrar usuarios y sistemas en Auth | Sí | No | No |
+| Consultar/crear/editar productos con token INVENTORY | Sí | Sí | No |
+| Consultar/crear/editar/enviar/cancelar órdenes con token PURCHASES | Sí, todas | No | Sí, solo propias |
 
-## 4. Propiedad y Modificación de Datos
-- **Única Fuente de Verdad:** Solo el servicio propietario (quien produce los eventos de esa entidad) puede realizar operaciones de escritura (`INSERT`, `UPDATE`, `DELETE`) en sus entidades principales.
-- Las **Proyecciones** (como `UsersProjection` o `ProductsProjection`) son estrictamente de **solo lectura** para el servicio que las aloja. Bajo ninguna circunstancia el servicio de Compras puede editar un producto en su `ProductsProjection`; debe esperar el evento del servicio de Inventario.
+El usuario tiene asignaciones `{ system, role }`, una por sistema, y Auth verifica esa asignación al emitir cada token. `ADMIN` puede asignarse a ambos sistemas; los otros roles solo al suyo. Usuario inactivo no inicia sesión. Un servicio que ya recibió su desactivación lo rechaza. Un JWT previo puede seguir siendo utilizable mientras llega el evento, con un máximo de vigencia del token. No se promete revocación instantánea entre servicios. Rotar el secreto coordinadamente en todos los validadores invalida los tokens anteriores; una futura rotación gradual requiere claves identificadas y preferentemente firma asimétrica.
 
-## 5. Nomenclatura y Tópicos de Kafka
-- Los tópicos de Kafka deben seguir la nomenclatura: `dominio.entidad.eventos` (ejemplo: `auth.users.events`, `inventory.products.events`).
-- Se debe utilizar una partición lógica, típicamente utilizando el `aggregateId` (ID del usuario o del producto) como la **Key** del mensaje en Kafka para asegurar que los eventos de la misma entidad se procesen en estricto orden cronológico.
+## Independencia y eventos
 
-## 6. Gestión de Configuración y Secretos
-Es estrictamente necesario mantener la seguridad y claridad de las configuraciones en todos los repositorios. Para esto:
-- **Para servicios basados en Node.js (Auth) y Python (Purchases)**: Todo microservicio debe contar con un archivo de ejemplo llamado `.env.example` con las variables requeridas (sin incluir contraseñas reales). Los archivos `.env` que contengan secretos reales **jamás** deben subirse al repositorio.
-- **Para servicios basados en Spring Boot (Inventory)**: Las propiedades globales se mantendrán en el archivo principal `application.properties` o `application.yml`. Los secretos y configuraciones locales deben manejarse utilizando **Perfiles de Spring** (por ejemplo, creando un archivo `application-local.properties`). Este archivo de perfil con datos sensibles **no debe ser versionado** bajo ninguna circunstancia.
+Los servicios de dominio no se consultan por HTTP ni acceden a bases ajenas. El tráfico cliente→Gateway→servicio, esquemas OpenAPI y comprobaciones operativas quedan fuera de esta prohibición. Kafka sincroniza proyecciones; el Gateway no consume eventos ni se conecta a las bases.
 
-## 7. Documentación Interna por Servicio
-Cada microservicio debe ser autocontenido no solo a nivel de código, sino también en su documentación. 
-- **Obligatorio:** Cada microservicio debe contar con su propio archivo `README.md` personalizado en la raíz de su carpeta.
-- **Contenido del README:** Debe detallar explícitamente los pasos para inicializar ese servicio específico en solitario. Esto incluye instalación de dependencias, comandos para levantamiento en local, variables de entorno necesarias (o perfiles a usar) y scripts para ejecutar las pruebas.
+Solo el propietario modifica entidades principales. La aplicación de negocio lee sus proyecciones; únicamente sus consumidores y procesos de reconstrucción pueden escribirlas. El publicador confirma entidad + outbox en la misma transacción. El consumidor confirma proyección + deduplicación en otra transacción local antes de confirmar offsets. [Protocolo de entrega, recuperación y grupos](../architecture/event-driven-communication.md).
+
+Los contratos versionados están en [contracts](../contracts). Todos los eventos son snapshots completos de la entidad pública, identificados por `eventId`, con `schemaVersion: 1`, `entityVersion` monotónica, `aggregateId`, `timestamp` UTC y `correlationId`. La key Kafka es `aggregateId`; el publicador mantiene orden por agregado. `data.userId` o `data.productId` coincide con `aggregateId`. Kafka ordena dentro de una partición, no garantiza por sí solo orden de negocio entre productores/reintentos.
+
+## Persistencia, concurrencia y configuración
+
+Identificadores UUID en los tres stacks. Fechas UTC ISO 8601. Cantidades de productos y compras: enteros positivos en piezas; stock admite cero. Dinero: decimal exacto, nunca float binario. Escrituras concurrentes con versión esperada y conflicto 409, sin actualizaciones perdidas.
+
+Cada servicio debe incluir README, pruebas, migraciones versionadas y ejemplo de configuración sin secretos. Node/Python: `.env.example`; Spring: `application.yml` con placeholders y `application-local.yml` ignorado. El ejemplo Compose es exclusivamente local y sus credenciales son de demostración. La configuración reproducible se versiona; los secretos reales no. En despliegues accesibles, TLS termina en el ingress y los puertos de servicios permanecen privados. El Gateway actual usa un límite de login en memoria por instancia; escalar requiere almacenamiento compartido y una política explícita de proxies confiables.
+
+Cada escritura HTTP propaga un `X-Request-Id` generado por el Gateway; Auth/Inventory lo copian como `correlationId` al outbox. Logs estructurados incluyen servicio, requestId/eventId, resultado y duración, sin datos de autenticación. Medir latencia/errores HTTP, backlog del outbox, lag Kafka y DLQ. Readiness del Gateway solo comprueba su propio arranque, no certifica disponibilidad de los dominios.

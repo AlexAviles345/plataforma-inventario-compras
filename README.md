@@ -1,45 +1,32 @@
-# TechDistribution - Inventory & Purchases Platform
+# TechDistribution — Inventario y Compras
 
-Plataforma interna para gestionar las operaciones principales (Autenticación, Inventario y Compras) mediante una arquitectura de microservicios.
+Plataforma interna con Auth (NestJS/PostgreSQL), Inventory (Spring Boot/MySQL), Purchases (Django/PostgreSQL), Gateway NestJS y sincronización de proyecciones por Kafka.
 
-> **Nota:** Para leer sobre la arquitectura, decisiones técnicas y el diseño de la comunicación orientada a eventos, por favor revisa la carpeta [`.docs/`](./.docs).
+**Estado actual:** Gateway, infraestructura local, contratos y planificación. Los tres servicios de dominio todavía no están implementados. [Plan y criterios de aceptación](.docs/planning.md), [arquitectura](.docs/architecture/architecture.md), [reglas comunes](.docs/standards/guidelines.md).
 
-## Requisitos Previos
+## Entorno local
 
-- [ ] Docker y Docker Compose
-- [ ] Node.js (para el servicio Auth en NestJS)
-- [ ] Java / Maven (para el servicio de Inventario en Spring Boot)
-- [ ] Python (para el servicio de Compras en Django)
-- [ ] Base de datos PostgreSQL
-- [ ] Base de datos MySQL
-- [ ] Apache Kafka
+Requisitos actuales: Docker con Compose y Node 24.x/npm 11.x. Java/Maven y Python se requieren cuando se implementen sus servicios; sus versiones se fijarán en esos módulos.
 
-## Instrucciones de Inicialización
-
-*Agrega aquí los pasos específicos para levantar la plataforma.*
-
-### 1. Levantar Infraestructura Base (Bases de Datos y Kafka)
-Para evitar la instalación nativa de PostgreSQL, MySQL y Apache Kafka, puedes levantar toda la infraestructura base mediante Docker.
-Consulta la [Guía de Configuración de Docker](./.docs/infrastructure/docker-setup.md) para ver los comandos y credenciales.
-
-### 2. Inicializar Microservicio de Autenticación (Auth)
 ```bash
-# Pasos para levantar el servicio NestJS
+docker compose -f docker-compose.example.yml up -d --wait postgres-auth postgres-purchases mysql-inventory kafka
+docker compose -f docker-compose.example.yml run --rm kafka-init
 ```
 
-### 3. Inicializar Microservicio de Inventario (Inventory)
+El ejemplo versionado es un entorno local reproducible con credenciales de demostración y puertos publicados solo en loopback. No contiene secretos de producción. [Puertos, pruebas Kafka y persistencia](.docs/infrastructure/docker-setup.md).
+
+Después sigue el [README del Gateway](api-gateway/README.md) para instalar, generar el secreto, configurar `.env` y arrancar. Health del Gateway no comprueba que Auth/Inventory/Purchases estén implementados ni disponibles; hasta levantarlos, sus rutas devolverán 502.
+
+## Desarrollo y validación
+
 ```bash
-# Pasos para levantar el servicio Spring Boot
+cd api-gateway
+npm ci --ignore-scripts
+npm run lint
+npm run build
+npm test -- --runInBand
+npm run test:e2e -- --runInBand
+npm audit
 ```
 
-### 4. Inicializar Microservicio de Compras (Purchases)
-```bash
-# Pasos para levantar el servicio Django
-```
-
-### 5. Inicializar API Gateway
-El Gateway es el punto de acceso centralizado (NestJS).
-Consulta el [README del API Gateway](./api-gateway/README.md) para ver los comandos de instalación, configuración de `.env` y ejecución.
-
-## Pruebas y Validación
-*Agrega aquí cómo ejecutar las pruebas y validar que todos los servicios y Kafka se están comunicando correctamente.*
+CI valida Gateway, imagen Docker e infraestructura, incluida publicación/consumo tras recrear Kafka. La prueba completa login→usuario→producto→proyección→orden se implementará en el último hito del [plan](.docs/planning.md). No se considera validada la plataforma completa por pasar únicamente las pruebas del Gateway.
