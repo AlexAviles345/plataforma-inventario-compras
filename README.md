@@ -2,7 +2,7 @@
 
 Plataforma interna con Auth (NestJS/PostgreSQL), Inventory (Spring Boot/MySQL), Purchases (Django/PostgreSQL), Gateway NestJS y sincronización de proyecciones por Kafka.
 
-**Estado actual:** Gateway, infraestructura local, contratos y planificación implementados. Auth, Inventory y Purchases cuentan con bases ejecutables y validadas; sus módulos de dominio siguen pendientes. [Plan y criterios de aceptación](docs/planning.md), [arquitectura](docs/architecture/architecture.md), [reglas comunes](docs/standards/guidelines.md).
+**Estado actual:** Gateway, infraestructura local, contratos y planificación implementados. Auth, Inventory y Purchases cuentan con bases ejecutables y validadas; sus módulos de dominio siguen pendientes. [Plan y criterios de aceptación](docs/planning.md), [arquitectura](docs/architecture/architecture.md), [reglas comunes](docs/standards/guidelines.md), [respuestas HTTP](docs/standards/api-responses.md).
 
 ## Estructura del repositorio
 

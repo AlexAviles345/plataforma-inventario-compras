@@ -4,6 +4,8 @@
 
 Todas las rutas de negocio conservan el prefijo `/api/<dominio>` tanto en el Gateway como en el servicio destino. No hay reescritura ni registro público. El único endpoint de negocio anónimo es `POST /api/auth/login`; los esquemas OpenAPI exactos son públicos solo en desarrollo. [Matriz de rutas y configuración](../services/api-gateway.md).
 
+Todas las respuestas JSON de negocio cumplen el [estándar de respuestas HTTP](api-responses.md): envoltura única, status HTTP coherente, errores con código estable y paginación común. El Gateway conserva las respuestas de dominio y solo genera la envoltura cuando el error se origina en él.
+
 Auth emite el JWT. Gateway y cada servicio verifican firma HS256, algoritmo permitido, emisor `techdistribution-auth`, audiencia `techdistribution-api`, expiración y contrato completo. Cada servicio aplica además el RBAC y restricciones del recurso. `Authorization` se conserva; los headers `x-user-*` solo son contexto derivado, nunca una prueba de autenticación. Las aplicaciones de dominio quedan en red privada. El Gateway elimina los headers entrantes `x-user-*`, `x-forwarded-*` y `Forwarded`; no confía en proxies externos por defecto.
 
 Payload de acceso obligatorio, además de `iss` y `aud`:

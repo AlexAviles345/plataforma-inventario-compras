@@ -1,5 +1,7 @@
 # Auth: contrato de implementación
 
+Las respuestas JSON de negocio siguen el [estándar común](../standards/api-responses.md).
+
 Estado: base NestJS ejecutable con configuración validada, salud, OpenAPI, Docker y pruebas. El dominio, PostgreSQL y el productor Kafka siguen planificados. No consulta a otros dominios por HTTP.
 
 ## Datos y seguridad
