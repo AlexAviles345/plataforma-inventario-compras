@@ -8,7 +8,7 @@ Actualmente están implementados Gateway, entorno local y pruebas del Gateway. A
 
 | Hito | Entregables | Depende de | Aceptación |
 | --- | --- | --- | --- |
-| 1. Contratos | Rutas, JWT/roles, eventos v1, reglas de órdenes/stock | Ninguno | Los documentos de servicios usan los mismos campos, puertos y políticas; schemas disponibles |
+| 1. Contratos | Rutas, JWT/roles, eventos v1, reglas de órdenes/stock y [modelo lógico de datos](architecture/data-model.md) | Ninguno | Los documentos de servicios usan los mismos campos, puertos y políticas; schemas y atributos de tablas disponibles |
 | 2. Gateway e infraestructura | Proxy seguro, límites, Swagger dev, health, Docker/CI y persistencia Kafka | 1 | Build/lint/tests pasan; HTTP conserva cuerpos; 401/403/413/429/502/504; listeners estables; mensaje sobrevive recreación Kafka en CI |
 | 3. Auth | Migraciones, bootstrap ADMIN, login por sistema, usuarios/asignaciones, outbox/publicador | 1–2 | JWT válido por sistema; permisos; sin secretos en eventos; caída de Kafka no pierde cambios |
 | 4. Inventory | Migraciones, productos/stock, RBAC, inbox/proyección usuarios, outbox productos | 3 | Concurrencia y stock válidos; duplicados no cambian resultado; dos consumidores de usuarios reciben todos los eventos |

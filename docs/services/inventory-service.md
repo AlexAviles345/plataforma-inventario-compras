@@ -6,9 +6,13 @@ Inventory valida íntegramente el [access token común](../standards/jwt-and-ses
 
 Estado: base Spring Boot ejecutable con configuración, salud, Actuator, OpenAPI, Docker y pruebas. El dominio, MySQL, consumidor de usuarios y productor de productos siguen planificados. No consulta por HTTP a Auth/Compras.
 
-`Products`: UUID, sku único, name, unit `UNIT`, stockOnHand entero >=0, active, version, createdBy/updatedBy UUID y timestamps UTC. Stock inicial/correcciones explícitas las administra INVENTORY_MANAGER o ADMIN con versión esperada y auditoría. El MVP no contabiliza automáticamente recepciones de compras. No permitir escrituras de stock basadas en el dato atrasado de una proyección ajena.
+`Products`: UUID, sku único, name, unit `UNIT`, stockOnHand entero >=0, active, version, createdBy/updatedBy UUID y timestamps UTC. Stock inicial/correcciones explícitas las administra INVENTORY_MANAGER o ADMIN con versión esperada, motivo saneado de 1–500 caracteres y auditoría. El MVP no contabiliza automáticamente recepciones de compras. No permitir escrituras de stock basadas en el dato atrasado de una proyección ajena.
 
 `UsersProjection`: snapshot público y versión de usuario proveniente de Auth; solo consumidores/importadores la escriben. Grupo `inventory.auth-users.v1`, tópico `auth.users.events`. Un usuario conocido inactivo se rechaza; una referencia aún ausente devuelve `409 PROJECTION_NOT_READY`, según el [protocolo común](../architecture/event-driven-communication.md).
+
+Los atributos físicos previstos de productos, historial de correcciones, inbox,
+outbox y la copia local de usuarios están en el
+[modelo de datos planificado](../architecture/data-model.md#inventory-mysql).
 
 | Endpoint | Acceso | Resultado |
 | --- | --- | --- |

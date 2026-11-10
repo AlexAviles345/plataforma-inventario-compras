@@ -22,6 +22,10 @@ POST de creación requiere `Idempotency-Key` UUID. Guardar `(requesterId,key)`, 
 
 Usuarios: grupo `purchases.auth-users.v1`. Productos: grupo `purchases.inventory-products.v1`. Nunca compartir grupo con Inventory. Inbox y proyección se guardan atómicamente antes del offset. Ver [contratos](../../contracts/events) y [recuperación](../architecture/event-driven-communication.md).
 
+Los atributos físicos previstos de órdenes, líneas, idempotencia, historial, inbox
+y ambas copias locales están en el
+[modelo de datos planificado](../architecture/data-model.md#purchases-postgresql).
+
 Verificar JWT completo de PURCHASES y RBAC. Usuario conocido inactivo: 403. Producto conocido inactivo: 409 PRODUCT_INACTIVE. UUID válido ausente en proyección: `409 PROJECTION_NOT_READY`, Retry-After 2; sin HTTP a propietarios y sin afirmar que nunca existió. SKU y stock de la proyección no garantizan disponibilidad presente, y no se usan para descontar existencias.
 
 | Endpoint | Comportamiento |

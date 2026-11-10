@@ -2,7 +2,7 @@
 
 Plataforma interna con Auth (NestJS/PostgreSQL), Inventory (Spring Boot/MySQL), Purchases (Django/PostgreSQL), Gateway NestJS, futura capa edge Nginx, CI en GitHub Actions, futura entrega con Jenkins y sincronización de proyecciones por Kafka.
 
-**Estado actual:** Gateway, infraestructura local, contratos y planificación implementados. Auth, Inventory y Purchases cuentan con bases ejecutables y validadas; sus módulos de dominio, Nginx y Jenkins siguen pendientes. [Plan y criterios de aceptación](docs/planning.md), [arquitectura](docs/architecture/architecture.md), [Nginx edge](docs/infrastructure/nginx-edge.md), [Jenkins y GitHub](docs/infrastructure/jenkins-github.md), [reglas comunes](docs/standards/guidelines.md), [respuestas HTTP](docs/standards/api-responses.md), [tokens y sesiones](docs/standards/jwt-and-sessions.md).
+**Estado actual:** Gateway, infraestructura local, contratos y planificación implementados. Auth, Inventory y Purchases cuentan con bases ejecutables y validadas; sus módulos de dominio, Nginx y Jenkins siguen pendientes. [Plan y criterios de aceptación](docs/planning.md), [arquitectura](docs/architecture/architecture.md), [modelo de datos](docs/architecture/data-model.md), [Nginx edge](docs/infrastructure/nginx-edge.md), [Jenkins y GitHub](docs/infrastructure/jenkins-github.md), [reglas comunes](docs/standards/guidelines.md), [respuestas HTTP](docs/standards/api-responses.md), [tokens y sesiones](docs/standards/jwt-and-sessions.md).
 
 ## Estructura del repositorio
 

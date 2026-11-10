@@ -24,6 +24,11 @@ Motores de base de datos asignados:
 - **Inventory (Spring Boot)**: MySQL
 - **Purchases (Django)**: PostgreSQL
 
+El [modelo de datos planificado](data-model.md) detalla tablas, atributos,
+restricciones, índices y las copias locales mantenidas mediante eventos. Una
+proyección pertenece a la base que la consume y nunca crea una relación SQL con la
+base propietaria.
+
 ## Características Técnicas
 Esta arquitectura demuestra los siguientes conceptos clave:
 - API Gateway.

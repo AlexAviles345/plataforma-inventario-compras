@@ -8,6 +8,10 @@ Estado: base NestJS ejecutable con configuración validada, salud, OpenAPI, Dock
 
 `Users`: UUID, email normalizado único, displayName, hash de contraseña Argon2id, active, version y timestamps UTC. `Systems`: código INVENTORY/PURCHASES único y duración de token positiva <=900 segundos por defecto, limitada por `JWT_MAX_TTL_SECONDS`. `UserSystems`: asignaciones únicas usuario/sistema/rol conforme a la matriz común. Contraseñas y hashes nunca se incluyen en respuestas, eventos ni logs.
 
+El esquema lógico completo de `users`, `systems`, `user_systems`, auditoría,
+outbox y la futura tabla de sesiones está en el
+[modelo de datos planificado](../architecture/data-model.md#auth-postgresql).
+
 Bootstrap: comando administrativo local idempotente, fuera del HTTP público, crea el primer ADMIN desde variables temporales/secreto interactivo. No usar contraseña por defecto y no recrear/reactivar administradores existentes automáticamente. Registrar auditoría del bootstrap sin credenciales. Solo administradores gestionan usuarios/asignaciones; impedir desactivar al último administrador activo.
 
 Login recibe `{email,password,system}`. Verificar usuario activo, contraseña y asignación explícita al sistema. Credenciales incorrectas, usuario desconocido/inactivo y falta de asignación devuelven un mensaje genérico 401. Rate limiting adicional por cuenta/IP en Auth cuando se implemente. Emitir HS256 con todos los claims del [contrato de access token](../standards/jwt-and-sessions.md); TTL por sistema. Refresh permanece fuera del MVP actual, aunque su formato opaco, almacenamiento, cookies, CSRF, rotación y revocación ya están especificados para una ampliación posterior. Actualización de contraseña/desactivación no promete revocación inmediata de JWT ya emitidos; documentar vigencia máxima y eventos de estado.
@@ -20,7 +24,7 @@ Login recibe `{email,password,system}`. Verificar usuario activo, contraseña y 
 | `POST /api/auth/users` | ADMIN | Crear usuario/asignaciones; 201; email duplicado 409 |
 | `PUT /api/auth/users/{id}` | ADMIN | Actualizar con expectedVersion; conflicto 409; desactivar con active:false |
 | `GET /api/auth/systems` | ADMIN | Consultar sistemas y TTL |
-| `PUT /api/auth/systems/{code}` | ADMIN | Cambiar TTL validado para futuras emisiones |
+| `PUT /api/auth/systems/{code}` | ADMIN | Cambiar TTL con expectedVersion para futuras emisiones |
 | `GET /api/auth/openapi.json` | Desarrollo | Schema con paths completos y servidor `/` |
 
 `POST /api/auth/refresh` y `POST /api/auth/logout` están reservados por el estándar, pero no forman parte de los endpoints del MVP ni deben exponerse parcialmente. Se habilitan juntos después de implementar sesiones renovables y los cambios correspondientes en el Gateway.

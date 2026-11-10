@@ -19,11 +19,15 @@ Aunque cada dominio funcionará como un sistema autónomo con su propia base de 
 
 ## Estructura de Dominios y Entidades
 
-| Microservicio | Tecnología | Base de Datos | Entidades Principales | Proyecciones Locales (Solo Lectura) |
-|---------------|------------|---------------|-----------------------|-------------------------------------|
-| **Auth**      | NestJS     | PostgreSQL    | `Users`, `Systems`, `UserSystems`, `Outbox` | *(Ninguna)* |
-| **Inventory** | Spring Boot| MySQL         | `Products`, `Outbox` | `UsersProjection` |
-| **Purchases** | Django REST| PostgreSQL    | `PurchaseOrders`, `PurchaseOrderLines`, `IdempotencyKeys` | `UsersProjection`, `ProductsProjection` |
+| Microservicio | Tecnología | Base de datos | Tablas propias del MVP | Proyecciones locales | Entrega de eventos |
+| --- | --- | --- | --- | --- | --- |
+| **Auth** | NestJS | PostgreSQL | `users`, `systems`, `user_systems`, `auth_audit_log` | Ninguna | `outbox_events` |
+| **Inventory** | Spring Boot | MySQL | `products`, `stock_adjustments` | `user_projections` | `inbox_events`, `outbox_events` |
+| **Purchases** | Django REST | PostgreSQL | `purchase_orders`, `purchase_order_lines`, `idempotency_keys`, `purchase_order_history` | `user_projections`, `product_projections` | `inbox_events` |
+
+Los atributos, claves, índices, tablas inbox/outbox y la procedencia exacta de cada
+proyección están definidos en el [modelo de datos planificado](architecture/data-model.md).
+`refresh_sessions` pertenece a una ampliación posterior y no se crea en el MVP.
 
 ---
 
