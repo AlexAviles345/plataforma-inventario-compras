@@ -57,7 +57,9 @@ configurados sin barra final. No existen endpoints placeholder de órdenes.
 ## Siguientes módulos
 
 El contrato está en
-[`docs/services/purchases-service.md`](../../../docs/services/purchases-service.md).
+[`docs/services/purchases-service.md`](../../../docs/services/purchases-service.md)
+y el desglose detallado de implementación por fases está en
+[`PHASES_README.md`](./PHASES_README.md).
 Las siguientes etapas incorporarán:
 
 1. PostgreSQL y migraciones de dominio.
