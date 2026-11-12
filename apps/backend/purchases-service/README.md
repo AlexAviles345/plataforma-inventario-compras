@@ -61,6 +61,23 @@ presentes en el sistema); `.env.example` documenta las variables disponibles.
 - `JWT_ISSUER`: emisor esperado (`techdistribution-auth` por defecto).
 - `JWT_AUDIENCE`: audiencia esperada (`techdistribution-api` por defecto).
 - `JWT_MAX_TTL_SECONDS`: vigencia máxima permitida del access token (`900` por defecto, hasta `3600`).
+- `KAFKA_BOOTSTRAP_SERVERS`: brokers de Apache Kafka (`localhost:9092` por defecto).
+
+## Consumidores Kafka y Bootstrap de Proyecciones
+
+Para ejecutar los consumidores de proyecciones con commit manual de offsets y DLQ:
+
+```powershell
+python manage.py consume_projections --domain user
+python manage.py consume_projections --domain product
+```
+
+Para importar un snapshot JSON consistente con watermarks por partición:
+
+```powershell
+python manage.py import_projection_snapshot --domain user --file snapshot-users.json
+python manage.py import_projection_snapshot --domain product --file snapshot-products.json
+```
 
 Endpoints disponibles:
 
@@ -82,6 +99,6 @@ Las siguientes etapas incorporarán:
 
 1. PostgreSQL y migraciones de dominio (implementado en Fase 1).
 2. Estándar HTTP, trazabilidad, validación JWT y RBAC local en `core/` (implementado en Fase 2).
-3. Inbox y proyecciones de usuarios y productos mediante Kafka (Fase 3).
+3. Inbox y proyecciones de usuarios y productos mediante Kafka (implementado en Fase 3).
 4. Órdenes, líneas, dinero exacto, snapshots históricos, idempotencia y control optimista (Fase 4).
 5. Pruebas de aceptación integrales y cierre del servicio (Fase 5).

@@ -119,12 +119,17 @@ apps/backend/purchases-service/
 
 ---
 
-## Fase 3: App `projections/` — Consumidores Kafka, Inbox Transaccional, DLQ y Bootstrap
+## Fase 3: App `projections/` — Consumidores Kafka, Inbox Transaccional, DLQ y Bootstrap — [COMPLETADA]
 
 **Objetivo:** Sincronizar asíncronamente `user_projections` y `product_projections` desde Apache Kafka con entrega idempotente, control de versiones monotónico, aislamiento en DLQ y soporte de reconstrucción.
 
-- `projections/services/`: validación JSON Schema Draft 2020-12 (`event-envelope.schema.json`, `user-event.schema.json`, `product-event.schema.json`), aplicación transaccional `inbox_events` + upsert condicional por `entity_version` (`APPLIED` vs `IGNORED_STALE`), e importación administrativa de snapshots + watermark.
-- `projections/consumers/`: consumidores para `auth.users.events` (grupo `purchases.auth-users.v1`, DLQ `purchases.auth-users.dlq`) e `inventory.products.events` (grupo `purchases.inventory-products.v1`, DLQ `purchases.inventory-products.dlq`) con `enable.auto.commit=false`, 5 reintentos con backoff exponencial (1, 2, 4, 8, 16s + jitter) y confirmación de offset posterior al commit.
+- `projections/services/`:
+  - `schema_validator.py`: validación JSON Schema Draft 2020-12 (`event-envelope.schema.json`, `user-event.schema.json`, `product-event.schema.json`), coincidencia `aggregateId == data.userId/productId`, verificación de llave de partición y unicidad de `system` en `assignments`.
+  - `projection_ingestor.py`: aplicación transaccional `inbox_events` + upsert condicional por `entity_version` (`APPLIED` vs `IGNORED_STALE`), preservando filas en desactivación (`active = false`) y deduplicando por `event_id` o `(consumer_group, topic, partition_number, offset_value)`.
+  - `bootstrap_service.py`: importación administrativa de snapshots consistentes con versión monotónica y watermarks por partición.
+- `projections/consumers/`:
+  - `config.py`, `dlq_publisher.py`, `consumer_worker.py`: consumidores para `auth.users.events` (grupo `purchases.auth-users.v1`, DLQ `purchases.auth-users.dlq`) e `inventory.products.events` (grupo `purchases.inventory-products.v1`, DLQ `purchases.inventory-products.dlq`) con `enable.auto.commit=false`, 5 reintentos transitorios con backoff exponencial (`1, 2, 4, 8, 16`s + jitter), 0 reintentos ante errores permanentes de esquema y confirmación de offset estrictamente posterior al commit en BD o al envío confirmado a DLQ.
+- `projections/management/commands/`: comandos `consume_projections` e `import_projection_snapshot`.
 
 ---
 

@@ -43,7 +43,7 @@ class PartitionControllerProtocol(Protocol):
 
 
 class ProjectionConsumerWorker:
-    """Ejecuta ingesta atómica con 5 reintentos transitorios, pausa de partición y aislamiento DLQ."""
+    """Ejecuta ingesta atómica con 5 reintentos, pausa de partición y aislamiento DLQ."""
 
     def __init__(
         self,
