@@ -1,8 +1,10 @@
+from io import StringIO
 from unittest.mock import patch
 
 from django.core.exceptions import ImproperlyConfigured
 from django.test import SimpleTestCase, override_settings
 
+from health.management.commands.runserver import Command as RunserverCommand
 from purchases_service.settings import build_database_config
 
 
@@ -80,3 +82,17 @@ class FoundationTests(SimpleTestCase):
             self.assertRaises(ImproperlyConfigured),
         ):
             build_database_config(debug=False, argv=["gunicorn"])
+
+    def test_runserver_displays_swagger_and_openapi_links_on_bind(self):
+        stdout = StringIO()
+        cmd = RunserverCommand(stdout=stdout)
+        cmd.addr = "localhost"
+        cmd.protocol = "http"
+        cmd._raw_ipv6 = False
+
+        cmd.on_bind(8000)
+        output = stdout.getvalue()
+
+        self.assertIn("http://localhost:8000/docs", output)
+        self.assertIn("http://localhost:8000/api/purchases/openapi.json", output)
+        self.assertIn("http://localhost:8000/health/live", output)

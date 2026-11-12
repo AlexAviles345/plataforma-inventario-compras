@@ -147,12 +147,12 @@ ALLOWED_HOSTS = env_list(
 )
 
 INSTALLED_APPS = [
+    "health",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.staticfiles",
     "rest_framework",
     "drf_spectacular",
-    "health",
     "orders",
     "projections",
 ]
