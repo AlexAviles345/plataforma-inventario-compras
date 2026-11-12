@@ -136,6 +136,7 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "health",
     "orders",
+    "projections",
 ]
 
 MIDDLEWARE = [
