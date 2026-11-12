@@ -40,8 +40,9 @@ python manage.py migrate
 python manage.py runserver 0.0.0.0:8000
 ```
 
-La configuración se recibe desde el entorno; `.env.example` documenta las
-variables, pero Django no carga archivos `.env` automáticamente.
+La configuración se recibe desde variables de entorno o desde un archivo local
+`.env` (cargado automáticamente por `settings.py` sin sobrescribir variables ya
+presentes en el sistema); `.env.example` documenta las variables disponibles.
 
 - `DJANGO_DEBUG`: modo de desarrollo; `true` por defecto en ejecución local.
 - `DOCS_ENABLED`: habilita OpenAPI y Swagger; debe ser `false` en producción.
