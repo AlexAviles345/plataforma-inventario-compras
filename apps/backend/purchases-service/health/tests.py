@@ -33,14 +33,19 @@ class FoundationTests(SimpleTestCase):
         schema = schema_response.json()
         self.assertEqual(schema["info"]["title"], "TechDistribution Purchases Service")
         self.assertEqual(schema["servers"], [{"url": "/"}])
-        self.assertEqual(schema["paths"], {})
+        self.assertIn("/api/purchases/orders", schema["paths"])
+        self.assertIn("/api/purchases/orders/{id}", schema["paths"])
+        self.assertIn("/api/purchases/orders/{id}/submit", schema["paths"])
+        self.assertIn("/api/purchases/orders/{id}/cancel", schema["paths"])
+        self.assertIn("/api/purchases/orders/{id}/history", schema["paths"])
         self.assertIn("bearerAuth", schema["components"]["securitySchemes"])
         self.assertEqual(swagger_response.status_code, 200)
 
-    def test_business_placeholder_routes_do_not_exist(self):
+    def test_unmapped_routes_and_protected_orders_route(self):
         self.assertEqual(self.client.get("/").status_code, 404)
         self.assertEqual(self.client.get("/api/purchases").status_code, 404)
-        self.assertEqual(self.client.get("/api/purchases/orders").status_code, 404)
+        self.assertEqual(self.client.get("/api/purchases/orders/").status_code, 404)
+        self.assertEqual(self.client.get("/api/purchases/orders").status_code, 401)
 
     @override_settings(DOCS_ENABLED=False)
     def test_documentation_can_be_disabled(self):
