@@ -133,18 +133,18 @@ apps/backend/purchases-service/
 
 ---
 
-## Fase 4: App `orders/` — Dominio de Órdenes, Snapshots, Concurrencia e Idempotencia
+## Fase 4: App `orders/` — Dominio de Órdenes, Snapshots, Concurrencia e Idempotencia — [COMPLETADA]
 
 **Objetivo:** Implementar en `orders/serializers/`, `orders/services/`, `orders/views/` y `orders/urls/` los casos de uso y endpoints REST de órdenes de compra.
 
-- `orders/serializers/`: validación de entrada/salida (1–100 líneas, `productId` sin duplicados, `unitPrice` como string decimal positivo con máximo 2 decimales, `expectedVersion`).
+- `orders/serializers/`:
+  - `common.py`: validación de UUID, enteros estrictos positivos y `unitPrice` como cadena decimal exacta positiva con máximo 2 decimales (`INVALID_DECIMAL_SCALE`, `DECIMAL_OVERFLOW`, `<= numeric(18,2)`).
+  - `order_write_serializers.py`: validación de 1 a 100 líneas, prohibición de `productId` repetidos (`DUPLICATE_PRODUCT_LINE`), rechazo de `requesterId` en el body (`FORBIDDEN_FIELD`) y validación de `expectedVersion`.
+  - `order_read_serializers.py`: serialización de órdenes, líneas con snapshots históricos (`skuSnapshot`, `nameSnapshot`, `unit`) e información separada de proyección actual (`currentCatalog`), historial auditable y esquemas OpenAPI envueltos.
 - `orders/services/`:
-  - Verificación de productos en `product_projections` (`409 PROJECTION_NOT_READY` con `Retry-After: 2`; `409 PRODUCT_INACTIVE` si inactivo).
-  - Captura de `sku_snapshot`, `name_snapshot` y `unit` en `DRAFT` y congelamiento definitivo en `SUBMITTED`.
-  - Cálculo exacto de `line_total` y `total_amount` con `Decimal(18,2)`.
-  - Transiciones `DRAFT -> SUBMITTED` y `DRAFT | SUBMITTED -> CANCELLED` con control optimista `expectedVersion` (`409 VERSION_CONFLICT`) y registro en `purchase_order_history`.
-  - Idempotencia transaccional (`Idempotency-Key` UUID + `request_hash` SHA-256 en `POST /api/purchases/orders`, `submit` y `cancel`, devolviendo respuesta original o `409 IDEMPOTENCY_CONFLICT`).
-- `orders/views/` y `orders/urls/`: endpoints con `trailing_slash=False` y documentación OpenAPI en `/api/purchases/openapi.json`.
+  - `idempotency_service.py`: validación de `Idempotency-Key` UUID, cálculo de `request_hash` SHA-256 canónico y replay/conflicto transaccional (`409 IDEMPOTENCY_CONFLICT`) para `CREATE_ORDER`, `SUBMIT_ORDER` y `CANCEL_ORDER`.
+  - `order_service.py`: verificación de `product_projections` (`409 PROJECTION_NOT_READY` con `Retry-After: 2`; `409 PRODUCT_INACTIVE`), captura y congelamiento de snapshots, transiciones `DRAFT -> SUBMITTED` y `DRAFT | SUBMITTED -> CANCELLED` con bloqueo optimista (`expectedVersion` -> `409 VERSION_CONFLICT`) y registro en `purchase_order_history`.
+- `orders/views/` y `orders/urls/`: endpoints en `/api/purchases/orders` con `SimpleRouter(trailing_slash=False)` y documentación OpenAPI en `/api/purchases/openapi.json` y `/docs`.
 
 ---
 

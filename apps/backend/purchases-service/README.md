@@ -85,9 +85,15 @@ Endpoints disponibles:
 - `GET http://localhost:8000/health/ready`
 - `GET http://localhost:8000/api/purchases/openapi.json` en desarrollo
 - `GET http://localhost:8000/docs` en desarrollo
+- `GET http://localhost:8000/api/purchases/orders` (listado paginado de órdenes)
+- `POST http://localhost:8000/api/purchases/orders` (crear orden `DRAFT` con `Idempotency-Key`)
+- `GET http://localhost:8000/api/purchases/orders/{id}` (detalle de orden y líneas)
+- `PUT http://localhost:8000/api/purchases/orders/{id}` (editar orden `DRAFT` con `expectedVersion`)
+- `POST http://localhost:8000/api/purchases/orders/{id}/submit` (enviar y congelar orden `DRAFT` con `Idempotency-Key` y `expectedVersion`)
+- `POST http://localhost:8000/api/purchases/orders/{id}/cancel` (cancelar orden `DRAFT` o `SUBMITTED` con `Idempotency-Key` y `expectedVersion`)
+- `GET http://localhost:8000/api/purchases/orders/{id}/history` (historial auditable de versiones)
 
-Las rutas de negocio futuras usarán `/api/purchases` y los routers DRF están
-configurados sin barra final. No existen endpoints placeholder de órdenes.
+Los routers DRF están configurados sin barra final (`trailing_slash=False`).
 
 ## Siguientes módulos
 
@@ -95,10 +101,10 @@ El contrato está en
 [`docs/services/purchases-service.md`](../../../docs/services/purchases-service.md)
 y el desglose detallado de arquitectura e implementación por fases está en
 [`docs/services/purchases-implementation-plan.md`](../../../docs/services/purchases-implementation-plan.md).
-Las siguientes etapas incorporarán:
+Las etapas del plan son:
 
 1. PostgreSQL y migraciones de dominio (implementado en Fase 1).
 2. Estándar HTTP, trazabilidad, validación JWT y RBAC local en `core/` (implementado en Fase 2).
 3. Inbox y proyecciones de usuarios y productos mediante Kafka (implementado en Fase 3).
-4. Órdenes, líneas, dinero exacto, snapshots históricos, idempotencia y control optimista (Fase 4).
+4. Órdenes, líneas, dinero exacto, snapshots históricos, idempotencia y control optimista (implementado en Fase 4).
 5. Pruebas de aceptación integrales y cierre del servicio (Fase 5).
