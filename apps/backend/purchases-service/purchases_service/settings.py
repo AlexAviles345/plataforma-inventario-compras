@@ -58,14 +58,16 @@ def _postgres_is_reachable(host: str, port: int, timeout: float = 0.5) -> bool:
 
 def build_database_config(*, debug: bool, argv: list[str] | None = None) -> dict[str, object]:
     args = argv if argv is not None else sys.argv
-    is_testing = len(args) > 1 and args[1] == "test"
+    command = args[1] if len(args) > 1 else ""
+    is_testing = command == "test"
+    allows_sqlite_fallback = command in {"test", "makemigrations", "check"}
 
     raw_engine = os.getenv("DB_ENGINE")
     engine_choice = (raw_engine or "postgresql").strip().lower()
     if engine_choice not in {"postgresql", "sqlite3"}:
         raise ImproperlyConfigured("DB_ENGINE debe ser 'postgresql' o 'sqlite3'")
 
-    if engine_choice == "sqlite3" and not debug and not is_testing:
+    if engine_choice == "sqlite3" and not debug and not allows_sqlite_fallback:
         raise ImproperlyConfigured(
             "DB_ENGINE=sqlite3 no está permitido fuera de desarrollo/pruebas"
         )
@@ -74,12 +76,12 @@ def build_database_config(*, debug: bool, argv: list[str] | None = None) -> dict
     port = env_int("DB_PORT", 5433, minimum=1, maximum=65535)
     name = os.getenv("DB_NAME", "purchases_db").strip()
     user = os.getenv("DB_USER", "purchases_user").strip()
-    default_password = "purchases_password" if (debug or is_testing) else ""
+    default_password = "purchases_password" if (debug or allows_sqlite_fallback) else ""
     password = os.getenv("DB_PASSWORD", default_password)
     conn_max_age = env_int("DB_CONN_MAX_AGE", 60, minimum=0)
 
     if (
-        is_testing
+        allows_sqlite_fallback
         and raw_engine is None
         and engine_choice == "postgresql"
         and not _postgres_is_reachable(host, port)
@@ -133,6 +135,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "drf_spectacular",
     "health",
+    "orders",
 ]
 
 MIDDLEWARE = [
