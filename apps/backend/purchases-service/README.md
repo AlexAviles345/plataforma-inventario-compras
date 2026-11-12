@@ -1,14 +1,16 @@
 # Purchases Service
 
-Base ejecutable del servicio de compras de TechDistribution. Usa Django 6.0.10,
-Django REST Framework 3.17.2 y Python 3.14. Los módulos de órdenes, PostgreSQL y
-Kafka se agregarán después sobre esta base.
+Servicio de compras de TechDistribution sobre Django 6.0.10, Django REST Framework
+3.17.2, PostgreSQL (`psycopg` 3.3.8) y Python 3.14. Cuenta con la configuración de
+base de datos, el modelo de datos completo (`purchase_orders`, `purchase_order_lines`,
+`idempotency_keys`, `purchase_order_history`, `user_projections`,
+`product_projections`, `inbox_events`) y sus migraciones iniciales.
 
 ## Requisitos
 
 - Python 3.14.
 - Acceso a PyPI para instalar las dependencias la primera vez.
-- No se requiere PostgreSQL ni Kafka en esta etapa.
+- PostgreSQL 15 (`postgres-purchases` en puerto local `5433`) para ejecución y migraciones en desarrollo.
 
 ## Instalación y validación
 
@@ -22,15 +24,19 @@ python -m pip install --requirement requirements-dev.txt
 python -m ruff check .
 python -m ruff format --check .
 python manage.py check
-python manage.py test
+python manage.py makemigrations --check --dry-run
+python -Wa manage.py test
 ```
 
 En CMD, la activación es `.venv\Scripts\activate.bat`. En Linux o macOS es
 `source .venv/bin/activate`.
 
-## Ejecución
+## Migraciones y Ejecución
+
+Con el contenedor `postgres-purchases` activo (`npm run dev:infra` desde la raíz):
 
 ```powershell
+python manage.py migrate
 python manage.py runserver 0.0.0.0:8000
 ```
 
@@ -43,6 +49,13 @@ variables, pero Django no carga archivos `.env` automáticamente.
 - `DJANGO_ALLOWED_HOSTS`: hosts separados por comas.
 - `PORT`: puerto de Gunicorn, 8000 por defecto.
 - `WEB_CONCURRENCY`: procesos de Gunicorn, 2 por defecto.
+- `DB_ENGINE`: `postgresql` por defecto (`sqlite3` solo permitido en desarrollo/pruebas locales sin Docker).
+- `DB_HOST`: `127.0.0.1` por defecto.
+- `DB_PORT`: `5433` por defecto.
+- `DB_NAME`: `purchases_db` por defecto.
+- `DB_USER`: `purchases_user` por defecto.
+- `DB_PASSWORD`: contraseña de PostgreSQL (`purchases_password` en desarrollo local; obligatoria en producción).
+- `DB_CONN_MAX_AGE`: segundos de persistencia de conexión (`60` por defecto).
 
 Endpoints disponibles:
 
@@ -62,12 +75,8 @@ y el desglose detallado de implementación por fases está en
 [`PHASES_README.md`](./PHASES_README.md).
 Las siguientes etapas incorporarán:
 
-1. PostgreSQL y migraciones de dominio.
-2. Órdenes, líneas, dinero exacto y snapshots históricos.
-3. Validación JWT, propiedad y RBAC local.
-4. Idempotencia y control optimista de versiones.
-5. Inbox y proyecciones de usuarios y productos mediante Kafka.
-6. Recuperación, DLQ, observabilidad y pruebas de integración.
-
-SQLite se usa únicamente para que esta base pueda arrancar sin infraestructura
-externa. Se reemplazará por PostgreSQL al implementar la persistencia del dominio.
+1. PostgreSQL y migraciones de dominio (implementado en Fase 1).
+2. Estándar HTTP, trazabilidad, validación JWT y RBAC local (Fase 2).
+3. Inbox y proyecciones de usuarios y productos mediante Kafka (Fase 3).
+4. Órdenes, líneas, dinero exacto, snapshots históricos, idempotencia y control optimista (Fase 4).
+5. Pruebas de aceptación integrales y cierre del servicio (Fase 5).

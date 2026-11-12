@@ -18,7 +18,7 @@ Este documento detalla el plan técnico y secuencial para implementar el microse
 
 ---
 
-## Fase 1: Configuración de PostgreSQL y Modelo de Datos (Migraciones)
+## Fase 1: Configuración de PostgreSQL y Modelo de Datos (Migraciones) — [COMPLETADA]
 
 **Objetivo:** Configurar la persistencia en PostgreSQL (`postgres-purchases`, puerto local `5433`) y materializar el esquema físico completo mediante migraciones versionadas de Django, respetando el orden: tablas propietarias → tablas técnicas y proyecciones → restricciones e índices.
 
