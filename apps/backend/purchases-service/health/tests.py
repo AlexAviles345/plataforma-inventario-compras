@@ -1,4 +1,9 @@
+from unittest.mock import patch
+
+from django.core.exceptions import ImproperlyConfigured
 from django.test import SimpleTestCase, override_settings
+
+from purchases_service.settings import build_database_config
 
 
 class FoundationTests(SimpleTestCase):
@@ -40,3 +45,38 @@ class FoundationTests(SimpleTestCase):
         self.assertEqual(self.client.get("/docs").status_code, 404)
         self.assertEqual(self.client.get("/api/purchases/openapi.json").status_code, 404)
         self.assertEqual(self.client.get("/health/live").status_code, 200)
+
+    def test_postgresql_is_default_runtime_database(self):
+        with patch.dict(
+            "os.environ",
+            {
+                "DB_HOST": "localhost",
+                "DB_PORT": "5433",
+                "DB_NAME": "purchases_db",
+                "DB_USER": "purchases_user",
+                "DB_PASSWORD": "purchases_password",
+                "DB_CONN_MAX_AGE": "60",
+            },
+            clear=True,
+        ):
+            config = build_database_config(debug=True, argv=["manage.py", "runserver"])
+
+        self.assertEqual(config["ENGINE"], "django.db.backends.postgresql")
+        self.assertEqual(config["HOST"], "localhost")
+        self.assertEqual(config["PORT"], 5433)
+        self.assertEqual(config["NAME"], "purchases_db")
+        self.assertEqual(config["USER"], "purchases_user")
+        self.assertEqual(config["CONN_MAX_AGE"], 60)
+
+    def test_production_rejects_sqlite_or_missing_password(self):
+        with (
+            patch.dict("os.environ", {"DB_ENGINE": "sqlite3"}, clear=True),
+            self.assertRaises(ImproperlyConfigured),
+        ):
+            build_database_config(debug=False, argv=["gunicorn"])
+
+        with (
+            patch.dict("os.environ", {"DB_ENGINE": "postgresql", "DB_PASSWORD": ""}, clear=True),
+            self.assertRaises(ImproperlyConfigured),
+        ):
+            build_database_config(debug=False, argv=["gunicorn"])
