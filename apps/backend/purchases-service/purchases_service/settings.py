@@ -141,6 +141,22 @@ if len(SECRET_KEY.encode("utf-8")) < 32:
         "DJANGO_SECRET_KEY debe contener al menos 32 bytes fuera del desarrollo local"
     )
 
+JWT_SECRET = os.getenv("JWT_SECRET", "").strip()
+if not JWT_SECRET and DEBUG:
+    JWT_SECRET = "development-only-jwt-secret-change-before-production-0000000000"
+if len(JWT_SECRET.encode("utf-8")) < 32:
+    raise ImproperlyConfigured("JWT_SECRET debe contener al menos 32 bytes")
+
+JWT_ISSUER = os.getenv("JWT_ISSUER", "techdistribution-auth").strip()
+if not JWT_ISSUER:
+    raise ImproperlyConfigured("JWT_ISSUER no puede estar vacío")
+
+JWT_AUDIENCE = os.getenv("JWT_AUDIENCE", "techdistribution-api").strip()
+if not JWT_AUDIENCE:
+    raise ImproperlyConfigured("JWT_AUDIENCE no puede estar vacío")
+
+JWT_MAX_TTL_SECONDS = env_int("JWT_MAX_TTL_SECONDS", 900, minimum=1, maximum=3600)
+
 ALLOWED_HOSTS = env_list(
     "DJANGO_ALLOWED_HOSTS",
     "localhost,127.0.0.1,[::1],testserver",
@@ -159,6 +175,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "core.audit_context.RequestContextMiddleware",
     "django.middleware.common.CommonMiddleware",
 ]
 
@@ -193,8 +210,13 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
 
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": [],
-    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.AllowAny"],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "core.authentication.PurchasesJwtAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "core.permissions.PurchasesAccessPermission",
+    ],
+    "EXCEPTION_HANDLER": "core.exception_handler.purchases_exception_handler",
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "UNAUTHENTICATED_USER": None,
 }

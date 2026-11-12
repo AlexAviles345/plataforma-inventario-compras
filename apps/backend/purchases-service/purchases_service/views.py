@@ -5,6 +5,9 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 
 class DevelopmentDocumentationMixin:
+    authentication_classes = ()
+    permission_classes = ()
+
     def dispatch(self, request, *args, **kwargs):
         if not settings.DOCS_ENABLED:
             raise Http404
