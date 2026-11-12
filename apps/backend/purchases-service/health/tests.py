@@ -1,4 +1,11 @@
+from io import StringIO
+from unittest.mock import patch
+
+from django.core.exceptions import ImproperlyConfigured
 from django.test import SimpleTestCase, override_settings
+
+from health.management.commands.runserver import Command as RunserverCommand
+from purchases_service.settings import build_database_config
 
 
 class FoundationTests(SimpleTestCase):
@@ -26,17 +33,71 @@ class FoundationTests(SimpleTestCase):
         schema = schema_response.json()
         self.assertEqual(schema["info"]["title"], "TechDistribution Purchases Service")
         self.assertEqual(schema["servers"], [{"url": "/"}])
-        self.assertEqual(schema["paths"], {})
+        self.assertIn("/api/purchases/orders", schema["paths"])
+        self.assertIn("/api/purchases/orders/{id}", schema["paths"])
+        self.assertIn("/api/purchases/orders/{id}/submit", schema["paths"])
+        self.assertIn("/api/purchases/orders/{id}/cancel", schema["paths"])
+        self.assertIn("/api/purchases/orders/{id}/history", schema["paths"])
         self.assertIn("bearerAuth", schema["components"]["securitySchemes"])
         self.assertEqual(swagger_response.status_code, 200)
 
-    def test_business_placeholder_routes_do_not_exist(self):
+    def test_unmapped_routes_and_protected_orders_route(self):
         self.assertEqual(self.client.get("/").status_code, 404)
         self.assertEqual(self.client.get("/api/purchases").status_code, 404)
-        self.assertEqual(self.client.get("/api/purchases/orders").status_code, 404)
+        self.assertEqual(self.client.get("/api/purchases/orders/").status_code, 404)
+        self.assertEqual(self.client.get("/api/purchases/orders").status_code, 401)
 
     @override_settings(DOCS_ENABLED=False)
     def test_documentation_can_be_disabled(self):
         self.assertEqual(self.client.get("/docs").status_code, 404)
         self.assertEqual(self.client.get("/api/purchases/openapi.json").status_code, 404)
         self.assertEqual(self.client.get("/health/live").status_code, 200)
+
+    def test_postgresql_is_default_runtime_database(self):
+        with patch.dict(
+            "os.environ",
+            {
+                "DB_HOST": "localhost",
+                "DB_PORT": "5433",
+                "DB_NAME": "purchases_db",
+                "DB_USER": "purchases_user",
+                "DB_PASSWORD": "purchases_password",
+                "DB_CONN_MAX_AGE": "60",
+            },
+            clear=True,
+        ):
+            config = build_database_config(debug=True, argv=["manage.py", "runserver"])
+
+        self.assertEqual(config["ENGINE"], "django.db.backends.postgresql")
+        self.assertEqual(config["HOST"], "localhost")
+        self.assertEqual(config["PORT"], 5433)
+        self.assertEqual(config["NAME"], "purchases_db")
+        self.assertEqual(config["USER"], "purchases_user")
+        self.assertEqual(config["CONN_MAX_AGE"], 60)
+
+    def test_production_rejects_sqlite_or_missing_password(self):
+        with (
+            patch.dict("os.environ", {"DB_ENGINE": "sqlite3"}, clear=True),
+            self.assertRaises(ImproperlyConfigured),
+        ):
+            build_database_config(debug=False, argv=["gunicorn"])
+
+        with (
+            patch.dict("os.environ", {"DB_ENGINE": "postgresql", "DB_PASSWORD": ""}, clear=True),
+            self.assertRaises(ImproperlyConfigured),
+        ):
+            build_database_config(debug=False, argv=["gunicorn"])
+
+    def test_runserver_displays_swagger_and_openapi_links_on_bind(self):
+        stdout = StringIO()
+        cmd = RunserverCommand(stdout=stdout)
+        cmd.addr = "localhost"
+        cmd.protocol = "http"
+        cmd._raw_ipv6 = False
+
+        cmd.on_bind(8000)
+        output = stdout.getvalue()
+
+        self.assertIn("http://localhost:8000/docs", output)
+        self.assertIn("http://localhost:8000/api/purchases/openapi.json", output)
+        self.assertIn("http://localhost:8000/health/live", output)
