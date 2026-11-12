@@ -57,6 +57,10 @@ presentes en el sistema); `.env.example` documenta las variables disponibles.
 - `DB_USER`: `purchases_user` por defecto.
 - `DB_PASSWORD`: contraseña de PostgreSQL (`purchases_password` en desarrollo local; obligatoria en producción).
 - `DB_CONN_MAX_AGE`: segundos de persistencia de conexión (`60` por defecto).
+- `JWT_SECRET`: secreto HS256 compartido con Auth y Gateway (mínimo 32 bytes).
+- `JWT_ISSUER`: emisor esperado (`techdistribution-auth` por defecto).
+- `JWT_AUDIENCE`: audiencia esperada (`techdistribution-api` por defecto).
+- `JWT_MAX_TTL_SECONDS`: vigencia máxima permitida del access token (`900` por defecto, hasta `3600`).
 
 Endpoints disponibles:
 
@@ -77,7 +81,7 @@ y el desglose detallado de arquitectura e implementación por fases está en
 Las siguientes etapas incorporarán:
 
 1. PostgreSQL y migraciones de dominio (implementado en Fase 1).
-2. Estándar HTTP, trazabilidad, validación JWT y RBAC local (Fase 2).
+2. Estándar HTTP, trazabilidad, validación JWT y RBAC local en `core/` (implementado en Fase 2).
 3. Inbox y proyecciones de usuarios y productos mediante Kafka (Fase 3).
 4. Órdenes, líneas, dinero exacto, snapshots históricos, idempotencia y control optimista (Fase 4).
 5. Pruebas de aceptación integrales y cierre del servicio (Fase 5).

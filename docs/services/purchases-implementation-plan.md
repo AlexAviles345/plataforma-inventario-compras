@@ -107,7 +107,7 @@ apps/backend/purchases-service/
 
 ---
 
-## Fase 2: Paquete `core/` — Estándar HTTP, Trazabilidad, Autenticación JWT y RBAC Local
+## Fase 2: Paquete `core/` — Estándar HTTP, Trazabilidad, Autenticación JWT y RBAC Local — [COMPLETADA]
 
 **Objetivo:** Implementar en `core/` los componentes transversales para que toda petición bajo `/api/purchases/**` cumpla el formato estándar de respuestas y errores, propague `X-Request-Id` y valide de forma autónoma el access token JWT y la proyección local del usuario.
 
