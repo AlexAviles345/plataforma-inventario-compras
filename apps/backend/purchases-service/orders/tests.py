@@ -6,12 +6,18 @@ import time
 import uuid
 from datetime import UTC, datetime
 from decimal import Decimal
+from io import StringIO
+from unittest.mock import patch
 
 from django.conf import settings
+from django.core.management import call_command
+from django.core.management.base import CommandError
 from django.db import IntegrityError, transaction
 from django.db.models.deletion import RestrictedError
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
+from core.authentication import AuthenticatedActor
+from core.exceptions import IdempotencyConflictError
 from orders.models import (
     IdempotencyKey,
     IdempotencyOperation,
@@ -23,7 +29,10 @@ from orders.models import (
     PurchaseOrderHistory,
     PurchaseOrderLine,
 )
+from orders.services import create_purchase_order
+from projections.consumers import PRODUCTS_CONSUMER_SPEC, USERS_CONSUMER_SPEC
 from projections.models import ProductProjection, ProjectionProductUnit, UserProjection
+from projections.services import ingest_domain_event
 
 
 def _encode_b64url(data: bytes) -> str:
@@ -680,3 +689,230 @@ class PurchaseOrderEndpointsTests(TestCase):
         )
         self.assertEqual(cancel_admin.status_code, 200)
         self.assertEqual(cancel_admin.json()["data"]["status"], "CANCELLED")
+
+
+class PurchasesAcceptanceSuiteTests(TestCase):
+    """Pruebas de aceptación integrales de Fase 5 sin llamadas HTTP a Auth ni Inventory."""
+
+    def test_end_to_end_event_driven_flow_without_external_http_calls(self):
+        user_id = uuid.uuid4()
+        product_id = uuid.uuid4()
+
+        user_created_event = {
+            "eventId": str(uuid.uuid4()),
+            "eventType": "UserCreated",
+            "schemaVersion": 1,
+            "aggregateId": str(user_id),
+            "entityVersion": 1,
+            "timestamp": "2026-11-12T15:00:00Z",
+            "correlationId": str(uuid.uuid4()),
+            "data": {
+                "userId": str(user_id),
+                "email": "e2e.agent@techdistribution.com",
+                "displayName": "Agente E2E",
+                "active": True,
+                "assignments": [{"system": "PURCHASES", "role": "PURCHASES_AGENT"}],
+            },
+        }
+        product_created_event = {
+            "eventId": str(uuid.uuid4()),
+            "eventType": "ProductCreated",
+            "schemaVersion": 1,
+            "aggregateId": str(product_id),
+            "entityVersion": 1,
+            "timestamp": "2026-11-12T15:01:00Z",
+            "correlationId": str(uuid.uuid4()),
+            "data": {
+                "productId": str(product_id),
+                "sku": "SRV-RACK-2U",
+                "name": "Servidor Rack 2U Xeon",
+                "unit": "UNIT",
+                "stockOnHand": 5,
+                "active": True,
+                "createdBy": str(user_id),
+                "updatedBy": str(user_id),
+            },
+        }
+
+        with (
+            patch(
+                "urllib.request.urlopen",
+                side_effect=AssertionError("Prohibido realizar llamadas HTTP salientes"),
+            ),
+            patch(
+                "http.client.HTTPConnection.request",
+                side_effect=AssertionError("Prohibido realizar llamadas HTTP salientes"),
+            ),
+        ):
+            ingest_domain_event(
+                raw_payload=user_created_event,
+                expected_domain="user",
+                consumer_group=USERS_CONSUMER_SPEC.consumer_group,
+                topic=USERS_CONSUMER_SPEC.topic,
+                partition_number=0,
+                offset_value=1,
+                partition_key=str(user_id),
+            )
+            ingest_domain_event(
+                raw_payload=product_created_event,
+                expected_domain="product",
+                consumer_group=PRODUCTS_CONSUMER_SPEC.consumer_group,
+                topic=PRODUCTS_CONSUMER_SPEC.topic,
+                partition_number=0,
+                offset_value=1,
+                partition_key=str(product_id),
+            )
+
+            token = _mint_jwt(
+                user_id=user_id,
+                email="e2e.agent@techdistribution.com",
+                role="PURCHASES_AGENT",
+            )
+            create_res = self.client.post(
+                "/api/purchases/orders",
+                data=json.dumps(
+                    {
+                        "supplierName": "DataCenter Hardware MX",
+                        "lines": [
+                            {
+                                "productId": str(product_id),
+                                "quantity": 2,
+                                "unitPrice": "89500.50",
+                            }
+                        ],
+                    }
+                ),
+                content_type="application/json",
+                HTTP_AUTHORIZATION=f"Bearer {token}",
+                HTTP_IDEMPOTENCY_KEY=str(uuid.uuid4()),
+            )
+            self.assertEqual(create_res.status_code, 201)
+            order_id = create_res.json()["data"]["id"]
+
+            submit_res = self.client.post(
+                f"/api/purchases/orders/{order_id}/submit",
+                data=json.dumps({"expectedVersion": 1}),
+                content_type="application/json",
+                HTTP_AUTHORIZATION=f"Bearer {token}",
+                HTTP_IDEMPOTENCY_KEY=str(uuid.uuid4()),
+            )
+            self.assertEqual(submit_res.status_code, 200)
+            self.assertEqual(submit_res.json()["data"]["status"], "SUBMITTED")
+            self.assertEqual(submit_res.json()["data"]["totalAmount"], "179001.00")
+
+    def test_concurrent_idempotency_race_recovery_and_conflict(self):
+        user_id = uuid.uuid4()
+        product_id = uuid.uuid4()
+        now = datetime(2026, 11, 12, 15, 30, 0, tzinfo=UTC)
+
+        UserProjection.objects.create(
+            user_id=user_id,
+            email="race@techdistribution.com",
+            display_name="Agente Concurrencia",
+            active=True,
+            assignments=[{"system": "PURCHASES", "role": "PURCHASES_AGENT"}],
+            entity_version=1,
+            source_event_id=uuid.uuid4(),
+            source_event_at=now,
+            projected_at=now,
+        )
+        ProductProjection.objects.create(
+            product_id=product_id,
+            sku="SW-24P",
+            name="Switch 24 Puertos PoE",
+            unit=ProjectionProductUnit.UNIT,
+            stock_on_hand=10,
+            active=True,
+            created_by=user_id,
+            updated_by=user_id,
+            entity_version=1,
+            source_event_id=uuid.uuid4(),
+            source_event_at=now,
+            projected_at=now,
+        )
+
+        actor = AuthenticatedActor(
+            user_id=user_id,
+            email="race@techdistribution.com",
+            role="PURCHASES_AGENT",
+            system="PURCHASES",
+            iat=1794182400,
+            exp=1794183300,
+        )
+        idem_key = uuid.uuid4()
+        payload = {
+            "supplierName": "Redes MX",
+            "lines": [
+                {
+                    "productId": str(product_id),
+                    "quantity": 1,
+                    "unitPrice": "4500.00",
+                }
+            ],
+        }
+
+        # Primera ejecución normal que confirma la orden y la IdempotencyKey
+        first_result = create_purchase_order(
+            actor=actor,
+            raw_idempotency_key=str(idem_key),
+            raw_payload=payload,
+            request_id=uuid.uuid4(),
+        )
+        self.assertFalse(first_result.replayed)
+
+        # Verifica el bloque except IntegrityError en create_purchase_order
+        original_check = __import__(
+            "orders.services.idempotency_service",
+            fromlist=["check_existing_idempotency_key"],
+        ).check_existing_idempotency_key
+        check_calls = 0
+
+        def simulated_race_check(**kwargs):
+            nonlocal check_calls
+            check_calls += 1
+            if check_calls == 1:
+                return None
+            return original_check(**kwargs)
+
+        with patch(
+            "orders.services.order_service.check_existing_idempotency_key",
+            side_effect=simulated_race_check,
+        ):
+            race_replay = create_purchase_order(
+                actor=actor,
+                raw_idempotency_key=str(idem_key),
+                raw_payload=payload,
+                request_id=uuid.uuid4(),
+            )
+            self.assertTrue(race_replay.replayed)
+            self.assertEqual(race_replay.status_code, 201)
+            self.assertEqual(race_replay.envelope, first_result.envelope)
+
+        check_calls = 0
+        with (
+            patch(
+                "orders.services.order_service.check_existing_idempotency_key",
+                side_effect=simulated_race_check,
+            ),
+            self.assertRaises(IdempotencyConflictError),
+        ):
+            create_purchase_order(
+                actor=actor,
+                raw_idempotency_key=str(idem_key),
+                raw_payload={**payload, "supplierName": "Cuerpo Diferente en Carrera"},
+                request_id=uuid.uuid4(),
+            )
+
+    def test_generate_dev_token_command_seeds_and_mints_working_jwt(self):
+        out = StringIO()
+        with override_settings(DEBUG=True):
+            call_command("generate_dev_token", role="ADMIN", stdout=out)
+        output = out.getvalue()
+        self.assertIn("ENTORNO DE PRUEBA LOCAL LISTO", output)
+        self.assertTrue(
+            UserProjection.objects.filter(email="admin.compras@techdistribution.com").exists()
+        )
+        self.assertGreaterEqual(ProductProjection.objects.count(), 3)
+
+        with override_settings(DEBUG=False), self.assertRaises(CommandError):
+            call_command("generate_dev_token", role="ADMIN")

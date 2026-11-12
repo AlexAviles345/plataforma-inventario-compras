@@ -148,9 +148,10 @@ apps/backend/purchases-service/
 
 ---
 
-## Fase 5: Pruebas de Aceptación, Calidad y Documentación Final
+## Fase 5: Pruebas de Aceptación, Calidad y Documentación Final — [COMPLETADA]
 
-**Objetivo:** Verificar todos los criterios de aceptación del servicio en `orders/tests.py`, `projections/tests.py` y `core/tests.py`.
+**Objetivo:** Verificar todos los criterios de aceptación del servicio en `orders/tests.py`, `projections/tests.py`, `core/tests.py` y `health/tests.py`.
 
-- Cobertura completa de JWT/RBAC, dinero exacto, inmutabilidad de snapshots históricos ante cambios posteriores del catálogo, idempotencia concurrente, conflictos de versión `409`, estados de proyección (`409 PROJECTION_NOT_READY`, `409 PRODUCT_INACTIVE`), deduplicación de inbox, DLQ y bootstrap.
-- Validación de calidad en CI: `ruff check .`, `ruff format --check .`, `python manage.py check`, `python manage.py makemigrations --check --dry-run`, `python -Wa manage.py test` y construcción de imagen Docker.
+- Cobertura completa de JWT/RBAC, dinero exacto, inmutabilidad de snapshots históricos ante cambios posteriores del catálogo, idempotencia concurrente, conflictos de versión `409`, estados de proyección (`409 PROJECTION_NOT_READY`, `409 PRODUCT_INACTIVE`), deduplicación de inbox, DLQ, bootstrap y verificación de cero llamadas HTTP salientes hacia `auth-service` o `inventory-service`.
+- Comando `generate_dev_token` (`orders/management/commands/generate_dev_token.py`, restringido a `DEBUG=True`) para poblar proyecciones locales de prueba y emitir access tokens JWT `HS256` listos para probar en Swagger UI (`/docs`).
+- Validación de calidad en CI: `ruff check .`, `ruff format --check .`, `python manage.py check`, `python manage.py makemigrations --check --dry-run`, `python -Wa manage.py test` y `python -m pip check`.

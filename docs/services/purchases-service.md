@@ -4,7 +4,7 @@ Las respuestas JSON de negocio siguen el [estándar común](../standards/api-res
 
 Purchases valida íntegramente el [access token común](../standards/jwt-and-sessions.md) y exige `system: "PURCHASES"`. Nunca interpreta ni acepta refresh tokens.
 
-Estado: base Django REST Framework ejecutable con configuración, salud, OpenAPI, Docker, PostgreSQL, modelos modulares (`orders`, `projections`, `core`) y pruebas. Los consumidores de usuarios/productos y endpoints de órdenes siguen el [plan detallado de implementación por fases](./purchases-implementation-plan.md). En el MVP registra órdenes a proveedores; recepción, reservas y modificaciones automáticas de stock quedan fuera del alcance. Por ello no produce eventos de stock ni requiere sagas.
+Estado: servicio Django REST Framework completo y ejecutable con configuración PostgreSQL, salud, OpenAPI, Docker, arquitectura modular (`core`, `orders`, `projections`, `health`), consumidores Kafka e inbox transaccional con DLQ, endpoints de órdenes con snapshots históricos, concurrencia optimista e idempotencia, y suite de pruebas de aceptación conforme al [plan detallado de implementación por fases](./purchases-implementation-plan.md). En el MVP registra órdenes a proveedores; recepción, reservas y modificaciones automáticas de stock quedan fuera del alcance. Por ello no produce eventos de stock ni requiere sagas.
 
 Configurar los routers DRF con `trailing_slash=False`: las rutas del contrato son exactas y el Gateway no sigue redirects para añadir barras.
 

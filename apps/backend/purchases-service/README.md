@@ -79,6 +79,13 @@ python manage.py import_projection_snapshot --domain user --file snapshot-users.
 python manage.py import_projection_snapshot --domain product --file snapshot-products.json
 ```
 
+Para generar un token JWT `HS256` de prueba en desarrollo local (`DJANGO_DEBUG=true`) y poblar automáticamente el usuario y 3 productos de muestra en las proyecciones locales (sin necesitar que `auth-service` o `inventory-service` estén encendidos):
+
+```powershell
+python manage.py generate_dev_token --role ADMIN
+python manage.py generate_dev_token --role PURCHASES_AGENT
+```
+
 Endpoints disponibles:
 
 - `GET http://localhost:8000/health/live`
@@ -107,4 +114,4 @@ Las etapas del plan son:
 2. Estándar HTTP, trazabilidad, validación JWT y RBAC local en `core/` (implementado en Fase 2).
 3. Inbox y proyecciones de usuarios y productos mediante Kafka (implementado en Fase 3).
 4. Órdenes, líneas, dinero exacto, snapshots históricos, idempotencia y control optimista (implementado en Fase 4).
-5. Pruebas de aceptación integrales y cierre del servicio (Fase 5).
+5. Pruebas de aceptación integrales y cierre del servicio (implementado en Fase 5).
