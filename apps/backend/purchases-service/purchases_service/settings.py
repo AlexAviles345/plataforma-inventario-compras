@@ -157,6 +157,10 @@ if not JWT_AUDIENCE:
 
 JWT_MAX_TTL_SECONDS = env_int("JWT_MAX_TTL_SECONDS", 900, minimum=1, maximum=3600)
 
+KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092").strip()
+if not KAFKA_BOOTSTRAP_SERVERS:
+    raise ImproperlyConfigured("KAFKA_BOOTSTRAP_SERVERS no puede estar vacío")
+
 ALLOWED_HOSTS = env_list(
     "DJANGO_ALLOWED_HOSTS",
     "localhost,127.0.0.1,[::1],testserver",
