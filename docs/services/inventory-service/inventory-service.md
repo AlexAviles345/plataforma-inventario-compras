@@ -1,18 +1,18 @@
 # Inventory: contrato de implementación
 
-Las respuestas JSON de negocio siguen el [estándar común](../standards/api-responses.md).
+Las respuestas JSON de negocio siguen el [estándar común](../../standards/api-responses.md).
 
-Inventory valida íntegramente el [access token común](../standards/jwt-and-sessions.md) y exige `system: "INVENTORY"`. Nunca interpreta ni acepta refresh tokens.
+Inventory valida íntegramente el [access token común](../../standards/jwt-and-sessions.md) y exige `system: "INVENTORY"`. Nunca interpreta ni acepta refresh tokens.
 
 Estado: base Spring Boot ejecutable con configuración, salud, Actuator, OpenAPI, Docker y pruebas. El dominio, MySQL, consumidor de usuarios y productor de productos siguen planificados. No consulta por HTTP a Auth/Compras.
 
 `Products`: UUID, sku único, name, unit `UNIT`, stockOnHand entero >=0, active, version, createdBy/updatedBy UUID y timestamps UTC. Stock inicial/correcciones explícitas las administra INVENTORY_MANAGER o ADMIN con versión esperada, motivo saneado de 1–500 caracteres y auditoría. El MVP no contabiliza automáticamente recepciones de compras. No permitir escrituras de stock basadas en el dato atrasado de una proyección ajena.
 
-`UsersProjection`: snapshot público y versión de usuario proveniente de Auth; solo consumidores/importadores la escriben. Grupo `inventory.auth-users.v1`, tópico `auth.users.events`. Un usuario conocido inactivo se rechaza; una referencia aún ausente devuelve `409 PROJECTION_NOT_READY`, según el [protocolo común](../architecture/event-driven-communication.md).
+`UsersProjection`: snapshot público y versión de usuario proveniente de Auth; solo consumidores/importadores la escriben. Grupo `inventory.auth-users.v1`, tópico `auth.users.events`. Un usuario conocido inactivo se rechaza; una referencia aún ausente devuelve `409 PROJECTION_NOT_READY`, según el [protocolo común](../../architecture/event-driven-communication.md).
 
 Los atributos físicos previstos de productos, historial de correcciones, inbox,
 outbox y la copia local de usuarios están en el
-[modelo de datos planificado](../architecture/data-model.md#inventory-mysql).
+[modelo de datos planificado](../../architecture/data-model.md#inventory-mysql).
 
 | Endpoint | Acceso | Resultado |
 | --- | --- | --- |
@@ -21,6 +21,6 @@ outbox y la copia local de usuarios están en el
 | `PUT /api/inventory/products/{id}` | Igual | expectedVersion obligatorio; 409 ante conflicto; desactivación lógica |
 | `GET /api/inventory/openapi.json` | Desarrollo | Springdoc en esta ruta; paths `/api/inventory/...`, server `/` |
 
-Verificar JWT y RBAC localmente, sin confiar exclusivamente en x-user headers. Cada cambio confirma entidad + outbox y publica `ProductCreated`/`ProductUpdated` con snapshot completo según [schema](../../contracts/events/product-event.schema.json). No borrar físicamente productos referenciados por compras: emitir active:false.
+Verificar JWT y RBAC localmente, sin confiar exclusivamente en x-user headers. Cada cambio confirma entidad + outbox y publica `ProductCreated`/`ProductUpdated` con snapshot completo según [schema](../../../contracts/events/product-event.schema.json). No borrar físicamente productos referenciados por compras: emitir active:false.
 
 Aceptación: migraciones, validación de SKU/stock, control concurrente, permisos de sistema, inbox/proyección atómica, eventos duplicados y desordenados, recuperación outbox, DLQ y reconstrucción desde snapshot. Configuración Spring por placeholders/perfiles; secretos locales fuera de git. README propio debe incluir migraciones y pruebas.

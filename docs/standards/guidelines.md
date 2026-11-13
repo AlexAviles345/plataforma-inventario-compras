@@ -2,7 +2,7 @@
 
 ## HTTP y autenticación
 
-Todas las rutas de negocio conservan el prefijo `/api/<dominio>` tanto en el Gateway como en el servicio destino. No hay reescritura ni registro público. El único endpoint de negocio sin credencial en el MVP actual es `POST /api/auth/login`; los esquemas OpenAPI exactos son públicos solo en desarrollo. [Matriz de rutas y configuración](../services/api-gateway.md).
+Todas las rutas de negocio conservan el prefijo `/api/<dominio>` tanto en el Gateway como en el servicio destino. No hay reescritura ni registro público. El único endpoint de negocio sin credencial en el MVP actual es `POST /api/auth/login`; los esquemas OpenAPI exactos son públicos solo en desarrollo. [Matriz de rutas y configuración](../services/api-gateway/api-gateway.md).
 
 Todas las respuestas JSON de negocio cumplen el [estándar de respuestas HTTP](api-responses.md): envoltura única, status HTTP coherente, errores con código estable y paginación común. El Gateway conserva las respuestas de dominio y solo genera la envoltura cuando el error se origina en él.
 

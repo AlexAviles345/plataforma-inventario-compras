@@ -3,11 +3,11 @@
 Este documento detalla la arquitectura interna y el plan técnico secuencial para implementar el microservicio de compras (`purchases-service`) en **Django 6.0 / Django REST Framework 3.17 / Python 3.14**, alineado con los contratos oficiales del repositorio:
 
 - [Contrato de Purchases](./purchases-service.md)
-- [Modelo de datos planificado](../architecture/data-model.md#purchases-postgresql)
-- [Entrega de eventos y proyecciones](../architecture/event-driven-communication.md)
-- [Estándar de respuestas HTTP](../standards/api-responses.md)
-- [Estándar de access tokens y sesiones](../standards/jwt-and-sessions.md)
-- [Reglas comunes de implementación](../standards/guidelines.md)
+- [Modelo de datos planificado](../../architecture/data-model.md#purchases-postgresql)
+- [Entrega de eventos y proyecciones](../../architecture/event-driven-communication.md)
+- [Estándar de respuestas HTTP](../../standards/api-responses.md)
+- [Estándar de access tokens y sesiones](../../standards/jwt-and-sessions.md)
+- [Reglas comunes de implementación](../../standards/guidelines.md)
 
 ---
 

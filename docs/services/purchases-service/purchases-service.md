@@ -1,8 +1,8 @@
 # Purchases: contrato de implementación
 
-Las respuestas JSON de negocio siguen el [estándar común](../standards/api-responses.md).
+Las respuestas JSON de negocio siguen el [estándar común](../../standards/api-responses.md).
 
-Purchases valida íntegramente el [access token común](../standards/jwt-and-sessions.md) y exige `system: "PURCHASES"`. Nunca interpreta ni acepta refresh tokens.
+Purchases valida íntegramente el [access token común](../../standards/jwt-and-sessions.md) y exige `system: "PURCHASES"`. Nunca interpreta ni acepta refresh tokens.
 
 Estado: servicio Django REST Framework completo y ejecutable con configuración PostgreSQL, salud, OpenAPI, Docker, arquitectura modular (`core`, `orders`, `projections`, `health`), consumidores Kafka e inbox transaccional con DLQ, endpoints de órdenes con snapshots históricos, concurrencia optimista e idempotencia, y suite de pruebas de aceptación conforme al [plan detallado de implementación por fases](./purchases-implementation-plan.md). En el MVP registra órdenes a proveedores; recepción, reservas y modificaciones automáticas de stock quedan fuera del alcance. Por ello no produce eventos de stock ni requiere sagas.
 
@@ -20,11 +20,11 @@ POST de creación requiere `Idempotency-Key` UUID. Guardar `(requesterId,key)`, 
 
 ## Proyecciones y HTTP
 
-Usuarios: grupo `purchases.auth-users.v1`. Productos: grupo `purchases.inventory-products.v1`. Nunca compartir grupo con Inventory. Inbox y proyección se guardan atómicamente antes del offset. Ver [contratos](../../contracts/events) y [recuperación](../architecture/event-driven-communication.md).
+Usuarios: grupo `purchases.auth-users.v1`. Productos: grupo `purchases.inventory-products.v1`. Nunca compartir grupo con Inventory. Inbox y proyección se guardan atómicamente antes del offset. Ver [contratos](../../../contracts/events) y [recuperación](../../architecture/event-driven-communication.md).
 
 Los atributos físicos previstos de órdenes, líneas, idempotencia, historial, inbox
 y ambas copias locales están en el
-[modelo de datos planificado](../architecture/data-model.md#purchases-postgresql).
+[modelo de datos planificado](../../architecture/data-model.md#purchases-postgresql).
 
 Verificar JWT completo de PURCHASES y RBAC. Usuario conocido inactivo: 403. Producto conocido inactivo: 409 PRODUCT_INACTIVE. UUID válido ausente en proyección: `409 PROJECTION_NOT_READY`, Retry-After 2; sin HTTP a propietarios y sin afirmar que nunca existió. SKU y stock de la proyección no garantizan disponibilidad presente, y no se usan para descontar existencias.
 

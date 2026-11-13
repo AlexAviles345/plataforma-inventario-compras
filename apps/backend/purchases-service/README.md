@@ -105,9 +105,9 @@ Los routers DRF están configurados sin barra final (`trailing_slash=False`).
 ## Siguientes módulos
 
 El contrato está en
-[`docs/services/purchases-service.md`](../../../docs/services/purchases-service.md)
+[`docs/services/purchases-service/purchases-service.md`](../../../docs/services/purchases-service/purchases-service.md)
 y el desglose detallado de arquitectura e implementación por fases está en
-[`docs/services/purchases-implementation-plan.md`](../../../docs/services/purchases-implementation-plan.md).
+[`docs/services/purchases-service/purchases-implementation-plan.md`](../../../docs/services/purchases-service/purchases-implementation-plan.md).
 Las etapas del plan son:
 
 1. PostgreSQL y migraciones de dominio (implementado en Fase 1).

@@ -48,7 +48,7 @@ npm run test:e2e -- --runInBand
 
 ## Siguientes módulos
 
-El contrato de implementación está en [`docs/services/auth-service.md`](../../../docs/services/auth-service.md). Las siguientes etapas incorporarán, sin mezclarlas con el bootstrap:
+El contrato de implementación está en [`docs/services/auth-service/auth-service.md`](../../../docs/services/auth-service/auth-service.md). Las siguientes etapas incorporarán, sin mezclarlas con el bootstrap:
 
 1. Persistencia PostgreSQL y migraciones.
 2. Usuarios, sistemas y asignaciones.

@@ -47,7 +47,7 @@ Las rutas de negocio futuras usarán `/api/inventory`. No existen endpoints plac
 
 ## Siguientes módulos
 
-El contrato de implementación está en [`docs/services/inventory-service.md`](../../../docs/services/inventory-service.md). Las siguientes etapas incorporarán:
+El contrato de implementación está en [`docs/services/inventory-service/inventory-service.md`](../../../docs/services/inventory-service/inventory-service.md). Las siguientes etapas incorporarán:
 
 1. Persistencia MySQL y migraciones Flyway.
 2. Productos, existencias y control optimista de versiones.

@@ -1,8 +1,8 @@
 # Frontend Web: contrato de implementación
 
-Aplicación web empresarial unificada (SPA monolítica modular) en **React 19 + TypeScript 5 + Vite 6**, estilizada con **Tailwind CSS v4 + shadcn/ui (Radix UI)**, que consume exclusivamente el [API Gateway](./api-gateway.md) bajo `/api/**` y cumple el [estándar de respuestas HTTP](../standards/api-responses.md), el [contrato de access tokens y sesiones](../standards/jwt-and-sessions.md) y las [reglas comunes](../standards/guidelines.md).
+Aplicación web empresarial unificada (SPA monolítica modular) en **React 19 + TypeScript 5 + Vite 6**, estilizada con **Tailwind CSS v4 + shadcn/ui (Radix UI)**, que consume exclusivamente el [API Gateway](../api-gateway/api-gateway.md) bajo `/api/**` y cumple el [estándar de respuestas HTTP](../../standards/api-responses.md), el [contrato de access tokens y sesiones](../../standards/jwt-and-sessions.md) y las [reglas comunes](../../standards/guidelines.md).
 
-Estado: planificación general y [plan detallado de implementación por fases](./frontend-implementation-plan.md) definidos en documentación. En desarrollo se ejecuta sobre Node 24 con recarga en caliente y proxy local hacia `http://localhost:3000`; en despliegues accesibles se sirve detrás de [Nginx como capa edge](../infrastructure/nginx-edge.md) en `/`.
+Estado: planificación general y [plan detallado de implementación por fases](./frontend-implementation-plan.md) definidos en documentación. En desarrollo se ejecuta sobre Node 24 con recarga en caliente y proxy local hacia `http://localhost:3000`; en despliegues accesibles se sirve detrás de [Nginx como capa edge](../../infrastructure/nginx-edge.md) en `/`.
 
 ## Alcance y principios arquitectónicos
 
@@ -53,3 +53,4 @@ El contrato de autenticación emite un `accessToken` JWT por sistema destino (`s
 3. **Aislamiento RBAC y propiedad:** ocultamiento y bloqueo de rutas según `role` y `system`; un `PURCHASES_AGENT` solo opera sus órdenes y un `INVENTORY_MANAGER` no accede a Compras ni Administración.
 4. **Precisión monetaria e inmutabilidad histórica:** cálculos exactos con `decimal.js` y preservación visual de snapshots históricos frente a cambios posteriores del catálogo.
 5. **Contenedor y Nginx Edge:** `Dockerfile` multi-stage reproducible sin privilegios root y entrega de `/` tras Nginx en el recorrido `npm run dev:edge`.
+

@@ -3,13 +3,13 @@
 Este documento detalla la arquitectura modular mejorada, las decisiones tecnológicas y el plan técnico secuencial por fases para implementar el frontend unificado de **TechDistribution** (`apps/frontend`) en **React 19 + TypeScript 5 + Vite 6 + Tailwind CSS v4 + shadcn/ui**, alineado con los contratos oficiales del repositorio:
 
 - [Contrato de Frontend Web](./frontend-web.md)
-- [Contrato del API Gateway](./api-gateway.md)
-- [Contrato de Auth Service](./auth-service.md)
-- [Contrato de Inventory Service](./inventory-service.md)
-- [Contrato de Purchases Service](./purchases-service.md)
-- [Estándar de respuestas HTTP](../standards/api-responses.md)
-- [Estándar de access tokens y sesiones](../standards/jwt-and-sessions.md)
-- [Capa Edge con Nginx](../infrastructure/nginx-edge.md)
+- [Contrato del API Gateway](../api-gateway/api-gateway.md)
+- [Contrato de Auth Service](../auth-service/auth-service.md)
+- [Contrato de Inventory Service](../inventory-service/inventory-service.md)
+- [Contrato de Purchases Service](../purchases-service/purchases-service.md)
+- [Estándar de respuestas HTTP](../../standards/api-responses.md)
+- [Estándar de access tokens y sesiones](../../standards/jwt-and-sessions.md)
+- [Capa Edge con Nginx](../../infrastructure/nginx-edge.md)
 
 ---
 
@@ -337,4 +337,5 @@ apps/frontend/
      - Flujo automatizado: login por sistema, alta de producto, espera de sincronización de proyección en Compras, creación de orden `DRAFT`, edición `PUT`, envío `submit`, verificación de inmutabilidad de snapshot histórico tras editar producto y cancelación `cancel`.
   3. **Empaquetado Docker y CI:**
      - `apps/frontend/Dockerfile` multi-stage y job `frontend` en `.github/workflows/ci.yml` (`npm ci`, `npm run format:check`, `npm run lint`, `npm run build`, `npm test`).
-     - Integración con el perfil `frontend` y `edge` (Nginx) descrito en [`docs/infrastructure/nginx-edge.md`](../infrastructure/nginx-edge.md).
+     - Integración con el perfil `frontend` y `edge` (Nginx) descrito en [`docs/infrastructure/nginx-edge.md`](../../infrastructure/nginx-edge.md).
+
