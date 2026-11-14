@@ -24,7 +24,7 @@ Este documento detalla el plan técnico secuencial para implementar el microserv
 | Validación de entrada | `class-validator` + `class-transformer` |
 | Validación de eventos | `ajv` (JSON Schema 2020-12) |
 | Cliente Kafka | `@confluentinc/kafka-javascript` |
-| ORM y migraciones | Pendiente de decisión entre TypeORM y Prisma |
+| ORM y migraciones | TypeORM 1.x (`@nestjs/typeorm` 11, CommonJS como el resto de NestJS 11) con migraciones SQL escritas a mano y `synchronize` deshabilitado; exige Node ≥ 24.11 |
 | Variables de configuración | Cada variable (`DATABASE_URL`, `JWT_*`, `KAFKA_*`) se agrega en la fase que la utiliza |
 
 ---
@@ -44,14 +44,16 @@ Este documento detalla el plan técnico secuencial para implementar el microserv
 
 ---
 
-## Fase 1: Persistencia PostgreSQL y migraciones
+## Fase 1: Persistencia PostgreSQL y migraciones — [COMPLETADA]
 
 **Objetivo:** Materializar el esquema de Auth con migraciones versionadas.
 
-- Conexión a `postgres-auth` (`127.0.0.1:5432`, `auth_db`) mediante `DATABASE_URL`, documentada en `.env.example`.
-- Migraciones con los `CHECK`, `UNIQUE` e índices del modelo: `users`, `systems` (seed `INVENTORY` y `PURCHASES` con TTL 900), `user_systems` (combinaciones rol/sistema válidas), `auth_audit_log` y `outbox_events`.
-- `/health/ready` verifica la conexión a la base.
-- Script de migraciones y su ejecución automática desde `tools/dev.mjs`, como en Purchases.
+- Conexión a `postgres-auth` con `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` y `DB_POOL_MAX` (misma convención que Purchases): valores de `docker-compose` por defecto fuera de producción, obligatorias en producción. Documentadas en `.env.example`.
+- `src/database/migrations/`: cinco migraciones SQL escritas a mano con nombres explícitos de restricciones: `users`, `systems` (seed `INVENTORY` y `PURCHASES` con TTL 900), `user_systems` (combinaciones rol/sistema válidas, una asignación por sistema, FKs `RESTRICT`), `auth_audit_log` (append-only mediante trigger) y `outbox_events` (estados, lease y `published_at` coherentes por `CHECK`).
+- `src/database/entities/`: entidades con los mismos nombres de restricciones e índices; `password_hash` no se selecciona por defecto. Una prueba e2e verifica que entidades y migraciones no difieran.
+- `npm run migration:run | migration:show | migration:revert` (`show` termina con código 1 si hay pendientes); `tools/dev.mjs` aplica las migraciones de Auth antes de arrancar.
+- `/health/ready` ejecuta `SELECT 1` con timeout de 2 s y responde `503` si la base no está disponible.
+- Pruebas e2e sobre la base `auth_db_test`, recreada en cada ejecución; el job `auth` de CI levanta su propio PostgreSQL y verifica que no queden migraciones pendientes.
 
 ## Fase 2: Dominio de usuarios y outbox transaccional
 

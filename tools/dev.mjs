@@ -222,25 +222,34 @@ function commands(frontends) {
   ];
 }
 
-function prepareApplications() {
-  const python = isWindows
-    ? path.join('.venv', 'Scripts', 'python.exe')
-    : path.join('.venv', 'bin', 'python');
-  console.log('Aplicando migraciones locales de Purchases...');
-  const result = spawnSync(python, ['manage.py', 'migrate', '--noinput'], {
-    cwd: servicePaths.purchases,
-    stdio: 'inherit',
-    shell: false,
-  });
+function runMigrations(service, command, args, options) {
+  console.log(`Aplicando migraciones locales de ${service}...`);
+  const result = spawnSync(command, args, { stdio: 'inherit', ...options });
 
   if (result.error) {
     throw new Error(`No se pudieron ejecutar las migraciones: ${result.error.message}`);
   }
   if (result.status !== 0) {
     throw new Error(
-      `Las migraciones de Purchases terminaron con código ${result.status ?? 'desconocido'}`,
+      `Las migraciones de ${service} terminaron con código ${result.status ?? 'desconocido'}`,
     );
   }
+}
+
+function prepareApplications() {
+  // npm es un script .cmd en Windows y requiere shell; los argumentos son fijos.
+  runMigrations('Auth', 'npm', ['run', 'migration:run'], {
+    cwd: servicePaths.auth,
+    shell: isWindows,
+  });
+
+  const python = isWindows
+    ? path.join('.venv', 'Scripts', 'python.exe')
+    : path.join('.venv', 'bin', 'python');
+  runMigrations('Purchases', python, ['manage.py', 'migrate', '--noinput'], {
+    cwd: servicePaths.purchases,
+    shell: false,
+  });
 }
 
 function delay(milliseconds, signal) {
