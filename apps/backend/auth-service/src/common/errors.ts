@@ -7,6 +7,10 @@ export const ErrorCode = {
   RESOURCE_NOT_FOUND: 'RESOURCE_NOT_FOUND',
   METHOD_NOT_ALLOWED: 'METHOD_NOT_ALLOWED',
   VERSION_CONFLICT: 'VERSION_CONFLICT',
+  /** Auth: el email normalizado ya pertenece a otro usuario. */
+  EMAIL_ALREADY_EXISTS: 'EMAIL_ALREADY_EXISTS',
+  /** Auth: el cambio dejaría al sistema sin ningún ADMIN activo. */
+  LAST_ACTIVE_ADMIN: 'LAST_ACTIVE_ADMIN',
   PAYLOAD_TOO_LARGE: 'PAYLOAD_TOO_LARGE',
   RATE_LIMITED: 'RATE_LIMITED',
   INTERNAL_ERROR: 'INTERNAL_ERROR',

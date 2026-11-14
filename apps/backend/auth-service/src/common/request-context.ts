@@ -31,6 +31,14 @@ export function currentRequestId(): string | undefined {
   return storage.getStore()?.requestId;
 }
 
+/**
+ * Ejecuta `fn` con un request id fijo. Lo usan los comandos CLI (bootstrap) y
+ * las pruebas para correlacionar auditoría y outbox fuera de HTTP.
+ */
+export function runWithRequestId<T>(requestId: string, fn: () => T): T {
+  return storage.run({ requestId }, fn);
+}
+
 export function createRequestContextMiddleware(options: { log: boolean }) {
   return function requestContext(
     request: Request,

@@ -1,4 +1,4 @@
-import type { DataSourceOptions } from 'typeorm';
+import type { PostgresDataSourceOptions } from 'typeorm/driver/postgres/PostgresDataSourceOptions';
 import { AuthAuditLogEntity } from './entities/auth-audit-log.entity';
 import { OutboxEventEntity } from './entities/outbox-event.entity';
 import { SystemEntity } from './entities/system.entity';
@@ -56,7 +56,7 @@ export function databaseSettings(
  */
 export function buildDataSourceOptions(
   settings: DatabaseSettings,
-): DataSourceOptions {
+): PostgresDataSourceOptions {
   return {
     type: 'postgres',
     host: settings.host,

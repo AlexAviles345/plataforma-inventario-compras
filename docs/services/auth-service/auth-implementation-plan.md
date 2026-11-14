@@ -25,6 +25,9 @@ Este documento detalla el plan técnico secuencial para implementar el microserv
 | Validación de eventos | `ajv` (JSON Schema 2020-12) |
 | Cliente Kafka | `@confluentinc/kafka-javascript` |
 | ORM y migraciones | TypeORM 1.x (`@nestjs/typeorm` 11, CommonJS como el resto de NestJS 11) con migraciones SQL escritas a mano y `synchronize` deshabilitado; exige Node ≥ 24.11 |
+| `PUT /api/auth/users/{id}` | Actualización parcial con `expectedVersion`; los campos omitidos se conservan y `assignments`, si se envía, reemplaza la lista completa |
+| Cambio de contraseña | Incrementa `version` y se audita, pero no publica evento porque el snapshot público no cambia |
+| Códigos de error propios | `409 EMAIL_ALREADY_EXISTS` y `409 LAST_ACTIVE_ADMIN`, además del catálogo común |
 | Variables de configuración | Cada variable (`DATABASE_URL`, `JWT_*`, `KAFKA_*`) se agrega en la fase que la utiliza |
 
 ---
@@ -55,13 +58,21 @@ Este documento detalla el plan técnico secuencial para implementar el microserv
 - `/health/ready` ejecuta `SELECT 1` con timeout de 2 s y responde `503` si la base no está disponible.
 - Pruebas e2e sobre la base `auth_db_test`, recreada en cada ejecución; el job `auth` de CI levanta su propio PostgreSQL y verifica que no queden migraciones pendientes.
 
-## Fase 2: Dominio de usuarios y outbox transaccional
+## Fase 2: Dominio de usuarios y outbox transaccional — [COMPLETADA]
 
 **Objetivo:** Casos de uso de usuarios y asignaciones con evento y auditoría en la misma transacción.
 
-- Matriz rol/sistema, una asignación por sistema; email con trim + lowercase; `displayName` de 1 a 200 caracteres.
-- Una transacción por cambio: usuario + asignaciones + `version++` + `auth_audit_log` + fila en `outbox_events` con `UserCreated`/`UserUpdated` (snapshot público validado con `ajv`, sin hash; `correlationId` = `X-Request-Id`).
-- `expectedVersion` → `409 VERSION_CONFLICT`. Bloqueo de fila para impedir desactivar al último `ADMIN` activo.
+- `src/users/user-rules.ts`: email con trim + lowercase y el mismo formato `email` que valida `ajv`; `displayName` de 1 a 200 caracteres tras trim; contraseña de 8 a 128 caracteres Unicode, sin recortar, rechazando `src/users/common-passwords.ts` y un solo carácter repetido; matriz rol/sistema y una asignación por sistema. Los errores salen como `400 VALIDATION_ERROR` con `details[].field` (`assignments[1].role`) y nunca repiten la contraseña.
+- `src/users/password-hasher.ts`: Argon2id (19 MiB, t=2, p=1), calculado antes de abrir la transacción.
+- `src/users/users.service.ts`:
+  - `createUser`: inserta usuario (`version` 1), asignaciones, `USER_CREATED` en auditoría y `UserCreated` en outbox en una transacción. Un email duplicado tras normalizar devuelve `409 EMAIL_ALREADY_EXISTS`, detectado por la restricción `uq_users_email`, por lo que también cubre carreras.
+  - `updateUser`: actualización parcial con `expectedVersion`; `assignments` reemplaza la lista completa. Bloquea la fila (`FOR UPDATE`); una versión distinta devuelve `409 VERSION_CONFLICT`. Sin cambios reales no escribe nada. Un cambio incrementa `version` una vez y registra `USER_UPDATED` con los campos cambiados. Solo publica `UserUpdated` si cambia email, nombre, `active` o asignaciones; un cambio de contraseña no publica evento, y los consumidores toleran el salto de versión.
+  - Último `ADMIN` activo: desactivar o retirar el último rol `ADMIN` de un usuario activo devuelve `409 LAST_ACTIVE_ADMIN`. Esas operaciones toman `pg_advisory_xact_lock` antes de contar, para que dos administradores que se desactivan mutuamente a la vez no dejen el sistema sin ninguno.
+- `src/events/user-event.ts`: construye el evento v1 y lo valida con `ajv` (JSON Schema 2020-12 + formatos) contra `src/events/schemas/`, más las reglas del README de contratos (`aggregateId` = `data.userId`, una asignación por sistema). `correlationId` = `X-Request-Id`, o un UUID nuevo fuera de HTTP (`runWithRequestId` permite fijarlo desde CLI).
+- `src/events/outbox.ts` y `src/audit/audit-log.ts`: escriben siempre con el `EntityManager` de la transacción del cambio.
+- Pruebas:
+  - unitarias: reglas, evento, y copias de schemas idénticas a `contracts/events/`;
+  - e2e sobre PostgreSQL: atomicidad (la falla de la auditoría revierte usuario y outbox), ausencia de hash y contraseña en outbox y auditoría, conflictos de versión y email, reemplazo de asignaciones, actualizaciones sin cambios, y concurrencia del último `ADMIN` y de la misma versión.
 
 ## Fase 3: Bootstrap administrativo
 

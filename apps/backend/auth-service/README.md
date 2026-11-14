@@ -50,6 +50,12 @@ npm run migration:revert  :: revierte la última
 
 En la imagen Docker se ejecutan con `node dist/database/migrate.js run`. Cada constraint, índice y llave tiene nombre explícito y coincide con las entidades de `src/database/entities`; una prueba e2e verifica que no haya diferencias.
 
+## Usuarios y eventos
+
+`UsersService` (`src/users`) crea y actualiza usuarios. Cada cambio se guarda en una sola transacción junto con sus asignaciones, el incremento de `version`, la fila de `auth_audit_log` y, si cambia el snapshot público, el evento `UserCreated`/`UserUpdated` en `outbox_events`. El evento se valida con `ajv` contra `src/events/schemas/`, copia de `contracts/events/`; una prueba unitaria falla si las copias dejan de coincidir con el original, así que al cambiar un contrato hay que copiar de nuevo ambos archivos.
+
+Las contraseñas se guardan con Argon2id y nunca aparecen en respuestas, eventos, auditoría ni logs.
+
 ## Ejecución
 
 ```bat

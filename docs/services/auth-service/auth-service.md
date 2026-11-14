@@ -29,6 +29,8 @@ Login recibe `{email,password,system}`. Verificar usuario activo, contraseña y 
 | `PUT /api/auth/systems/{code}` | ADMIN | Cambiar TTL con expectedVersion para futuras emisiones |
 | `GET /api/auth/openapi.json` | Desarrollo | Schema con paths completos y servidor `/` |
 
+Códigos propios de Auth, además del [catálogo común](../../standards/api-responses.md): `409 EMAIL_ALREADY_EXISTS` (email ya registrado tras normalizar) y `409 LAST_ACTIVE_ADMIN` (el cambio dejaría sin ningún ADMIN activo). `PUT /api/auth/users/{id}` es parcial: conserva los campos omitidos y `assignments` reemplaza la lista completa.
+
 `POST /api/auth/refresh` y `POST /api/auth/logout` están reservados por el estándar, pero no forman parte de los endpoints del MVP ni deben exponerse parcialmente. Se habilitan juntos después de implementar sesiones renovables y los cambios correspondientes en el Gateway.
 
 Usar migraciones. Guardar Users/asignaciones, versión y outbox en una transacción. Producir `UserCreated`/`UserUpdated` con snapshot público según [schema](../../../contracts/events/user-event.schema.json). Cambios de email, nombre, active o asignaciones generan evento; nunca distribuir el hash. Implementar publicador con orden por agregado y reintentos según [protocolo Kafka](../../architecture/event-driven-communication.md).
