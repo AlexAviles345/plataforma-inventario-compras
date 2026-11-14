@@ -22,6 +22,8 @@ Login recibe `{email,password,system}`. Verificar usuario activo, contraseña y 
 | --- | --- | --- |
 | `POST /api/auth/login` | Público | Credenciales/sistema → accessToken, tokenType Bearer, expiresIn |
 | `POST /api/auth/users` | ADMIN | Crear usuario/asignaciones; 201; email duplicado 409 |
+| `GET /api/auth/users` | ADMIN | Listado paginado de usuarios con sus asignaciones, sin hash de contraseña |
+| `GET /api/auth/users/{id}` | ADMIN | Consultar un usuario; inexistente 404 |
 | `PUT /api/auth/users/{id}` | ADMIN | Actualizar con expectedVersion; conflicto 409; desactivar con active:false |
 | `GET /api/auth/systems` | ADMIN | Consultar sistemas y TTL |
 | `PUT /api/auth/systems/{code}` | ADMIN | Cambiar TTL con expectedVersion para futuras emisiones |

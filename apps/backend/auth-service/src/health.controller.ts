@@ -1,5 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { SkipEnvelope } from './common/api-response';
 
 interface HealthResponse {
   status: 'ok' | 'ready';
@@ -7,6 +8,7 @@ interface HealthResponse {
 }
 
 @ApiTags('health')
+@SkipEnvelope()
 @Controller('health')
 export class HealthController {
   @Get('live')
