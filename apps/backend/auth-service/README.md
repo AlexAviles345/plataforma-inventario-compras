@@ -50,6 +50,24 @@ npm run migration:revert  :: revierte la última
 
 En la imagen Docker se ejecutan con `node dist/database/migrate.js run`. Cada constraint, índice y llave tiene nombre explícito y coincide con las entidades de `src/database/entities`; una prueba e2e verifica que no haya diferencias.
 
+## Primer administrador (bootstrap)
+
+No existe contraseña ni usuario por defecto. El primer ADMIN se crea con un comando local, fuera del HTTP público. Email y nombre se pasan como variables **solo para esa ejecución**, no las guardes en `.env`. La contraseña se pide dos veces y no se muestra mientras se escribe:
+
+```bash
+BOOTSTRAP_ADMIN_EMAIL=admin@techdistribution.com BOOTSTRAP_ADMIN_DISPLAY_NAME="Administrador" npm run bootstrap:admin
+```
+
+```powershell
+$env:BOOTSTRAP_ADMIN_EMAIL='admin@techdistribution.com'; $env:BOOTSTRAP_ADMIN_DISPLAY_NAME='Administrador'; npm run bootstrap:admin; Remove-Item Env:BOOTSTRAP_ADMIN_*
+```
+
+- Crea un usuario con rol ADMIN en INVENTORY y PURCHASES, registra `BOOTSTRAP_ADMIN` en la auditoría (sin credenciales) y deja `UserCreated` en el outbox.
+- Es idempotente: si ya hay un ADMIN activo, termina con código 0 sin pedir la contraseña ni cambiar nada. Nunca reactiva, promueve ni sobrescribe un usuario existente; un email ya registrado termina con código 1.
+- Para automatizar, la contraseña se puede enviar por tubería en una sola línea: `printf '%s\n' "$CLAVE" | npm run bootstrap:admin`. Nunca se acepta como variable de entorno ni como argumento.
+- En la imagen Docker: `docker run --rm -it -e DB_HOST=... -e BOOTSTRAP_ADMIN_EMAIL=... -e BOOTSTRAP_ADMIN_DISPLAY_NAME=... <imagen> node dist/cli/bootstrap-admin.js`.
+- En la ventana independiente de Git Bash (mintty), Node no detecta una terminal y la contraseña se vería al escribirla. Usa la terminal integrada de VS Code, PowerShell, `winpty npm run bootstrap:admin` o la tubería.
+
 ## Usuarios y eventos
 
 `UsersService` (`src/users`) crea y actualiza usuarios. Cada cambio se guarda en una sola transacción junto con sus asignaciones, el incremento de `version`, la fila de `auth_audit_log` y, si cambia el snapshot público, el evento `UserCreated`/`UserUpdated` en `outbox_events`. El evento se valida con `ajv` contra `src/events/schemas/`, copia de `contracts/events/`; una prueba unitaria falla si las copias dejan de coincidir con el original, así que al cambiar un contrato hay que copiar de nuevo ambos archivos.

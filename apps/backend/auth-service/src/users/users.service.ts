@@ -42,6 +42,29 @@ export interface UpdateUserInput {
   assignments?: AssignmentInput[];
 }
 
+export interface BootstrapAdminInput {
+  email: string;
+  displayName: string;
+  password: string;
+}
+
+export type BootstrapAdminResult =
+  { created: true; user: UserView } | { created: false };
+
+/** El primer administrador gestiona ambos sistemas. */
+const BOOTSTRAP_ASSIGNMENTS: AssignmentInput[] = [
+  { system: 'INVENTORY', role: 'ADMIN' },
+  { system: 'PURCHASES', role: 'ADMIN' },
+];
+
+/** Usuario ya validado y normalizado, listo para insertar. */
+interface NewUser {
+  email: string;
+  displayName: string;
+  passwordHash: string;
+  assignments: Assignment[];
+}
+
 export interface ActorContext {
   /** Nulo solo para el bootstrap inicial. */
   actorUserId: string | null;
@@ -158,6 +181,61 @@ export class UsersService {
     input: CreateUserInput,
     actor: ActorContext,
   ): Promise<UserView> {
+    const user = await this.prepareNewUser(input);
+    const correlationId = currentRequestId() ?? randomUUID();
+    try {
+      return await this.dataSource.transaction((manager) =>
+        this.insertNewUser(manager, user, {
+          action: actor.auditAction ?? AuditAction.USER_CREATED,
+          actorUserId: actor.actorUserId,
+          correlationId,
+          details: { assignments: user.assignments },
+        }),
+      );
+    } catch (error) {
+      translateWriteError(error);
+    }
+  }
+
+  /**
+   * Crea el primer ADMIN (ADMIN en ambos sistemas) solo si no existe ningún
+   * ADMIN activo. Idempotente: nunca modifica, recrea ni reactiva usuarios
+   * existentes. Usa el mismo candado que la protección del último ADMIN, así
+   * que dos bootstraps simultáneos no crean dos administradores.
+   */
+  async bootstrapAdmin(
+    input: BootstrapAdminInput,
+  ): Promise<BootstrapAdminResult> {
+    const user = await this.prepareNewUser({
+      ...input,
+      assignments: BOOTSTRAP_ASSIGNMENTS,
+    });
+    const correlationId = currentRequestId() ?? randomUUID();
+    try {
+      return await this.dataSource.transaction(async (manager) => {
+        await this.lockActiveAdmins(manager);
+        if (await this.activeAdminExists(manager))
+          return { created: false } as const;
+        const view = await this.insertNewUser(manager, user, {
+          action: AuditAction.BOOTSTRAP_ADMIN,
+          actorUserId: null,
+          correlationId,
+          details: { source: 'cli', assignments: user.assignments },
+        });
+        return { created: true, user: view } as const;
+      });
+    } catch (error) {
+      translateWriteError(error);
+    }
+  }
+
+  /** Lectura sin candado, solo orientativa (la decisión se toma con candado). */
+  hasActiveAdmin(): Promise<boolean> {
+    return this.activeAdminExists(this.dataSource.manager);
+  }
+
+  /** Valida y calcula el hash antes de abrir la transacción (Argon2 es costoso). */
+  private async prepareNewUser(input: CreateUserInput): Promise<NewUser> {
     const email = normalizeEmail(input.email);
     const displayName = normalizeDisplayName(input.displayName);
     const { assignments, details } = validateAssignments(input.assignments);
@@ -167,40 +245,41 @@ export class UsersService {
       ...passwordViolations(input.password),
       ...details,
     ]);
-
-    // Argon2 es costoso: se calcula antes de abrir la transacción.
     const passwordHash = await this.hasher.hash(input.password);
-    const correlationId = currentRequestId() ?? randomUUID();
+    return { email, displayName, passwordHash, assignments };
+  }
 
-    try {
-      return await this.dataSource.transaction(async (manager) => {
-        const { id } = await manager
-          .insert(UserEntity, { email, displayName, passwordHash })
-          .then((result) => result.identifiers[0] as { id: string });
-        if (assignments.length > 0)
-          await manager.insert(
-            UserSystemEntity,
-            assignments.map(({ system, role }) => ({
-              userId: id,
-              systemCode: system,
-              role,
-            })),
-          );
+  private async insertNewUser(
+    manager: EntityManager,
+    user: NewUser,
+    audit: {
+      action: AuditAction;
+      actorUserId: string | null;
+      correlationId: string;
+      details: Record<string, unknown>;
+    },
+  ): Promise<UserView> {
+    const { email, displayName, passwordHash, assignments } = user;
+    const { id } = await manager
+      .insert(UserEntity, { email, displayName, passwordHash })
+      .then((result) => result.identifiers[0] as { id: string });
+    if (assignments.length > 0)
+      await manager.insert(
+        UserSystemEntity,
+        assignments.map(({ system, role }) => ({
+          userId: id,
+          systemCode: system,
+          role,
+        })),
+      );
 
-        const view = await this.loadView(manager, id);
-        if (!view) throw new Error('El usuario recién creado no es visible');
-        await this.recordChange(manager, view, {
-          eventType: 'UserCreated',
-          action: actor.auditAction ?? AuditAction.USER_CREATED,
-          actorUserId: actor.actorUserId,
-          correlationId,
-          details: { assignments },
-        });
-        return view;
-      });
-    } catch (error) {
-      translateWriteError(error);
-    }
+    const view = await this.loadView(manager, id);
+    if (!view) throw new Error('El usuario recién creado no es visible');
+    await this.recordChange(manager, view, {
+      eventType: 'UserCreated',
+      ...audit,
+    });
+    return view;
   }
 
   /**
@@ -337,21 +416,34 @@ export class UsersService {
     manager: EntityManager,
     userId: string,
   ): Promise<void> {
-    await manager.query(`SELECT pg_advisory_xact_lock(${ACTIVE_ADMINS_LOCK})`);
-    const [{ found }] = await manager.query<{ found: boolean }[]>(
-      `SELECT EXISTS (
-         SELECT 1 FROM users u
-         JOIN user_systems us ON us.user_id = u.id
-         WHERE u.active AND us.role = 'ADMIN' AND u.id <> $1
-       ) AS found`,
-      [userId],
-    );
-    if (!found)
+    await this.lockActiveAdmins(manager);
+    if (!(await this.activeAdminExists(manager, userId)))
       throw new AuthDomainError(
         409,
         ErrorCode.LAST_ACTIVE_ADMIN,
         'No se puede desactivar ni retirar el rol al último administrador activo',
       );
+  }
+
+  /** Se libera solo al terminar la transacción. */
+  private async lockActiveAdmins(manager: EntityManager): Promise<void> {
+    await manager.query(`SELECT pg_advisory_xact_lock(${ACTIVE_ADMINS_LOCK})`);
+  }
+
+  private async activeAdminExists(
+    manager: EntityManager,
+    excludeUserId?: string,
+  ): Promise<boolean> {
+    const [{ found }] = await manager.query<{ found: boolean }[]>(
+      `SELECT EXISTS (
+         SELECT 1 FROM users u
+         JOIN user_systems us ON us.user_id = u.id
+         WHERE u.active AND us.role = 'ADMIN'
+           AND ($1::uuid IS NULL OR u.id <> $1::uuid)
+       ) AS found`,
+      [excludeUserId ?? null],
+    );
+    return found;
   }
 
   private async replaceAssignments(

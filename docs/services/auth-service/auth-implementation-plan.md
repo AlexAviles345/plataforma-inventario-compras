@@ -74,10 +74,25 @@ Este documento detalla el plan técnico secuencial para implementar el microserv
   - unitarias: reglas, evento, y copias de schemas idénticas a `contracts/events/`;
   - e2e sobre PostgreSQL: atomicidad (la falla de la auditoría revierte usuario y outbox), ausencia de hash y contraseña en outbox y auditoría, conflictos de versión y email, reemplazo de asignaciones, actualizaciones sin cambios, y concurrencia del último `ADMIN` y de la misma versión.
 
-## Fase 3: Bootstrap administrativo
+## Fase 3: Bootstrap administrativo — [COMPLETADA]
 
-- Comando `bootstrap:admin` fuera del HTTP público: email y nombre desde variables temporales, contraseña solicitada sin eco.
-- Idempotente: no recrea ni reactiva administradores existentes. Auditoría `BOOTSTRAP_ADMIN` y `UserCreated` en outbox.
+- `npm run bootstrap:admin` (`node dist/cli/bootstrap-admin.js` en la imagen) arranca un contexto Nest sin HTTP. Email y nombre llegan en `BOOTSTRAP_ADMIN_EMAIL` y `BOOTSTRAP_ADMIN_DISPLAY_NAME`, variables temporales.
+- `src/cli/password-prompt.ts`:
+  - En terminal lee en modo raw, sin eco ni asteriscos, y pide la contraseña dos veces. Ctrl+C cancela con código 130.
+  - Sin terminal lee una sola línea de la tubería y lo avisa por stderr.
+  - La contraseña nunca se acepta como variable de entorno ni como argumento.
+- `UsersService.bootstrapAdmin`:
+  - Crea el usuario con ADMIN en INVENTORY y PURCHASES, solo si no existe ningún ADMIN activo. Lo comprueba dentro de la transacción, bajo el mismo `pg_advisory_xact_lock` que la protección del último ADMIN, por lo que dos bootstraps simultáneos crean uno solo.
+  - Registra `BOOTSTRAP_ADMIN` en la auditoría (`actor_user_id` nulo, `details.source = "cli"`, sin credenciales) y `UserCreated` en el outbox.
+  - Nunca reactiva, promueve ni sobrescribe usuarios existentes: un email ya registrado termina con `EMAIL_ALREADY_EXISTS`.
+- Códigos de salida:
+  - 0: creado, o ya existía un ADMIN activo (en ese caso no se pide la contraseña);
+  - 1: variables faltantes, datos inválidos o email existente; se imprimen los detalles sin la contraseña;
+  - 130: cancelado con Ctrl+C.
+- Pruebas:
+  - unitarias del prompt: sin eco, Backspace, secuencias de escape, Ctrl+C, confirmación y tubería;
+  - e2e del servicio: creación, idempotencia, admin inactivo no reactivado, usuario existente no promovido y concurrencia;
+  - e2e del flujo del comando, incluido el proceso real con la contraseña por tubería.
 
 ## Fase 4: Login, emisión JWT y autorización local
 
