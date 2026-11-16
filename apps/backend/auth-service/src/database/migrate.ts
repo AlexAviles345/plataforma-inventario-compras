@@ -1,5 +1,5 @@
 import { DataSource } from 'typeorm';
-import { validateEnvironment } from '../config/environment';
+import { validateDatabaseEnvironment } from '../config/environment';
 import { buildDataSourceOptions, databaseSettings } from './database-options';
 
 /**
@@ -13,7 +13,7 @@ async function main(command: string | undefined): Promise<void> {
   } catch {
     // Sin .env se usan las variables del proceso y los valores locales por defecto.
   }
-  const settings = databaseSettings(validateEnvironment(process.env));
+  const settings = databaseSettings(validateDatabaseEnvironment(process.env));
   const dataSource = new DataSource({
     ...buildDataSourceOptions(settings),
     logging: ['error', 'warn', 'migration'],

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { DataSource } from 'typeorm';
-import { validateEnvironment } from '../src/config/environment';
+import { validateDatabaseEnvironment } from '../src/config/environment';
 import {
   buildDataSourceOptions,
   databaseSettings,
@@ -44,7 +44,7 @@ describe('Auth PostgreSQL schema', () => {
   beforeAll(async () => {
     dataSource = new DataSource(
       buildDataSourceOptions(
-        databaseSettings(validateEnvironment(process.env)),
+        databaseSettings(validateDatabaseEnvironment(process.env)),
       ),
     );
     await dataSource.initialize();

@@ -11,6 +11,8 @@ export const ErrorCode = {
   EMAIL_ALREADY_EXISTS: 'EMAIL_ALREADY_EXISTS',
   /** Auth: el cambio dejaría al sistema sin ningún ADMIN activo. */
   LAST_ACTIVE_ADMIN: 'LAST_ACTIVE_ADMIN',
+  /** Auth: login fallido; no revela si el usuario existe, está inactivo o sin asignación. */
+  INVALID_CREDENTIALS: 'INVALID_CREDENTIALS',
   PAYLOAD_TOO_LARGE: 'PAYLOAD_TOO_LARGE',
   RATE_LIMITED: 'RATE_LIMITED',
   INTERNAL_ERROR: 'INTERNAL_ERROR',

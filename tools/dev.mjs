@@ -94,6 +94,11 @@ function requirements(frontends) {
       fix: 'cd apps/backend/auth-service && npm ci --ignore-scripts',
     },
     {
+      label: 'Configuración de Auth',
+      file: path.join(servicePaths.auth, '.env'),
+      fix: 'copia .env.example a .env con el mismo JWT_SECRET que el Gateway',
+    },
+    {
       label: 'Maven Wrapper de Inventory',
       file: path.join(servicePaths.inventory, isWindows ? 'mvnw.cmd' : 'mvnw'),
       fix: 'restaura el Maven Wrapper de apps/backend/inventory-service',

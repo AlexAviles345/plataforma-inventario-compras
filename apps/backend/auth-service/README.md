@@ -29,8 +29,11 @@ copy .env.example .env
 | `DB_NAME` / `DB_USER` / `DB_PASSWORD` | auth_db / auth_user / auth_password | Credenciales de demostración del Compose |
 | `DB_POOL_MAX` | 10 | Conexiones máximas del pool (1–100) |
 | `DB_TEST_NAME` | auth_db_test | Base de las pruebas e2e; debe terminar en `_test` |
+| `JWT_SECRET` | **ninguno, obligatorio** | Secreto HS256 de al menos 32 bytes; el mismo del Gateway |
+| `JWT_ISSUER` / `JWT_AUDIENCE` | techdistribution-auth / techdistribution-api | Deben coincidir con el Gateway y los servicios |
+| `JWT_MAX_TTL_SECONDS` | 900 | Vigencia máxima del access token (1–3600) |
 
-En producción `DB_HOST`, `DB_NAME`, `DB_USER` y `DB_PASSWORD` son obligatorios y no tienen valores por defecto.
+En producción `DB_HOST`, `DB_NAME`, `DB_USER` y `DB_PASSWORD` son obligatorios y no tienen valores por defecto. `JWT_SECRET` es obligatorio en todos los entornos y rechaza los valores de ejemplo: copia en `.env` el mismo `JWT_SECRET` de `apps/backend/api-gateway/.env`. `migrate.js` solo valida las variables de PostgreSQL.
 
 ## Base de datos y migraciones
 
@@ -67,6 +70,18 @@ $env:BOOTSTRAP_ADMIN_EMAIL='admin@techdistribution.com'; $env:BOOTSTRAP_ADMIN_DI
 - Para automatizar, la contraseña se puede enviar por tubería en una sola línea: `printf '%s\n' "$CLAVE" | npm run bootstrap:admin`. Nunca se acepta como variable de entorno ni como argumento.
 - En la imagen Docker: `docker run --rm -it -e DB_HOST=... -e BOOTSTRAP_ADMIN_EMAIL=... -e BOOTSTRAP_ADMIN_DISPLAY_NAME=... <imagen> node dist/cli/bootstrap-admin.js`.
 - En la ventana independiente de Git Bash (mintty), Node no detecta una terminal y la contraseña se vería al escribirla. Usa la terminal integrada de VS Code, PowerShell, `winpty npm run bootstrap:admin` o la tubería.
+
+## Login y tokens
+
+```bash
+curl -X POST http://localhost:3001/api/auth/login -H "Content-Type: application/json" \
+  -d '{"email":"admin@techdistribution.com","password":"<contraseña>","system":"INVENTORY"}'
+```
+
+- Responde `{accessToken, tokenType: "Bearer", expiresIn}` con `Cache-Control: no-store`. El token es HS256 con `sub`, `email`, `role`, `system`, `iat`, `exp`, `iss` y `aud`, y el rol es el asignado al usuario en el sistema pedido.
+- `expiresIn` es el TTL del sistema (`systems.access_token_ttl_seconds`), limitado por `JWT_MAX_TTL_SECONDS`.
+- Contraseña incorrecta, usuario inexistente o inactivo, y usuario sin asignación al sistema responden el mismo `401 INVALID_CREDENTIALS`. Siempre se hace una verificación Argon2, aunque el usuario no exista, para no revelar la causa por tiempo de respuesta.
+- No hay revocación inmediata: un token emitido sigue siendo válido para el Gateway y los servicios hasta `exp` (como máximo 15 minutos con la configuración por defecto). Las rutas administrativas de Auth sí comprueban en la base que el usuario siga activo y conserve el rol ADMIN.
 
 ## Usuarios y eventos
 

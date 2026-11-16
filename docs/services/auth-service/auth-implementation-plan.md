@@ -94,11 +94,29 @@ Este documento detalla el plan técnico secuencial para implementar el microserv
   - e2e del servicio: creación, idempotencia, admin inactivo no reactivado, usuario existente no promovido y concurrencia;
   - e2e del flujo del comando, incluido el proceso real con la contraseña por tubería.
 
-## Fase 4: Login, emisión JWT y autorización local
+## Fase 4: Login, emisión JWT y autorización local — [COMPLETADA]
 
-- `POST /api/auth/login` con `{email, password, system}`; usuario activo, contraseña y asignación verificados; cualquier fallo devuelve el mismo `401` genérico, con verificación Argon2 simulada para usuarios inexistentes.
-- JWT HS256 con `sub`, `email`, `role`, `system`, `iat`, `exp`, `iss`, `aud`; TTL del sistema limitado por `JWT_MAX_TTL_SECONDS`.
-- Guard propio que revalida el token y exige `role: ADMIN` en las rutas administrativas.
+- Configuración: `JWT_SECRET` es obligatorio en todos los entornos, con la misma regla que el Gateway (al menos 32 bytes, sin valores de ejemplo). `JWT_ISSUER`, `JWT_AUDIENCE` y `JWT_MAX_TTL_SECONDS` usan por defecto los valores del estándar. `validateDatabaseEnvironment` permite que `migrate.js` funcione sin el secreto. `tools/dev.mjs` exige el `.env` de Auth.
+- `POST /api/auth/login` (`src/auth/auth.controller.ts`, `auth.service.ts`):
+  - Recibe `{email, password, system}`; el email se normaliza y la contraseña admite como máximo 128 caracteres.
+  - Una sola consulta trae usuario, asignación al sistema y TTL. Siempre se ejecuta una verificación Argon2, contra un hash simulado si el usuario no existe.
+  - Contraseña incorrecta, usuario inexistente o inactivo, o sin asignación responden el mismo `401 INVALID_CREDENTIALS`.
+  - Responde `{accessToken, tokenType: "Bearer", expiresIn}` con `Cache-Control: no-store`.
+- `src/auth/token.service.ts`: firma y verifica HS256 con algoritmo, emisor y audiencia fijados por configuración, nunca tomados del token. El TTL es el del sistema limitado por `JWT_MAX_TTL_SECONDS`, y `expiresIn` = `exp - iat`.
+- `src/auth/token-claims.ts`: aplica las mismas comprobaciones que el Gateway (UUID, email, matriz rol/sistema, `iat` con 30 s de tolerancia, `exp` y TTL máximo).
+- `src/auth/admin.guard.ts`:
+  - Revalida el JWT del header `Authorization` y no confía en `x-user-*`. Acepta solo `role: ADMIN`, de cualquiera de los dos sistemas.
+  - Además consulta la base: un usuario inactivo responde `401 INVALID_TOKEN` y uno sin ADMIN en ese sistema responde `403 FORBIDDEN`.
+  - `@CurrentPrincipal()` entrega la identidad para usarla como actor en la fase 5.
+- OpenAPI declara `bearer` y documenta el login.
+- Pruebas:
+  - unitarias de claims y configuración;
+  - e2e HTTP:
+    - claims y header del token, rol por sistema y TTL limitado;
+    - el mismo 401 para los cinco casos de fallo, y una sola verificación Argon2 con usuario inexistente;
+    - validación del body;
+    - guard: sin token, token fuera del header, `x-user-*` ignorados, otro secreto, emisor, audiencia o algoritmo, `alg: none`, expiración, TTL excesivo, matriz inválida, desactivación y retiro del rol.
+  - Se comprobó manualmente que el código de validación del Gateway acepta los tokens emitidos.
 
 ## Fase 5: Endpoints administrativos
 

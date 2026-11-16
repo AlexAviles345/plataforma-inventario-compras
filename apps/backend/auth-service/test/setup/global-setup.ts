@@ -1,5 +1,5 @@
 import { DataSource } from 'typeorm';
-import { validateEnvironment } from '../../src/config/environment';
+import { validateDatabaseEnvironment } from '../../src/config/environment';
 import {
   buildDataSourceOptions,
   databaseSettings,
@@ -12,7 +12,7 @@ import { applyTestEnvironment } from './test-env';
  */
 export default async function globalSetup(): Promise<void> {
   applyTestEnvironment();
-  const settings = databaseSettings(validateEnvironment(process.env));
+  const settings = databaseSettings(validateDatabaseEnvironment(process.env));
   if (!/^[a-z0-9_]+_test$/.test(settings.database)) {
     throw new Error(
       `La base de pruebas debe terminar en _test; se recibió "${settings.database}"`,

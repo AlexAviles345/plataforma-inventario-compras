@@ -45,6 +45,7 @@ export async function createAuthApplication(
         .setTitle('TechDistribution Auth Service')
         .setDescription('Usuarios, sistemas, asignaciones y emisión de tokens')
         .setVersion('1.0')
+        .addBearerAuth()
         .addServer('/')
         .addBearerAuth()
         .build(),

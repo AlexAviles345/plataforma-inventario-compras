@@ -73,12 +73,58 @@ export function validateEnvironment(
   }
   result.DOCS_ENABLED = docs === 'true';
 
-  const production = nodeEnvironment === 'production';
-  result.DB_HOST = requiredText(env, 'DB_HOST', production);
-  result.DB_PORT = integer(env, 'DB_PORT', 5432, 65535);
-  result.DB_NAME = requiredText(env, 'DB_NAME', production);
-  result.DB_USER = requiredText(env, 'DB_USER', production);
-  result.DB_PASSWORD = requiredText(env, 'DB_PASSWORD', production, false);
-  result.DB_POOL_MAX = integer(env, 'DB_POOL_MAX', 10, 100);
+  Object.assign(result, databaseVariables(env, nodeEnvironment));
+  Object.assign(result, jwtVariables(env));
   return result;
+}
+
+/**
+ * Solo las variables de PostgreSQL. La usa el CLI de migraciones, que no firma
+ * tokens y por lo tanto no debe exigir JWT_SECRET.
+ */
+export function validateDatabaseEnvironment(
+  env: Record<string, unknown>,
+): Record<string, unknown> {
+  return { ...env, ...databaseVariables(env, env.NODE_ENV ?? 'development') };
+}
+
+function databaseVariables(
+  env: Record<string, unknown>,
+  nodeEnvironment: unknown,
+): Record<string, unknown> {
+  const production = nodeEnvironment === 'production';
+  return {
+    DB_HOST: requiredText(env, 'DB_HOST', production),
+    DB_PORT: integer(env, 'DB_PORT', 5432, 65535),
+    DB_NAME: requiredText(env, 'DB_NAME', production),
+    DB_USER: requiredText(env, 'DB_USER', production),
+    DB_PASSWORD: requiredText(env, 'DB_PASSWORD', production, false),
+    DB_POOL_MAX: integer(env, 'DB_POOL_MAX', 10, 100),
+  };
+}
+
+/** Mismas reglas que el Gateway: ambos deben compartir secreto, emisor y audiencia. */
+function jwtVariables(env: Record<string, unknown>): Record<string, unknown> {
+  const secret = env.JWT_SECRET;
+  if (
+    typeof secret !== 'string' ||
+    Buffer.byteLength(secret) < 32 ||
+    /^(tu_|change|replace|generate)/i.test(secret)
+  ) {
+    throw new Error(
+      'JWT_SECRET debe ser un secreto aleatorio de al menos 32 bytes, igual al del Gateway',
+    );
+  }
+  const text = (key: string, fallback: string) => {
+    const value = env[key] ?? fallback;
+    if (typeof value !== 'string' || !value.trim())
+      throw new Error(`${key} no puede estar vacío`);
+    return value;
+  };
+  return {
+    JWT_SECRET: secret,
+    JWT_ISSUER: text('JWT_ISSUER', 'techdistribution-auth'),
+    JWT_AUDIENCE: text('JWT_AUDIENCE', 'techdistribution-api'),
+    JWT_MAX_TTL_SECONDS: integer(env, 'JWT_MAX_TTL_SECONDS', 900, 3600),
+  };
 }
