@@ -118,11 +118,27 @@ Este documento detalla el plan técnico secuencial para implementar el microserv
     - guard: sin token, token fuera del header, `x-user-*` ignorados, otro secreto, emisor, audiencia o algoritmo, `alg: none`, expiración, TTL excesivo, matriz inválida, desactivación y retiro del rol.
   - Se comprobó manualmente que el código de validación del Gateway acepta los tokens emitidos.
 
-## Fase 5: Endpoints administrativos
+## Fase 5: Endpoints administrativos — [COMPLETADA]
 
-- `POST /api/auth/users`, `GET /api/auth/users`, `GET /api/auth/users/{id}`, `PUT /api/auth/users/{id}`.
-- `GET /api/auth/systems`, `PUT /api/auth/systems/{code}`.
-- OpenAPI con la envoltura completa y ejemplos por status.
+- `src/admin/admin.module.ts` agrupa los controladores protegidos por `AdminGuard`, para evitar el ciclo `AuthModule` ↔ `UsersModule`. El actor de cada cambio es `@CurrentPrincipal().userId`.
+- `src/users/users.controller.ts`:
+  - `POST /users`: 201 con header `Location`.
+  - `GET /users`: paginado con `PaginationQueryDto`, ordenado por email; las asignaciones de la página se cargan en una sola consulta.
+  - `GET /users/{id}`: 404 si no existe o el id no es UUID.
+  - `PUT /users/{id}`: parcial con `expectedVersion`.
+- `src/users/users.dto.ts`: los DTO solo validan tipos y forma (`IS_STRING`, `IS_BOOLEAN`, `ARRAY_MAX_SIZE`, `UNKNOWN_FIELD`). Formato, política de contraseñas y matriz rol/sistema siguen en el dominio, con los mismos `details[].field`. Las respuestas nunca incluyen el hash.
+- `src/systems/`:
+  - `GET /systems` devuelve `maxAccessTokenTtlSeconds` (`JWT_MAX_TTL_SECONDS`) para que el frontend valide.
+  - `PUT /systems/{code}` acepta un TTL de 1 a `JWT_MAX_TTL_SECONDS`, o devuelve `400 OUT_OF_RANGE`. Bloquea la fila, aplica `expectedVersion` (`409 VERSION_CONFLICT`) y audita `SYSTEM_UPDATED` con el TTL anterior y el nuevo. No publica eventos y solo afecta a emisiones futuras.
+- `src/common/openapi.ts`: `@ApiSuccess` describe la envoltura real (`data`, más `meta` en las listas paginadas) y `@ApiErrors` publica un ejemplo nombrado por cada código de error, agrupado por status.
+- Pruebas e2e HTTP (`test/admin.e2e-spec.ts`):
+  - 401 y 403 en cada ruta;
+  - creación con `Location` y auditoría del actor y del `X-Request-Id`;
+  - validación de DTO y de dominio, y campos no declarados;
+  - email duplicado, paginación y valores por defecto, 404;
+  - `VERSION_CONFLICT` y `LAST_ACTIVE_ADMIN`;
+  - TTL aplicado al siguiente login, sus límites y su auditoría;
+  - paths y ejemplos en `openapi.json`.
 
 ## Fase 6: Publicador del outbox hacia Kafka
 

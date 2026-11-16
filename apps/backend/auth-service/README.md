@@ -102,7 +102,19 @@ Endpoints disponibles:
 - `GET http://localhost:3001/api/auth/openapi.json` en desarrollo
 - `GET http://localhost:3001/docs` en desarrollo
 
-Las rutas de negocio futuras quedan bajo `/api/auth`. Swagger se rechaza en producción cuando `NODE_ENV=production`.
+Rutas de negocio bajo `/api/auth`:
+
+| Ruta | Acceso | Respuesta |
+| --- | --- | --- |
+| `POST /login` | Público | 200 token; 401 `INVALID_CREDENTIALS` |
+| `POST /users` | ADMIN | 201 + `Location`; 409 `EMAIL_ALREADY_EXISTS` |
+| `GET /users?page=&limit=` | ADMIN | Lista paginada ordenada por email (`limit` ≤ 100) |
+| `GET /users/{id}` | ADMIN | 200; 404 si no existe |
+| `PUT /users/{id}` | ADMIN | Parcial con `expectedVersion`; 409 `VERSION_CONFLICT` o `LAST_ACTIVE_ADMIN` |
+| `GET /systems` | ADMIN | Sistemas con `accessTokenTtlSeconds` y `maxAccessTokenTtlSeconds` |
+| `PUT /systems/{code}` | ADMIN | `{expectedVersion, accessTokenTtlSeconds}` entre 1 y `JWT_MAX_TTL_SECONDS` |
+
+Las rutas ADMIN aceptan un token ADMIN de cualquiera de los dos sistemas. Swagger documenta la envoltura completa y un ejemplo por cada código de error; se rechaza en producción cuando `NODE_ENV=production`.
 
 ## Validación
 

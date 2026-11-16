@@ -166,6 +166,35 @@ export class UsersService {
     private readonly hasher: PasswordHasher,
   ) {}
 
+  /** Página ordenada por email; las asignaciones se cargan en una consulta. */
+  async listUsers(
+    page: number,
+    limit: number,
+  ): Promise<{ items: UserView[]; total: number }> {
+    const manager = this.dataSource.manager;
+    const [users, total] = await manager.findAndCount(UserEntity, {
+      order: { email: 'ASC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+    const rows =
+      users.length === 0
+        ? []
+        : await manager.find(UserSystemEntity, {
+            where: { userId: In(users.map((user) => user.id)) },
+          });
+    const byUser = new Map<string, Assignment[]>();
+    for (const row of rows)
+      byUser.set(row.userId, [
+        ...(byUser.get(row.userId) ?? []),
+        { system: row.systemCode, role: row.role },
+      ]);
+    return {
+      items: users.map((user) => toView(user, byUser.get(user.id) ?? [])),
+      total,
+    };
+  }
+
   async findById(id: string): Promise<UserView> {
     if (!UUID_PATTERN.test(id)) throw notFound();
     const view = await this.loadView(this.dataSource.manager, id);
