@@ -1,6 +1,12 @@
-import { useFieldArray, useWatch, type UseFormReturn } from 'react-hook-form';
+import {
+  Controller,
+  useFieldArray,
+  useWatch,
+  type UseFormReturn,
+} from 'react-hook-form';
 import { Plus, Trash2 } from 'lucide-react';
 
+import { ProductSearchableSelect } from '@modules/inventory/products';
 import { DecimalMoneyInput } from '@shared/components/inputs/DecimalMoneyInput';
 import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
@@ -76,13 +82,18 @@ export function OrderLinesFieldArray({
                 <Label htmlFor={`lines.${index}.productId`}>
                   Producto UUID
                 </Label>
-                <Input
-                  id={`lines.${index}.productId`}
-                  placeholder="00000000-0000-4000-8000-000000000000"
-                  className="font-mono text-xs"
-                  disabled={disabled}
-                  aria-invalid={Boolean(errors?.productId)}
-                  {...form.register(`lines.${index}.productId`)}
+                <Controller
+                  control={form.control}
+                  name={`lines.${index}.productId`}
+                  render={({ field: productField }) => (
+                    <ProductSearchableSelect
+                      id={`lines.${index}.productId`}
+                      value={productField.value}
+                      onChange={productField.onChange}
+                      disabled={disabled}
+                      invalid={Boolean(errors?.productId)}
+                    />
+                  )}
                 />
                 {errors?.productId && (
                   <p className="text-xs text-destructive">
