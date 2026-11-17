@@ -1,5 +1,10 @@
 export { cn } from './cn';
 export {
+  InvalidAccessTokenError,
+  decodeAndValidateAccessToken,
+  isAccessTokenExpired,
+} from './access-token.util';
+export {
   MONEY_INTEGER_DIGITS,
   MONEY_PRECISION,
   MONEY_SCALE,
