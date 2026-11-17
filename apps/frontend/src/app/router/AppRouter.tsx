@@ -40,6 +40,11 @@ const ProductsPage = lazy(() =>
     default: module.ProductsPage,
   })),
 );
+const SystemsPage = lazy(() =>
+  import('@modules/administration/systems/page').then((module) => ({
+    default: module.SystemsPage,
+  })),
+);
 
 function RouteLoader() {
   return (
@@ -121,11 +126,7 @@ export function AppRouter() {
               path="/administration/systems"
               element={
                 <SystemTokenGuard roles={['ADMIN']}>
-                  <ModuleComingSoonPage
-                    title="Configuración de sistemas"
-                    phase={5}
-                    description="Vigencia JWT y configuración operativa por sistema."
-                  />
+                  <SystemsPage />
                 </SystemTokenGuard>
               }
             />
