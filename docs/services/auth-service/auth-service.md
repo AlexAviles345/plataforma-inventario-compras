@@ -2,7 +2,7 @@
 
 Las respuestas JSON de negocio siguen el [estándar común](../../standards/api-responses.md) y las credenciales siguen el [contrato de tokens y sesiones](../../standards/jwt-and-sessions.md).
 
-Estado: implementados PostgreSQL con migraciones, dominio de usuarios con outbox transaccional, bootstrap del primer ADMIN, login con JWT y los endpoints administrativos. El publicador del outbox hacia Kafka sigue planificado ([plan](./auth-implementation-plan.md)). No consulta a otros dominios por HTTP.
+Estado: implementados PostgreSQL con migraciones, dominio de usuarios con outbox transaccional, bootstrap del primer ADMIN, login con JWT, endpoints administrativos y publicador del outbox hacia Kafka (`auth.users.events`). Quedan las pruebas de aceptación y el cierre ([plan](./auth-implementation-plan.md)). No consulta a otros dominios por HTTP.
 
 ## Datos y seguridad
 

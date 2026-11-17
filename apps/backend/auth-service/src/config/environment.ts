@@ -75,7 +75,48 @@ export function validateEnvironment(
 
   Object.assign(result, databaseVariables(env, nodeEnvironment));
   Object.assign(result, jwtVariables(env));
+  Object.assign(result, outboxVariables(env, nodeEnvironment));
   return result;
+}
+
+/**
+ * Publicador del outbox. Fuera de producción apunta al Kafka del Compose
+ * (puerto publicado en loopback). Desactivarlo no pierde eventos: quedan en
+ * `outbox_events` y se publican cuando vuelva a activarse.
+ */
+function outboxVariables(
+  env: Record<string, unknown>,
+  nodeEnvironment: string,
+): Record<string, unknown> {
+  const enabled = env.OUTBOX_PUBLISHER_ENABLED ?? 'true';
+  if (enabled !== 'true' && enabled !== 'false')
+    throw new Error('OUTBOX_PUBLISHER_ENABLED debe ser true o false');
+
+  const production = nodeEnvironment === 'production';
+  const raw =
+    env.KAFKA_BOOTSTRAP_SERVERS ?? (production ? undefined : 'localhost:9092');
+  if (typeof raw !== 'string' || raw.trim() === '')
+    throw new Error(
+      production
+        ? 'KAFKA_BOOTSTRAP_SERVERS es obligatorio en producción'
+        : 'KAFKA_BOOTSTRAP_SERVERS no puede estar vacío',
+    );
+  const brokers = raw.split(',').map((broker) => broker.trim());
+  if (brokers.some((broker) => !/^[A-Za-z0-9.-]+:\d{1,5}$/.test(broker)))
+    throw new Error(
+      'KAFKA_BOOTSTRAP_SERVERS debe ser una lista host:puerto separada por comas',
+    );
+
+  return {
+    OUTBOX_PUBLISHER_ENABLED: enabled === 'true',
+    KAFKA_BOOTSTRAP_SERVERS: brokers.join(','),
+    OUTBOX_POLL_INTERVAL_MS: integer(
+      env,
+      'OUTBOX_POLL_INTERVAL_MS',
+      1000,
+      60_000,
+    ),
+  };
 }
 
 /**

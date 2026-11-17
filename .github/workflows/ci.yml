@@ -64,15 +64,28 @@ jobs:
           cache: npm
           cache-dependency-path: apps/backend/auth-service/package-lock.json
       - run: npm ci --ignore-scripts
+      # Único paquete con script de instalación: descarga el binario de librdkafka.
+      - run: npm rebuild @confluentinc/kafka-javascript
       - run: npm run format:check
       - run: npm run lint
       - run: npm run build
       - run: npm test -- --runInBand
+      - name: Start Kafka and create topics
+        working-directory: .
+        run: |
+          docker compose -f docker-compose.example.yml up -d --wait kafka
+          docker compose -f docker-compose.example.yml run --rm kafka-init
       - run: npm run test:e2e -- --runInBand
+        env:
+          KAFKA_E2E: 'true'
+          KAFKA_BOOTSTRAP_SERVERS: localhost:9092
       - run: node dist/database/migrate.js run
       - run: node dist/database/migrate.js show
       - run: npm audit --registry=https://registry.npmjs.org/ --omit=dev --audit-level=high
       - run: docker build -t techdistribution-auth .
+      - if: always()
+        working-directory: .
+        run: docker compose -f docker-compose.example.yml down -v
   gateway:
     runs-on: ubuntu-latest
     defaults:

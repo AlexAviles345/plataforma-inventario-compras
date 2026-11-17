@@ -1,7 +1,7 @@
 FROM node:24-bookworm-slim AS build
 WORKDIR /app
 COPY package*.json .npmrc ./
-RUN npm ci --ignore-scripts
+RUN npm ci --ignore-scripts && npm rebuild @confluentinc/kafka-javascript
 COPY nest-cli.json tsconfig*.json ./
 COPY src ./src
 RUN npm run build && npm prune --omit=dev --ignore-scripts

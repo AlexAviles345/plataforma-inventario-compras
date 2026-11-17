@@ -36,7 +36,11 @@ describe('validateEnvironment', () => {
 
   it('disables documentation by default in production', () => {
     expect(
-      validate({ NODE_ENV: 'production', ...PRODUCTION_DATABASE }),
+      validate({
+        NODE_ENV: 'production',
+        ...PRODUCTION_DATABASE,
+        KAFKA_BOOTSTRAP_SERVERS: 'kafka:29092',
+      }),
     ).toMatchObject({ DOCS_ENABLED: false, DB_HOST: 'auth-db' });
   });
 
@@ -46,6 +50,7 @@ describe('validateEnvironment', () => {
         NODE_ENV: 'production',
         DOCS_ENABLED: 'true',
         ...PRODUCTION_DATABASE,
+        KAFKA_BOOTSTRAP_SERVERS: 'kafka:29092',
       }),
     ).toThrow(/producción/);
   });
@@ -99,6 +104,38 @@ describe('validateEnvironment', () => {
       expect(() =>
         validateDatabaseEnvironment({ NODE_ENV: 'production' }),
       ).toThrow(/DB_HOST/);
+    });
+  });
+
+  describe('outbox publisher', () => {
+    it('defaults to the local Kafka and an enabled publisher', () => {
+      expect(validate()).toMatchObject({
+        OUTBOX_PUBLISHER_ENABLED: true,
+        KAFKA_BOOTSTRAP_SERVERS: 'localhost:9092',
+        OUTBOX_POLL_INTERVAL_MS: 1000,
+      });
+    });
+
+    it('accepts a comma-separated broker list and normalizes spaces', () => {
+      expect(
+        validate({ KAFKA_BOOTSTRAP_SERVERS: 'kafka-1:9092, kafka-2:9092' }),
+      ).toMatchObject({ KAFKA_BOOTSTRAP_SERVERS: 'kafka-1:9092,kafka-2:9092' });
+    });
+
+    it('requires the brokers in production', () => {
+      expect(() =>
+        validate({ NODE_ENV: 'production', ...PRODUCTION_DATABASE }),
+      ).toThrow(/KAFKA_BOOTSTRAP_SERVERS es obligatorio en producción/);
+    });
+
+    it.each([
+      ['KAFKA_BOOTSTRAP_SERVERS', 'kafka'],
+      ['KAFKA_BOOTSTRAP_SERVERS', 'http://kafka:9092'],
+      ['OUTBOX_PUBLISHER_ENABLED', 'yes'],
+      ['OUTBOX_POLL_INTERVAL_MS', '0'],
+      ['OUTBOX_POLL_INTERVAL_MS', '60001'],
+    ])('rejects %s=%p', (key, value) => {
+      expect(() => validate({ [key]: value })).toThrow(key);
     });
   });
 

@@ -69,6 +69,9 @@ async function main(): Promise<number> {
   } catch {
     // Sin .env se usan las variables del proceso y los valores locales por defecto.
   }
+  // Comando de vida corta: el evento queda en el outbox y lo publica el
+  // servicio Auth. No se conecta a Kafka ni retrasa la salida si no está.
+  process.env.OUTBOX_PUBLISHER_ENABLED = 'false';
   const app = await NestFactory.createApplicationContext(AppModule, {
     logger: ['error', 'warn'],
   });

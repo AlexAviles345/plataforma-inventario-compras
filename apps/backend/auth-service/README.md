@@ -4,7 +4,7 @@ Base ejecutable del servicio de autenticación de TechDistribution. Usa NestJS 1
 
 ## Requisitos
 
-- Node.js 24.11 o posterior dentro de la rama 24.x (mínimo exigido por TypeORM 1.x).
+- Node.js 24.11 o posterior dentro de la rama 24.x (mínimo exigido por TypeORM 1.x). Es obligatorio para el publicador de Kafka: `@confluentinc/kafka-javascript` solo publica binarios precompilados para versiones LTS de Node, y en otras versiones no carga.
 - npm 11.x.
 - Acceso al mirror npm configurado en `.npmrc`.
 - PostgreSQL de Auth en ejecución (`postgres-auth` del Compose de ejemplo, puerto local 5432).
@@ -32,6 +32,9 @@ copy .env.example .env
 | `JWT_SECRET` | **ninguno, obligatorio** | Secreto HS256 de al menos 32 bytes; el mismo del Gateway |
 | `JWT_ISSUER` / `JWT_AUDIENCE` | techdistribution-auth / techdistribution-api | Deben coincidir con el Gateway y los servicios |
 | `JWT_MAX_TTL_SECONDS` | 900 | Vigencia máxima del access token (1–3600) |
+| `KAFKA_BOOTSTRAP_SERVERS` | localhost:9092 (obligatorio en producción) | Brokers `host:puerto` separados por comas |
+| `OUTBOX_PUBLISHER_ENABLED` | true | `false` deja los eventos acumulados en el outbox |
+| `OUTBOX_POLL_INTERVAL_MS` | 1000 | Pausa entre rondas del publicador cuando no hay trabajo (1–60000) |
 
 En producción `DB_HOST`, `DB_NAME`, `DB_USER` y `DB_PASSWORD` son obligatorios y no tienen valores por defecto. `JWT_SECRET` es obligatorio en todos los entornos y rechaza los valores de ejemplo: copia en `.env` el mismo `JWT_SECRET` de `apps/backend/api-gateway/.env`. `migrate.js` solo valida las variables de PostgreSQL.
 
@@ -88,6 +91,19 @@ curl -X POST http://localhost:3001/api/auth/login -H "Content-Type: application/
 `UsersService` (`src/users`) crea y actualiza usuarios. Cada cambio se guarda en una sola transacción junto con sus asignaciones, el incremento de `version`, la fila de `auth_audit_log` y, si cambia el snapshot público, el evento `UserCreated`/`UserUpdated` en `outbox_events`. El evento se valida con `ajv` contra `src/events/schemas/`, copia de `contracts/events/`; una prueba unitaria falla si las copias dejan de coincidir con el original, así que al cambiar un contrato hay que copiar de nuevo ambos archivos.
 
 Las contraseñas se guardan con Argon2id y nunca aparecen en respuestas, eventos, auditoría ni logs.
+
+## Publicación en Kafka
+
+El servicio publica `outbox_events` en `auth.users.events` (`src/outbox/`). La key es el UUID del usuario y el valor es el evento JSON completo.
+
+- **Orden:** cada ronda reclama solo el evento no publicado de menor versión de cada usuario. Hay como máximo un envío en curso por usuario, y la versión siguiente espera a que la anterior quede `PUBLISHED`. Varias réplicas pueden convivir: el reclamo es un `UPDATE` condicional con lease de 60 s.
+- **Entrega:** el productor es idempotente con `acks=all`. Un evento queda `PUBLISHED` solo tras el acknowledgement. Si el proceso cae antes de marcarlo, el lease vence y se reenvía el mismo `eventId`; los consumidores lo deduplican.
+- **Fallos:**
+  - Un envío fallido vuelve a `PENDING` con backoff exponencial y jitter (1 s, 2 s, 4 s… hasta 5 min), sin límite de intentos y con un `last_error` saneado.
+  - Con Kafka caído, el HTTP funciona igual. El productor reintenta conectar en segundo plano y los eventos esperan sin gastar intentos.
+- **Retención:** las filas publicadas se borran a los 30 días.
+- **Binario nativo:** `npm ci --ignore-scripts` no descarga el binario de librdkafka. Tras instalar, ejecuta una vez `npm rebuild @confluentinc/kafka-javascript`, como hacen el Dockerfile y CI. Si tu Node no es 24.x, arranca con `OUTBOX_PUBLISHER_ENABLED=false`.
+- **Pruebas contra un broker real:** se activan con `KAFKA_E2E=true`. Requieren Kafka con los tópicos creados (`docker compose -f docker-compose.example.yml up -d --wait kafka` y luego `run --rm kafka-init`) y el binario nativo.
 
 ## Ejecución
 

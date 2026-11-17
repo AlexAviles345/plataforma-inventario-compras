@@ -140,10 +140,26 @@ Este documento detalla el plan técnico secuencial para implementar el microserv
   - TTL aplicado al siguiente login, sus límites y su auditoría;
   - paths y ejemplos en `openapi.json`.
 
-## Fase 6: Publicador del outbox hacia Kafka
+## Fase 6: Publicador del outbox hacia Kafka — [COMPLETADA]
 
-- Publicación en `auth.users.events` con key `aggregateId`, un evento en vuelo por agregado y en orden de versión, productor idempotente y `acks=all`.
-- `PUBLISHED` solo tras el acknowledgement; reintentos con backoff exponencial y jitter; leases vencidos recuperables.
+- `src/outbox/outbox-publisher.ts`:
+  - **Reclamo:** cada ronda reclama solo la cabeza de cada agregado (`DISTINCT ON (aggregate_id) … ORDER BY entity_version` entre las filas no publicadas). El reclamo es un `UPDATE` condicional sobre `PENDING` vencido o `PUBLISHING` con lease (60 s) expirado, por lo que hay un solo envío en curso por agregado, en orden de versión, aunque haya varias réplicas.
+  - **Marcado:** `PUBLISHED` solo tras el acknowledgement y solo si el worker conserva el lease. Un fallo vuelve a `PENDING` con `next_attempt_at` según backoff exponencial con jitter (1 s → 5 min, sin límite de intentos) y `last_error` saneado de una línea, sin payload.
+  - **Ciclo:** `start()` no espera a Kafka; la conexión se intenta dentro del ciclo con backoff y los eventos esperan sin gastar intentos. Borra cada hora las filas publicadas hace más de 30 días. El comando `bootstrap:admin` no arranca el publicador.
+- `src/outbox/kafka-transport.ts`: `@confluentinc/kafka-javascript` 1.11 (librdkafka 2.16) con API KafkaJS, `idempotent: true`, `acks: -1`, `message.timeout.ms` de 30 s y logs JSON propios.
+  - La librería se carga al conectar, así que Auth funciona sin el binario mientras el publicador esté desactivado.
+  - Hay un único productor: si el broker no responde, `connect()` deja de esperar a los 10 s pero el intento sigue en segundo plano, sin acumular productores.
+- Configuración: `KAFKA_BOOTSTRAP_SERVERS` (obligatorio en producción), `OUTBOX_PUBLISHER_ENABLED` y `OUTBOX_POLL_INTERVAL_MS`.
+- Binario nativo: solo existen binarios precompilados para versiones LTS de Node. El Dockerfile y CI ejecutan `npm rebuild @confluentinc/kafka-javascript` después de `npm ci --ignore-scripts`.
+- Pruebas:
+  - unitarias de backoff, saneamiento y configuración;
+  - e2e del publicador con transporte simulado sobre PostgreSQL:
+    - key y valor del mensaje, marcado `PUBLISHED`;
+    - orden por agregado, backoff sin saltar versiones, `last_error` sin payload;
+    - lease vencido recuperado, lease vivo respetado, fencing al perder el lease;
+    - dos publicadores en carrera, retención de 30 días, ciclo automático y conexión fallida al arrancar.
+  - `test/kafka.e2e-spec.ts` contra un broker real, con `KAFKA_E2E=true`: orden, key y partición únicas por usuario; Kafka inalcanzable deja el evento `PENDING` sin intentos y se entrega al volver.
+  - CI levanta Kafka del Compose para ejecutarlas. Se verificó además con la imagen Docker: publica el evento del bootstrap y, con Kafka caído, `/health/ready` responde 200.
 
 ## Fase 7: Pruebas de aceptación, CI y documentación final
 
