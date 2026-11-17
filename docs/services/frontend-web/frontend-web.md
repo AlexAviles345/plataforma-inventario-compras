@@ -2,7 +2,7 @@
 
 Aplicación web empresarial unificada (SPA monolítica modular) en **React 19 + TypeScript 5 + Vite 6**, estilizada con **Tailwind CSS v4 + shadcn/ui (Radix UI)**, que consume exclusivamente el [API Gateway](../api-gateway/api-gateway.md) bajo `/api/**` y cumple el [estándar de respuestas HTTP](../../standards/api-responses.md), el [contrato de access tokens y sesiones](../../standards/jwt-and-sessions.md) y las [reglas comunes](../../standards/guidelines.md).
 
-Estado: planificación general y [plan detallado de implementación por fases](./frontend-implementation-plan.md) definidos en documentación. En desarrollo se ejecuta sobre Node 24 con recarga en caliente y proxy local hacia `http://localhost:3000`; en despliegues accesibles se sirve detrás de [Nginx como capa edge](../../infrastructure/nginx-edge.md) en `/`.
+Estado: **Fase 1 implementada** en `apps/frontend`; incluye el scaffold ejecutable, Tailwind CSS v4, tema y primitivas `shadcn/ui`, contratos HTTP y utilidades transversales. Las fases funcionales 2 a 6 permanecen planificadas en el [plan detallado de implementación](./frontend-implementation-plan.md). En desarrollo se ejecuta sobre Node 24 con recarga en caliente y proxy local hacia `http://localhost:3000`; en despliegues accesibles se servirá detrás de [Nginx como capa edge](../../infrastructure/nginx-edge.md) en `/`.
 
 ## Alcance y principios arquitectónicos
 

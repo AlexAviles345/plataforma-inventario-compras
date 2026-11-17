@@ -246,7 +246,10 @@ apps/frontend/
 
 ## 3. Planificación Detallada por Fases
 
-### Fase 1: Scaffold Vite + TypeScript, Tailwind CSS v4, `shadcn/ui` y Arquitectura Base (`(shared)`)
+### Fase 1: Scaffold Vite + TypeScript, Tailwind CSS v4, `shadcn/ui` y Arquitectura Base (`(shared)`) — COMPLETADA
+
+**Estado:** completada el 17 de noviembre de 2026. La implementación está disponible en `apps/frontend` y fue validada mediante formato, lint, comprobación de tipos y build de producción.
+
 **Objetivo:** Inicializar `apps/frontend` como paquete compatible con el supervisor de la raíz (`npm run dev`), configurar los alias de importación (`@shared/*`, `@modules/*`, `@auth/*`), instalar Tailwind CSS v4 + primitivas base de `shadcn/ui` y construir los tipos y utilidades transversales.
 
 - **Entregables:**
@@ -256,6 +259,13 @@ apps/frontend/
      - `decimal-money.util.ts` con `decimal.js` para cálculo exacto de importes `(18, 2)`, validación de escala máxima de 2 decimales y formateo en `MXN`.
      - `date-utc.util.ts` para formatear timestamps ISO 8601 UTC provenientes de los tres microservicios.
   4. Contratos TypeScript en `src/app/(shared)/types/` para el sobre estándar (`ApiSuccessResponse<T>`, `ApiErrorResponse`, `FieldErrorDetail`, `PaginationMeta`) y catálogo completo de códigos de error (`VALIDATION_ERROR`, `VERSION_CONFLICT`, `IDEMPOTENCY_CONFLICT`, `PROJECTION_NOT_READY`, `PRODUCT_INACTIVE`, `ORDER_STATE_CONFLICT`).
+
+- **Evidencia de cierre:**
+  - Scaffold de React/Vite con puerto fijo `5173`, alias de TypeScript/Vite y proxy `/api` configurable mediante `API_PROXY_TARGET`.
+  - Dieciséis primitivas `shadcn/ui`, tema claro/oscuro y tokens semánticos compartidos.
+  - Contratos de éxito/error/paginación y catálogo transversal de códigos de error.
+  - Utilidades de dinero exacto con `decimal.js`, validación `numeric(18,2)` y fechas ISO 8601 UTC.
+  - Scripts reproducibles `dev`, `build`, `typecheck`, `lint`, `format` y `format:check`.
 
 ---
 
