@@ -8,5 +8,6 @@ export function useOrderDetail(orderId?: string) {
     queryKey: orderQueryKeys.detail(orderId ?? ''),
     queryFn: () => getPurchaseOrder(orderId ?? ''),
     enabled: Boolean(orderId),
+    refetchOnMount: 'always',
   });
 }
