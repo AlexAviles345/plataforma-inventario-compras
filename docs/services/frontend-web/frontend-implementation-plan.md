@@ -365,7 +365,9 @@ La implementación frontend está completa, pero no se considera evidencia de fu
 
 ---
 
-### Fase 5: Módulo de Administración (`modules/administration`) — Usuarios, Asignaciones y Sistemas
+### Fase 5: Módulo de Administración (`modules/administration`) — Usuarios, Asignaciones y Sistemas — COMPLETADA EN FRONTEND
+
+**Estado:** completada en el frontend el 17 de noviembre de 2026 contra el contrato planificado de `auth-service`. Auth todavía mantiene solo su scaffold y no define una ruta de consulta de usuarios, limitaciones que se representan explícitamente en la interfaz.
 
 **Objetivo:** Implementar las pantallas exclusivas para el rol `ADMIN` conectadas a `/api/auth/users` y `/api/auth/systems`.
 
@@ -375,6 +377,15 @@ La implementación frontend está completa, pero no se considera evidencia de fu
      - Actualización (`PUT /api/auth/users/{id}`) con `expectedVersion`, edición de asignaciones y desactivación (`active: false`), mostrando el error de protección si se intenta desactivar al último administrador activo.
   2. **Configuración de Sistemas y Vigencia JWT (`systems/page.tsx`, `SystemsCatalogCards.tsx`, `SystemTtlEditDialog.tsx`):**
      - Consulta `GET /api/auth/systems` y permite actualizar la duración de futuros access tokens (`PUT /api/auth/systems/{code}` con `expectedVersion`, respetando el límite `<= JWT_MAX_TTL_SECONDS`).
+
+- **Evidencia de cierre:**
+  - Rutas `/administration/users` y `/administration/systems` protegidas por rol `ADMIN` y cargadas de forma diferida.
+  - Formularios React Hook Form + Zod para creación y actualización de usuarios, normalización de correo, contraseña inicial no persistida y matriz válida de un rol por sistema.
+  - Actualización de usuario con `expectedVersion`, desactivación lógica, aviso de protección del último administrador y manejo normalizado de errores del Gateway.
+  - Catálogo de sistemas con lectura de TTL, equivalencia visual en minutos y actualización concurrente mediante `expectedVersion`.
+  - Caché exclusivamente en memoria para usuarios creados o actualizados en la sesión y edición manual por UUID/versión; no se inventa una operación `GET /api/auth/users` ausente del contrato.
+
+La implementación frontend está completa, pero la operación extremo a extremo depende de implementar el dominio de Auth. Para obtener un catálogo administrativo completo, el contrato de Auth deberá incorporar en una fase posterior una consulta paginada de usuarios.
 
 ---
 
