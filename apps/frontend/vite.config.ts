@@ -15,9 +15,9 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@': fromSource(''),
-        '@shared': fromSource('app/(shared)'),
-        '@modules': fromSource('app/(modules)'),
-        '@auth': fromSource('app/(auth)'),
+        '@shared': fromSource('app/shared'),
+        '@modules': fromSource('app/modules'),
+        '@auth': fromSource('app/auth'),
       },
     },
     server: {

@@ -22,7 +22,7 @@ Este documento detalla la arquitectura modular mejorada, las decisiones tecnoló
 
 ### 1.2 Sistema de Diseño e Interfaz (`shadcn/ui` + Tailwind CSS)
 - **Tailwind CSS v4** con variables CSS semánticas (soporte nativo para tema claro/oscuro y paleta empresarial sobria estilo *Linear / Vercel*).
-- **`shadcn/ui` (basado en Radix UI + Lucide Icons):** componentes accesibles alojados en `src/app/(shared)/components/ui/` (`Button`, `Input`, `Dialog`, `Sheet`, `Table`, `Badge`, `Command`, `Popover`, `Select`, `Tabs`, `Tooltip`, `DropdownMenu`, `Skeleton`).
+- **`shadcn/ui` (basado en Radix UI + Lucide Icons):** componentes accesibles alojados en `src/app/shared/components/ui/` (`Button`, `Input`, `Dialog`, `Sheet`, `Table`, `Badge`, `Command`, `Popover`, `Select`, `Tabs`, `Tooltip`, `DropdownMenu`, `Skeleton`).
 - **Notificaciones (`Sonner`):** toasts estructurados que muestran mensajes de negocio, el código de error (`code`), detalles por campo (`details[]`) y el `X-Request-Id` copiable para auditoría.
 
 ### 1.3 Estado de Servidor, Caché y Comunicación con el API Gateway
@@ -38,9 +38,9 @@ Este documento detalla la arquitectura modular mejorada, las decisiones tecnoló
 - **`decimal.js` para Dinero Exacto (`MXN`):** cálculo sin pérdida de precisión de `lineTotal = quantity * unitPrice` y `totalAmount` en el formulario maestro-detalle de órdenes (hasta 100 líneas), serializando `unitPrice` siempre como `string` con dos decimales (`"1250.50"`).
 - **TanStack Table v8:** tablas empresariales reutilizables (`DataTable.tsx`) conectadas al objeto `meta: { page, limit, total, totalPages }` del estándar HTTP.
 
-### 1.5 Arquitectura Modular por Grupos de Dominio (Inspirada en Next App Router, Optimizada para Vite SPA)
-Tomando como base la estructura de referencia (`src/app/(auth)`, `src/app/(modules)`, `src/app/(shared)` y submódulos con `components/`, `config/`, `hooks/`, `services/`, `types/`, `index.ts`, `page.tsx`), se aplican las siguientes **mejoras arquitectónicas**:
-1. **Unificación de la capa compartida en `src/app/(shared)/`:** se elimina la duplicación de carpetas `components/`, `services/` y `types/` en la raíz de `src/`. Todo código transversal vive en `src/app/(shared)/` y se importa mediante el alias `@shared/*`.
+### 1.5 Arquitectura Modular por Grupos de Dominio para Vite SPA
+La estructura usa carpetas ordinarias de React/Vite (`src/app/auth`, `src/app/modules` y `src/app/shared`), sin los grupos de rutas entre paréntesis propios de Next App Router. Los submódulos conservan `components/`, `config/`, `hooks/`, `services/`, `types/`, `index.ts` y `page.tsx` como organización interna sin semántica especial del framework:
+1. **Unificación de la capa compartida en `src/app/shared/`:** se elimina la duplicación de carpetas `components/`, `services/` y `types/` en la raíz de `src/`. Todo código transversal vive en `src/app/shared/` y se importa mediante el alias `@shared/*`.
 2. **Aislamiento estricto entre módulos (`@modules/*`):** cada módulo de dominio (`administration`, `inventory`, `purchases`, `dashboard`) contiene sus propios `components/`, `config/`, `hooks/`, `schemas/`, `services/`, `types/`, `index.ts` y `page.tsx`. Un módulo nunca importa archivos internos de otro módulo; solo consume `@shared/*`.
 3. **Almacenamiento temporal de borradores (`draftStorage`):** al igual que el patrón `registrationDraftStorage.ts`, el formulario de creación de órdenes incluye persistencia local opcional de borrador en sesión junto con su `Idempotency-Key` activa hasta que el servidor confirma el `201 Created`.
 
@@ -60,7 +60,7 @@ apps/frontend/
 │   └── favicon.svg
 ├── src/
 │   ├── app/
-│   │   ├── (auth)/                                     # Grupo de rutas públicas de autenticación
+│   │   ├── auth/                                       # Rutas públicas de autenticación
 │   │   │   ├── login/
 │   │   │   │   ├── components/
 │   │   │   │   │   ├── LoginFormCard.tsx               # Formulario con selector de sistema (INVENTORY / PURCHASES)
@@ -79,7 +79,7 @@ apps/frontend/
 │   │   │   │   └── page.tsx
 │   │   │   └── layout.tsx                              # Layout limpio centrado para pantallas de acceso
 │   │   │
-│   │   ├── (modules)/                                  # Grupo de rutas protegidas del ERP / Backoffice
+│   │   ├── modules/                                    # Rutas protegidas del ERP / Backoffice
 │   │   │   ├── dashboard/                              # Resumen operativo y estado de tokens por sistema
 │   │   │   │   ├── components/
 │   │   │   │   │   ├── ActiveSystemSessionCard.tsx
@@ -176,7 +176,7 @@ apps/frontend/
 │   │   │   │
 │   │   │   └── layout.tsx                              # Shell autenticado con DynamicSidebar, Header y Breadcrumb
 │   │   │
-│   │   ├── (shared)/                                   # Capa transversal única (@shared/*)
+│   │   ├── shared/                                     # Capa transversal única (@shared/*)
 │   │   │   ├── components/
 │   │   │   │   ├── cards/
 │   │   │   │   │   └── SummaryStatCard.tsx
@@ -246,7 +246,7 @@ apps/frontend/
 
 ## 3. Planificación Detallada por Fases
 
-### Fase 1: Scaffold Vite + TypeScript, Tailwind CSS v4, `shadcn/ui` y Arquitectura Base (`(shared)`) — COMPLETADA
+### Fase 1: Scaffold Vite + TypeScript, Tailwind CSS v4, `shadcn/ui` y Arquitectura Base (`shared`) — COMPLETADA
 
 **Estado:** completada el 17 de noviembre de 2026. La implementación está disponible en `apps/frontend` y fue validada mediante formato, lint, comprobación de tipos y build de producción.
 
@@ -254,11 +254,11 @@ apps/frontend/
 
 - **Entregables:**
   1. `package.json`, `tsconfig.json`, `vite.config.ts` (con proxy `/api` $\rightarrow$ `http://localhost:3000` en desarrollo y puerto local `5173`), `.env.example` y configuración de ESLint/Prettier.
-  2. Inicialización de `shadcn/ui` en `src/app/(shared)/components/ui/` (`button`, `input`, `label`, `card`, `badge`, `dialog`, `sheet`, `table`, `select`, `command`, `popover`, `sonner`, `skeleton`, `separator`, `dropdown-menu`, `tooltip`).
-  3. Utilidades transversales en `src/app/(shared)/utils/`:
+  2. Inicialización de `shadcn/ui` en `src/app/shared/components/ui/` (`button`, `input`, `label`, `card`, `badge`, `dialog`, `sheet`, `table`, `select`, `command`, `popover`, `sonner`, `skeleton`, `separator`, `dropdown-menu`, `tooltip`).
+  3. Utilidades transversales en `src/app/shared/utils/`:
      - `decimal-money.util.ts` con `decimal.js` para cálculo exacto de importes `(18, 2)`, validación de escala máxima de 2 decimales y formateo en `MXN`.
      - `date-utc.util.ts` para formatear timestamps ISO 8601 UTC provenientes de los tres microservicios.
-  4. Contratos TypeScript en `src/app/(shared)/types/` para el sobre estándar (`ApiSuccessResponse<T>`, `ApiErrorResponse`, `FieldErrorDetail`, `PaginationMeta`) y catálogo completo de códigos de error (`VALIDATION_ERROR`, `VERSION_CONFLICT`, `IDEMPOTENCY_CONFLICT`, `PROJECTION_NOT_READY`, `PRODUCT_INACTIVE`, `ORDER_STATE_CONFLICT`).
+  4. Contratos TypeScript en `src/app/shared/types/` para el sobre estándar (`ApiSuccessResponse<T>`, `ApiErrorResponse`, `FieldErrorDetail`, `PaginationMeta`) y catálogo completo de códigos de error (`VALIDATION_ERROR`, `VERSION_CONFLICT`, `IDEMPOTENCY_CONFLICT`, `PROJECTION_NOT_READY`, `PRODUCT_INACTIVE`, `ORDER_STATE_CONFLICT`).
 
 - **Evidencia de cierre:**
   - Scaffold de React/Vite con puerto fijo `5173`, alias de TypeScript/Vite y proxy `/api` configurable mediante `API_PROXY_TARGET`.
@@ -269,25 +269,25 @@ apps/frontend/
 
 ---
 
-### Fase 2: Cliente HTTP, Interceptores, Store de Sesión Multi-Sistema y Shell de Navegación (`(auth)` + Layouts)
+### Fase 2: Cliente HTTP, Interceptores, Store de Sesión Multi-Sistema y Shell de Navegación (`auth` + Layouts)
 **Objetivo:** Implementar la capa de red conectada al API Gateway, el manejo de tokens JWT por sistema (`INVENTORY` y `PURCHASES`), la política global de reintentos ante proyecciones en vuelo y el flujo de Login + Layout protegido.
 
 - **Entregables:**
-  1. `src/app/(shared)/stores/auth-session.store.ts` (Zustand):
+  1. `src/app/shared/stores/auth-session.store.ts` (Zustand):
      - Almacena en memoria los access tokens emitidos para `INVENTORY` y `PURCHASES`, decodifica sus claims (`sub`, `email`, `role`, `system`, `iat`, `exp`), detecta expiración y expone selectores de permisos (`isAdmin`, `canAccessInventory`, `canAccessPurchases`).
-  2. `src/app/(shared)/services/http-client.ts` y `query-client.config.ts`:
+  2. `src/app/shared/services/http-client.ts` y `query-client.config.ts`:
      - Adjunta el `Bearer` token del sistema requerido por cada prefijo (`/api/inventory/*` usa el token `INVENTORY`; `/api/purchases/*` usa el token `PURCHASES`; `/api/auth/*` usa el token administrativo activo).
      - Desempaqueta automáticamente la respuesta exitosa y adjunta `requestId` (`X-Request-Id`).
      - Configura en **TanStack Query** el reintento automático cuando una consulta o mutación segura recibe `409 PROJECTION_NOT_READY`, esperando el número de segundos indicado en el header `Retry-After` (por defecto `2s`, hasta 4 intentos) y activando el componente `ProjectionSyncBanner.tsx`.
-  3. Módulo `(auth)/login/`:
+  3. Módulo `auth/login/`:
      - Pantalla de inicio de sesión con selección de sistema destino (`INVENTORY` o `PURCHASES`), conectada a `POST /api/auth/login`.
      - Modo de asistencia para desarrollo local (solo en `import.meta.env.DEV`): permite pegar un token generado con `python manage.py generate_dev_token` para probar módulos individuales aunque `auth-service` esté apagado.
-  4. Shell principal `(modules)/layout.tsx`:
+  4. Shell principal `modules/layout.tsx`:
      - `DynamicSidebar.tsx`, `Header.tsx`, `SystemSwitcher.tsx` (permite cambiar entre `INVENTORY` y `PURCHASES` o solicitar credenciales del segundo sistema sin perder la sesión del primero), `BreadcrumbNav.tsx` y `ProtectedRouteGuard.tsx`.
 
 ---
 
-### Fase 3: Módulo de Compras (`(modules)/purchases/orders`) — Órdenes, Líneas, Snapshots, Concurrencia e Idempotencia
+### Fase 3: Módulo de Compras (`modules/purchases/orders`) — Órdenes, Líneas, Snapshots, Concurrencia e Idempotencia
 **Objetivo:** Construir el módulo completo de órdenes de compra aprovechando que `purchases-service` ya tiene sus 5 fases implementadas en el backend.
 
 - **Entregables:**
@@ -308,7 +308,7 @@ apps/frontend/
 
 ---
 
-### Fase 4: Módulo de Inventario (`(modules)/inventory/products`) — Catálogo, Stock y Control Optimista
+### Fase 4: Módulo de Inventario (`modules/inventory/products`) — Catálogo, Stock y Control Optimista
 **Objetivo:** Implementar la interfaz de gestión del catálogo de productos y correcciones explícitas de existencias conectada a `/api/inventory/products`.
 
 - **Entregables:**
@@ -323,7 +323,7 @@ apps/frontend/
 
 ---
 
-### Fase 5: Módulo de Administración (`(modules)/administration`) — Usuarios, Asignaciones y Sistemas
+### Fase 5: Módulo de Administración (`modules/administration`) — Usuarios, Asignaciones y Sistemas
 **Objetivo:** Implementar las pantallas exclusivas para el rol `ADMIN` conectadas a `/api/auth/users` y `/api/auth/systems`.
 
 - **Entregables:**
