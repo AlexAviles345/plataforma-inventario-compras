@@ -6,11 +6,12 @@ import {
   CardHeader,
   CardTitle,
 } from '@shared/components/ui/card';
+import { formatMxn } from '@shared/utils/decimal-money.util';
 
 const foundations = [
   ['React 19', 'Interfaz modular y tipada'],
   ['Vite 6', 'Desarrollo rápido en el puerto 5173'],
-  ['Tailwind CSS 4', 'Sistema visual basado en tokens'],
+  ['Dinero exacto', `Importes seguros como ${formatMxn('1250.50')}`],
 ];
 
 export function FoundationPage() {
