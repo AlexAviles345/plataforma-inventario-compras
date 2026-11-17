@@ -8,6 +8,8 @@ const segmentLabels: Record<string, string> = {
   products: 'Productos',
   purchases: 'Compras',
   orders: 'Órdenes',
+  new: 'Nueva orden',
+  edit: 'Editar',
   administration: 'Administración',
   users: 'Usuarios',
   systems: 'Sistemas',

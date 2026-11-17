@@ -20,6 +20,21 @@ const DashboardPage = lazy(() =>
     default: module.DashboardPage,
   })),
 );
+const OrdersPage = lazy(() =>
+  import('@modules/purchases/orders/page').then((module) => ({
+    default: module.OrdersPage,
+  })),
+);
+const OrderFormPage = lazy(() =>
+  import('@modules/purchases/orders/new/page').then((module) => ({
+    default: module.OrderFormPage,
+  })),
+);
+const OrderDetailPage = lazy(() =>
+  import('@modules/purchases/orders/detail/page').then((module) => ({
+    default: module.OrderDetailPage,
+  })),
+);
 
 function RouteLoader() {
   return (
@@ -61,11 +76,31 @@ export function AppRouter() {
               path="/purchases/orders"
               element={
                 <SystemTokenGuard system="PURCHASES">
-                  <ModuleComingSoonPage
-                    title="Órdenes de compra"
-                    phase={3}
-                    description="Captura maestro-detalle, transiciones e historial auditable."
-                  />
+                  <OrdersPage />
+                </SystemTokenGuard>
+              }
+            />
+            <Route
+              path="/purchases/orders/new"
+              element={
+                <SystemTokenGuard system="PURCHASES">
+                  <OrderFormPage />
+                </SystemTokenGuard>
+              }
+            />
+            <Route
+              path="/purchases/orders/:orderId"
+              element={
+                <SystemTokenGuard system="PURCHASES">
+                  <OrderDetailPage />
+                </SystemTokenGuard>
+              }
+            />
+            <Route
+              path="/purchases/orders/:orderId/edit"
+              element={
+                <SystemTokenGuard system="PURCHASES">
+                  <OrderFormPage />
                 </SystemTokenGuard>
               }
             />
