@@ -2,7 +2,7 @@
 
 Aplicación web empresarial unificada (SPA monolítica modular) en **React 19 + TypeScript 5 + Vite 6**, estilizada con **Tailwind CSS v4 + shadcn/ui (Radix UI)**, que consume exclusivamente el [API Gateway](../api-gateway/api-gateway.md) bajo `/api/**` y cumple el [estándar de respuestas HTTP](../../standards/api-responses.md), el [contrato de access tokens y sesiones](../../standards/jwt-and-sessions.md) y las [reglas comunes](../../standards/guidelines.md).
 
-Estado: **Fases 1 a 5 implementadas en el frontend** de `apps/frontend`; incluye el scaffold, sistema de diseño, cliente HTTP, sesión JWT en memoria, login, guards RBAC y shell responsive, junto con Compras, catálogo de Inventario y Administración. La fase de pruebas y entrega permanece planificada en el [plan detallado de implementación](./frontend-implementation-plan.md). En desarrollo se ejecuta sobre Node 24 con recarga en caliente y proxy local hacia `http://localhost:3000`; en despliegues accesibles se servirá detrás de [Nginx como capa edge](../../infrastructure/nginx-edge.md) en `/`.
+Estado: **Fases 1 a 6 implementadas** en `apps/frontend`; incluye el scaffold, sistema de diseño, cliente HTTP, sesión JWT en memoria, login, guards RBAC, Compras, Inventario, Administración, pruebas automatizadas y empaquetado Docker/Nginx. En desarrollo se ejecuta sobre Node 24 con recarga en caliente y proxy local hacia `http://localhost:3000`; el perfil edge sirve la aplicación en `http://localhost:8088` y conserva `/api/**` detrás del Gateway.
 
 > **Disponibilidad de Inventario:** la interfaz de la Fase 4 consume el contrato documentado `GET/POST /api/inventory/products` y `PUT /api/inventory/products/{id}` a través del Gateway. `inventory-service` conserva por ahora únicamente su scaffold ejecutable, por lo que esas operaciones no estarán disponibles extremo a extremo hasta implementar el dominio y los controladores correspondientes en el backend.
 
@@ -57,3 +57,5 @@ El contrato de autenticación emite un `accessToken` JWT por sistema destino (`s
 3. **Aislamiento RBAC y propiedad:** ocultamiento y bloqueo de rutas según `role` y `system`; un `PURCHASES_AGENT` solo opera sus órdenes y un `INVENTORY_MANAGER` no accede a Compras ni Administración.
 4. **Precisión monetaria e inmutabilidad histórica:** cálculos exactos con `decimal.js` y preservación visual de snapshots históricos frente a cambios posteriores del catálogo.
 5. **Contenedor y Nginx Edge:** `Dockerfile` multi-stage reproducible sin privilegios root y entrega de `/` tras Nginx en el recorrido `npm run dev:edge`.
+
+Las pruebas Playwright de los dominios aún no implementados interceptan los contratos HTTP en el navegador. Esto valida el frontend completo sin presentar esos dobles como evidencia de que Auth o Inventory ya funcionan extremo a extremo. La validación con servicios y bases reales corresponderá al pipeline de integración cuando los dominios estén implementados.

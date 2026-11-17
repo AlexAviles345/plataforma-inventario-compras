@@ -1,8 +1,8 @@
 # TechDistribution — Inventario y Compras
 
-Plataforma interna con Auth (NestJS/PostgreSQL), Inventory (Spring Boot/MySQL), Purchases (Django/PostgreSQL), Gateway NestJS, futura capa edge Nginx, CI en GitHub Actions, futura entrega con Jenkins y sincronización de proyecciones por Kafka.
+Plataforma interna con Auth (NestJS/PostgreSQL), Inventory (Spring Boot/MySQL), Purchases (Django/PostgreSQL), Gateway NestJS, capa edge Nginx para desarrollo integrado, CI en GitHub Actions, futura entrega con Jenkins y sincronización de proyecciones por Kafka.
 
-**Estado actual:** Gateway, infraestructura local, contratos y planificación implementados. Purchases cuenta con su dominio, persistencia PostgreSQL, consumidores Kafka, endpoints de órdenes y pruebas completas; Auth e Inventory cuentan con bases ejecutables y validadas. El Frontend completó sus Fases 1 a 5 con base React/Vite, sesión JWT, login, shell protegido y módulos de Compras, Inventario y Administración. Inventory y Auth todavía deben implementar sus rutas de negocio para habilitar esos recorridos extremo a extremo; Auth tampoco define aún una consulta administrativa de usuarios. Consulta el [contrato del frontend](docs/services/frontend-web/frontend-web.md) y su [plan de implementación por fases](docs/services/frontend-web/frontend-implementation-plan.md). [Plan y criterios de aceptación](docs/planning.md), [arquitectura](docs/architecture/architecture.md), [modelo de datos](docs/architecture/data-model.md), [Nginx edge](docs/infrastructure/nginx-edge.md), [Jenkins y GitHub](docs/infrastructure/jenkins-github.md), [reglas comunes](docs/standards/guidelines.md), [respuestas HTTP](docs/standards/api-responses.md), [tokens y sesiones](docs/standards/jwt-and-sessions.md).
+**Estado actual:** Gateway, infraestructura local, contratos y planificación implementados. Purchases cuenta con su dominio, persistencia PostgreSQL, consumidores Kafka, endpoints de órdenes y pruebas completas; Auth e Inventory cuentan con bases ejecutables y validadas. El Frontend completó sus seis fases con módulos de Compras, Inventario y Administración, pruebas Vitest/Playwright, Docker, Nginx Edge y CI. Inventory y Auth todavía deben implementar sus rutas de negocio para habilitar esos recorridos extremo a extremo; Auth tampoco define aún una consulta administrativa de usuarios. Consulta el [contrato del frontend](docs/services/frontend-web/frontend-web.md) y su [plan de implementación por fases](docs/services/frontend-web/frontend-implementation-plan.md). [Plan y criterios de aceptación](docs/planning.md), [arquitectura](docs/architecture/architecture.md), [modelo de datos](docs/architecture/data-model.md), [Nginx edge](docs/infrastructure/nginx-edge.md), [Jenkins y GitHub](docs/infrastructure/jenkins-github.md), [reglas comunes](docs/standards/guidelines.md), [respuestas HTTP](docs/standards/api-responses.md), [tokens y sesiones](docs/standards/jwt-and-sessions.md).
 
 ## Estructura del repositorio
 
@@ -31,14 +31,16 @@ npm run dev:check
 
 Comandos disponibles:
 
-| Comando              | Acción                                                                          |
-| -------------------- | ------------------------------------------------------------------------------- |
-| `npm run dev`        | Inicia bases/Kafka, aplica migraciones locales y levanta todas las aplicaciones |
-| `npm run dev:apps`   | Levanta aplicaciones sin iniciar Docker                                         |
-| `npm run dev:infra`  | Inicia únicamente PostgreSQL, MySQL y Kafka                                     |
-| `npm run dev:status` | Muestra el estado de la infraestructura                                         |
-| `npm run dev:logs`   | Sigue los últimos logs de infraestructura                                       |
-| `npm run dev:down`   | Detiene contenedores sin borrar volúmenes                                       |
+| Comando                 | Acción                                                                          |
+| ----------------------- | ------------------------------------------------------------------------------- |
+| `npm run dev`           | Inicia bases/Kafka, aplica migraciones locales y levanta todas las aplicaciones |
+| `npm run dev:apps`      | Levanta aplicaciones sin iniciar Docker                                         |
+| `npm run dev:infra`     | Inicia únicamente PostgreSQL, MySQL y Kafka                                     |
+| `npm run dev:status`    | Muestra el estado de la infraestructura                                         |
+| `npm run dev:logs`      | Sigue los últimos logs de infraestructura                                       |
+| `npm run dev:down`      | Detiene contenedores sin borrar volúmenes                                       |
+| `npm run dev:edge`      | Construye frontend y Nginx Edge sobre el Gateway local                          |
+| `npm run dev:edge:down` | Detiene el frontend y Nginx Edge locales                                        |
 
 `Ctrl+C` detiene conjuntamente Gateway, Auth, Inventory, Purchases y frontends. La
 infraestructura iniciada en segundo plano permanece activa hasta ejecutar
@@ -58,8 +60,9 @@ puerto y enlaces de cada backend. Swagger está disponible en desarrollo en:
 El supervisor detecta un frontend si existe `apps/frontend/package.json` o un
 `package.json` dentro de un subdirectorio inmediato de `apps/frontend`, con script
 `dev` o `start:dev`. Sus dependencias deben instalarse previamente con `npm ci`.
-El recorrido futuro con Nginx se añadirá como `npm run dev:edge` cuando exista el
-[Compose de aplicaciones](docs/infrastructure/nginx-edge.md).
+El recorrido con Nginx está disponible mediante `npm run dev:edge`, publica
+<http://localhost:8088> únicamente en loopback y espera que el Gateway ya responda
+en `localhost:3000`. Consulta el [perfil edge](docs/infrastructure/nginx-edge.md).
 
 Antes del primer arranque de cada servicio deben estar instaladas sus dependencias.
 Gateway requiere además su `.env` con un `JWT_SECRET` seguro. El comando
@@ -87,4 +90,4 @@ npm run test:e2e -- --runInBand
 npm audit
 ```
 
-GitHub Actions valida actualmente cada backend, sus imágenes y la infraestructura, incluida publicación/consumo tras recrear Kafka. En el futuro, [Jenkins conectado con GitHub](docs/infrastructure/jenkins-github.md) realizará integración completa, publicación de imágenes y despliegues sin sustituir los checks rápidos de pull requests. La prueba completa login→usuario→producto→proyección→orden se implementará en el último hito del [plan](docs/planning.md). No se considera validada la plataforma completa por pasar únicamente las pruebas del Gateway.
+GitHub Actions valida actualmente cada backend, el frontend, sus imágenes y la infraestructura, incluida publicación/consumo tras recrear Kafka. Playwright recorre login, RBAC y producto→orden→snapshot→cancelación con contratos HTTP simulados; no equivale todavía a una prueba integral de Auth e Inventory reales. En el futuro, [Jenkins conectado con GitHub](docs/infrastructure/jenkins-github.md) realizará integración completa, publicación de imágenes y despliegues sin sustituir los checks rápidos de pull requests. No se considera validada la plataforma completa hasta que los dominios pendientes funcionen con sus bases y Kafka reales.

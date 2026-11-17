@@ -1,4 +1,4 @@
-name: Backend foundations and infrastructure
+name: Platform validation
 on: [push, pull_request]
 jobs:
   frontend:

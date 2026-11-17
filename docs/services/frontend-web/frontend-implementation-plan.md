@@ -389,7 +389,9 @@ La implementación frontend está completa, pero la operación extremo a extremo
 
 ---
 
-### Fase 6: Pruebas Automatizadas (Vitest + MSW + Playwright), Dockerización e Integración con Nginx Edge
+### Fase 6: Pruebas Automatizadas (Vitest + MSW + Playwright), Dockerización e Integración con Nginx Edge — COMPLETADA
+
+**Estado:** completada el 17 de noviembre de 2026. Las pruebas de contratos usan MSW y rutas Playwright simuladas para Auth e Inventory mientras sus backends permanecen pendientes; no sustituyen la futura integración con servicios reales.
 
 **Objetivo:** Asegurar la calidad del frontend en CI/CD, empaquetarlo en Docker y validar el recorrido completo a través de Nginx y el API Gateway.
 
@@ -403,3 +405,13 @@ La implementación frontend está completa, pero la operación extremo a extremo
   3. **Empaquetado Docker y CI:**
      - `apps/frontend/Dockerfile` multi-stage y job `frontend` en `.github/workflows/ci.yml` (`npm ci`, `npm run format:check`, `npm run lint`, `npm run build`, `npm test`).
      - Integración con el perfil `frontend` y `edge` (Nginx) descrito en [`docs/infrastructure/nginx-edge.md`](../../infrastructure/nginx-edge.md).
+
+- **Evidencia de cierre:**
+  - 14 pruebas Vitest en cinco archivos para dinero exacto, esquemas de órdenes, reintentos de proyección, headers/idempotencia HTTP y guards RBAC.
+  - Tres pruebas Playwright en Chromium: navegación administrativa, denegación por rol y recorrido producto → orden → envío → cambio de catálogo → snapshot histórico → cancelación.
+  - Build Vite de producción integrado en `npm run test:e2e` y refresco obligatorio del detalle de orden al reabrirlo para consultar el catálogo actual.
+  - Imagen frontend multi-stage con runtime `nginx-unprivileged`, fallback SPA, caché inmutable de assets, headers de seguridad y health check.
+  - Imagen Nginx Edge parametrizable, Compose local en `docker-compose.edge.yml` y comandos raíz `dev:edge`/`dev:edge:down`.
+  - Job `frontend` en GitHub Actions con formato, lint, tipos, Vitest, Playwright y construcción de las imágenes frontend/edge.
+
+La configuración Compose fue validada localmente. La construcción Docker queda validada por CI; en la sesión de cierre local Docker Desktop no tenía el daemon iniciado.
