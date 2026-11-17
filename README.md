@@ -2,7 +2,7 @@
 
 Plataforma interna con Auth (NestJS/PostgreSQL), Inventory (Spring Boot/MySQL), Purchases (Django/PostgreSQL), Gateway NestJS, futura capa edge Nginx, CI en GitHub Actions, futura entrega con Jenkins y sincronización de proyecciones por Kafka.
 
-**Estado actual:** Gateway, infraestructura local, contratos y planificación implementados. Purchases cuenta con su dominio, persistencia PostgreSQL, consumidores Kafka, endpoints de órdenes y pruebas completas; Auth e Inventory cuentan con bases ejecutables y validadas; el Frontend completó sus Fases 1 a 3 con base React/Vite, sesión JWT, login, shell protegido y módulo funcional de órdenes de Compras, conforme a su [contrato](docs/services/frontend-web/frontend-web.md) y [plan de implementación por fases](docs/services/frontend-web/frontend-implementation-plan.md). [Plan y criterios de aceptación](docs/planning.md), [arquitectura](docs/architecture/architecture.md), [modelo de datos](docs/architecture/data-model.md), [Nginx edge](docs/infrastructure/nginx-edge.md), [Jenkins y GitHub](docs/infrastructure/jenkins-github.md), [reglas comunes](docs/standards/guidelines.md), [respuestas HTTP](docs/standards/api-responses.md), [tokens y sesiones](docs/standards/jwt-and-sessions.md).
+**Estado actual:** Gateway, infraestructura local, contratos y planificación implementados. Purchases cuenta con su dominio, persistencia PostgreSQL, consumidores Kafka, endpoints de órdenes y pruebas completas; Auth e Inventory cuentan con bases ejecutables y validadas. El Frontend completó sus Fases 1 a 4 con base React/Vite, sesión JWT, login, shell protegido, módulo funcional de órdenes de Compras e interfaz de catálogo de Inventario; esta última queda pendiente de operación extremo a extremo porque `inventory-service` todavía no implementa las rutas de productos planificadas. Consulta su [contrato](docs/services/frontend-web/frontend-web.md) y [plan de implementación por fases](docs/services/frontend-web/frontend-implementation-plan.md). [Plan y criterios de aceptación](docs/planning.md), [arquitectura](docs/architecture/architecture.md), [modelo de datos](docs/architecture/data-model.md), [Nginx edge](docs/infrastructure/nginx-edge.md), [Jenkins y GitHub](docs/infrastructure/jenkins-github.md), [reglas comunes](docs/standards/guidelines.md), [respuestas HTTP](docs/standards/api-responses.md), [tokens y sesiones](docs/standards/jwt-and-sessions.md).
 
 ## Estructura del repositorio
 
@@ -31,14 +31,14 @@ npm run dev:check
 
 Comandos disponibles:
 
-| Comando | Acción |
-| --- | --- |
-| `npm run dev` | Inicia bases/Kafka, aplica migraciones locales y levanta todas las aplicaciones |
-| `npm run dev:apps` | Levanta aplicaciones sin iniciar Docker |
-| `npm run dev:infra` | Inicia únicamente PostgreSQL, MySQL y Kafka |
-| `npm run dev:status` | Muestra el estado de la infraestructura |
-| `npm run dev:logs` | Sigue los últimos logs de infraestructura |
-| `npm run dev:down` | Detiene contenedores sin borrar volúmenes |
+| Comando              | Acción                                                                          |
+| -------------------- | ------------------------------------------------------------------------------- |
+| `npm run dev`        | Inicia bases/Kafka, aplica migraciones locales y levanta todas las aplicaciones |
+| `npm run dev:apps`   | Levanta aplicaciones sin iniciar Docker                                         |
+| `npm run dev:infra`  | Inicia únicamente PostgreSQL, MySQL y Kafka                                     |
+| `npm run dev:status` | Muestra el estado de la infraestructura                                         |
+| `npm run dev:logs`   | Sigue los últimos logs de infraestructura                                       |
+| `npm run dev:down`   | Detiene contenedores sin borrar volúmenes                                       |
 
 `Ctrl+C` detiene conjuntamente Gateway, Auth, Inventory, Purchases y frontends. La
 infraestructura iniciada en segundo plano permanece activa hasta ejecutar
@@ -48,12 +48,12 @@ infraestructura iniciada en segundo plano permanece activa hasta ejecutar
 Cuando los healthchecks responden, el supervisor muestra una tabla con el estado,
 puerto y enlaces de cada backend. Swagger está disponible en desarrollo en:
 
-| Servicio | Puerto | Swagger |
-| --- | ---: | --- |
-| API Gateway (documentación agregada) | 3000 | <http://localhost:3000/docs> |
-| Auth | 3001 | <http://localhost:3001/docs> |
-| Inventory | 8081 | <http://localhost:8081/docs> |
-| Purchases | 8000 | <http://localhost:8000/docs> |
+| Servicio                             | Puerto | Swagger                      |
+| ------------------------------------ | -----: | ---------------------------- |
+| API Gateway (documentación agregada) |   3000 | <http://localhost:3000/docs> |
+| Auth                                 |   3001 | <http://localhost:3001/docs> |
+| Inventory                            |   8081 | <http://localhost:8081/docs> |
+| Purchases                            |   8000 | <http://localhost:8000/docs> |
 
 El supervisor detecta un frontend si existe `apps/frontend/package.json` o un
 `package.json` dentro de un subdirectorio inmediato de `apps/frontend`, con script

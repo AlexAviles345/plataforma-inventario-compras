@@ -16,16 +16,19 @@ Este documento detalla la arquitectura modular mejorada, las decisiones tecnoló
 ## 1. Decisiones Tecnológicas (Los 6 Pilares del Frontend)
 
 ### 1.1 Core y Bundler (SPA Modular con React + TypeScript + Vite)
+
 - **React 19 + TypeScript 5 (modo `strict: true`) + Vite 6** sobre **Node 24**.
 - Sin servidor SSR intermedio: en desarrollo Vite enruta `/api` hacia `http://localhost:3000` (API Gateway) y en producción genera artefactos estáticos inmutables (`dist/`) servidos directamente por Nginx en `/`.
-- **Enrutamiento declarativo:** **React Router v7** (o TanStack Router) con carga diferida (`React.lazy` + `Suspense`) por módulo y *guards* de seguridad por `system` (`INVENTORY`, `PURCHASES`) y `role` (`ADMIN`, `INVENTORY_MANAGER`, `PURCHASES_AGENT`).
+- **Enrutamiento declarativo:** **React Router v7** (o TanStack Router) con carga diferida (`React.lazy` + `Suspense`) por módulo y _guards_ de seguridad por `system` (`INVENTORY`, `PURCHASES`) y `role` (`ADMIN`, `INVENTORY_MANAGER`, `PURCHASES_AGENT`).
 
 ### 1.2 Sistema de Diseño e Interfaz (`shadcn/ui` + Tailwind CSS)
-- **Tailwind CSS v4** con variables CSS semánticas (soporte nativo para tema claro/oscuro y paleta empresarial sobria estilo *Linear / Vercel*).
+
+- **Tailwind CSS v4** con variables CSS semánticas (soporte nativo para tema claro/oscuro y paleta empresarial sobria estilo _Linear / Vercel_).
 - **`shadcn/ui` (basado en Radix UI + Lucide Icons):** componentes accesibles alojados en `src/app/shared/components/ui/` (`Button`, `Input`, `Dialog`, `Sheet`, `Table`, `Badge`, `Command`, `Popover`, `Select`, `Tabs`, `Tooltip`, `DropdownMenu`, `Skeleton`).
 - **Notificaciones (`Sonner`):** toasts estructurados que muestran mensajes de negocio, el código de error (`code`), detalles por campo (`details[]`) y el `X-Request-Id` copiable para auditoría.
 
 ### 1.3 Estado de Servidor, Caché y Comunicación con el API Gateway
+
 - **TanStack Query v5 (React Query):** gestión de caché, estados de carga, paginación sincronizada con URL (`page`, `limit`), invalidación selectiva tras mutaciones y política automática de reintentos ante `409 PROJECTION_NOT_READY` respetando el header `Retry-After` (`2s`).
 - **Cliente HTTP (`Axios` o `ky` tipado) con Interceptores:**
   1. **Interceptor de Autenticación:** inyecta `Authorization: Bearer <accessToken>` seleccionando el token del sistema requerido por el módulo (`INVENTORY` o `PURCHASES`).
@@ -34,20 +37,24 @@ Este documento detalla la arquitectura modular mejorada, las decisiones tecnoló
 - **Estado de Sesión en Memoria (`Zustand`):** store ligero (`useAuthSessionStore`) que mantiene los tokens por sistema (`INVENTORY` y `PURCHASES`), los claims decodificados (`sub`, `email`, `role`, `system`, `exp`) y el sistema activo en la interfaz.
 
 ### 1.4 Formularios Dinámicos, Dinero Exacto y Tablas de Datos
+
 - **React Hook Form + Zod:** validación declarativa en cliente antes de enviar al Gateway y mapeo automático de errores `400 VALIDATION_ERROR` (`details[].field`, como `lines[0].unitPrice`) hacia el input exacto.
 - **`decimal.js` para Dinero Exacto (`MXN`):** cálculo sin pérdida de precisión de `lineTotal = quantity * unitPrice` y `totalAmount` en el formulario maestro-detalle de órdenes (hasta 100 líneas), serializando `unitPrice` siempre como `string` con dos decimales (`"1250.50"`).
 - **TanStack Table v8:** tablas empresariales reutilizables (`DataTable.tsx`) conectadas al objeto `meta: { page, limit, total, totalPages }` del estándar HTTP.
 
 ### 1.5 Arquitectura Modular por Grupos de Dominio para Vite SPA
+
 La estructura usa carpetas ordinarias de React/Vite (`src/app/auth`, `src/app/modules` y `src/app/shared`), sin los grupos de rutas entre paréntesis propios de Next App Router. Los submódulos conservan `components/`, `config/`, `hooks/`, `services/`, `types/`, `index.ts` y `page.tsx` como organización interna sin semántica especial del framework:
+
 1. **Unificación de la capa compartida en `src/app/shared/`:** se elimina la duplicación de carpetas `components/`, `services/` y `types/` en la raíz de `src/`. Todo código transversal vive en `src/app/shared/` y se importa mediante el alias `@shared/*`.
 2. **Aislamiento estricto entre módulos (`@modules/*`):** cada módulo de dominio (`administration`, `inventory`, `purchases`, `dashboard`) contiene sus propios `components/`, `config/`, `hooks/`, `schemas/`, `services/`, `types/`, `index.ts` y `page.tsx`. Un módulo nunca importa archivos internos de otro módulo; solo consume `@shared/*`.
 3. **Almacenamiento temporal de borradores (`draftStorage`):** al igual que el patrón `registrationDraftStorage.ts`, el formulario de creación de órdenes incluye persistencia local opcional de borrador en sesión junto con su `Idempotency-Key` activa hasta que el servidor confirma el `201 Created`.
 
 ### 1.6 Calidad, Pruebas y Despliegue (CI/CD y Nginx Edge)
+
 - **ESLint 9 + Prettier + TypeScript typecheck (`tsc --noEmit`)**.
 - **Vitest + React Testing Library + MSW (Mock Service Worker)** para pruebas unitarias y de integración de módulos sin depender de backends encendidos.
-- **Playwright** para pruebas E2E del flujo completo en el Hito 6 (*Login → Usuario → Producto → Proyección → Orden*).
+- **Playwright** para pruebas E2E del flujo completo en el Hito 6 (_Login → Usuario → Producto → Proyección → Orden_).
 - **Dockerfile multi-stage** (Node 24 build → runtime sin privilegios) listo para integrarse detrás de Nginx.
 
 ---
@@ -327,11 +334,14 @@ apps/frontend/
   - Transiciones `submit` y `cancel` con `expectedVersion`, `Idempotency-Key`, motivo opcional y resolución explícita de conflictos concurrentes.
   - Historial auditable con versión, transición, actor, `requestId`, fecha y resumen estructurado de cambios.
 
-El selector buscable de productos queda deliberadamente para la integración con el catálogo de Inventario de la Fase 4. Hasta entonces, las líneas capturan el UUID de producto exigido por Purchases.
+La captura manual por UUID fue sustituida en la Fase 4 por un selector buscable cuando existe una sesión de Inventario. La captura manual se conserva como degradación segura cuando el usuario no cuenta con ese token o el catálogo no está disponible.
 
 ---
 
-### Fase 4: Módulo de Inventario (`modules/inventory/products`) — Catálogo, Stock y Control Optimista
+### Fase 4: Módulo de Inventario (`modules/inventory/products`) — Catálogo, Stock y Control Optimista — COMPLETADA EN FRONTEND
+
+**Estado:** completada en el frontend el 17 de noviembre de 2026 contra el contrato planificado de `inventory-service`. El backend de Inventory todavía no implementa estas rutas, por lo que la validación extremo a extremo queda pendiente hasta completar su dominio y controladores.
+
 **Objetivo:** Implementar la interfaz de gestión del catálogo de productos y correcciones explícitas de existencias conectada a `/api/inventory/products`.
 
 - **Entregables:**
@@ -344,9 +354,19 @@ El selector buscable de productos queda deliberadamente para la integración con
   4. **Integración con el Selector de Productos de Compras:**
      - Provee un selector buscable de productos activos para facilitar la captura de líneas en órdenes cuando el usuario cuenta con acceso al catálogo o caché local.
 
+- **Evidencia de cierre:**
+  - Catálogo TanStack Table paginado con búsqueda, filtro de estado, tarjetas de resumen y parámetros sincronizados en URL.
+  - Alta validada con React Hook Form + Zod, normalización de SKU y mapeo de errores de campo emitidos por el Gateway.
+  - Edición con `expectedVersion`, conflicto concurrente explícito, motivo obligatorio para ajustes de stock y advertencia de desactivación lógica.
+  - Consumo encapsulado en `products.service.ts` de las rutas `GET`, `POST` y `PUT` del catálogo usando exclusivamente el token `INVENTORY` y el Gateway.
+  - Selector buscable de productos activos exportado por la API pública del módulo de Inventario e integrado en las líneas de Compras; cae a UUID manual sin sesión de Inventario o ante indisponibilidad del catálogo.
+
+La implementación frontend está completa, pero no se considera evidencia de funcionamiento extremo a extremo mientras `inventory-service` mantenga solamente su scaffold y no exponga los endpoints documentados.
+
 ---
 
 ### Fase 5: Módulo de Administración (`modules/administration`) — Usuarios, Asignaciones y Sistemas
+
 **Objetivo:** Implementar las pantallas exclusivas para el rol `ADMIN` conectadas a `/api/auth/users` y `/api/auth/systems`.
 
 - **Entregables:**
@@ -359,6 +379,7 @@ El selector buscable de productos queda deliberadamente para la integración con
 ---
 
 ### Fase 6: Pruebas Automatizadas (Vitest + MSW + Playwright), Dockerización e Integración con Nginx Edge
+
 **Objetivo:** Asegurar la calidad del frontend en CI/CD, empaquetarlo en Docker y validar el recorrido completo a través de Nginx y el API Gateway.
 
 - **Entregables:**
@@ -371,4 +392,3 @@ El selector buscable de productos queda deliberadamente para la integración con
   3. **Empaquetado Docker y CI:**
      - `apps/frontend/Dockerfile` multi-stage y job `frontend` en `.github/workflows/ci.yml` (`npm ci`, `npm run format:check`, `npm run lint`, `npm run build`, `npm test`).
      - Integración con el perfil `frontend` y `edge` (Nginx) descrito en [`docs/infrastructure/nginx-edge.md`](../../infrastructure/nginx-edge.md).
-
