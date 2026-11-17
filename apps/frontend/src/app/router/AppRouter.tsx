@@ -2,7 +2,6 @@ import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 
 import { AccessDeniedPage } from '@shared/components/layout/AccessDeniedPage';
-import { ModuleComingSoonPage } from '@shared/components/layout/ModuleComingSoonPage';
 import { Skeleton } from '@shared/components/ui/skeleton';
 import { ProtectedRouteGuard } from './ProtectedRouteGuard';
 import { SystemTokenGuard } from './SystemTokenGuard';
@@ -43,6 +42,11 @@ const ProductsPage = lazy(() =>
 const SystemsPage = lazy(() =>
   import('@modules/administration/systems/page').then((module) => ({
     default: module.SystemsPage,
+  })),
+);
+const UsersPage = lazy(() =>
+  import('@modules/administration/users/page').then((module) => ({
+    default: module.UsersPage,
   })),
 );
 
@@ -114,11 +118,7 @@ export function AppRouter() {
               path="/administration/users"
               element={
                 <SystemTokenGuard roles={['ADMIN']}>
-                  <ModuleComingSoonPage
-                    title="Administración de usuarios"
-                    phase={5}
-                    description="Usuarios, estados y asignaciones por sistema."
-                  />
+                  <UsersPage />
                 </SystemTokenGuard>
               }
             />
