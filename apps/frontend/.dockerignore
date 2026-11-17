@@ -1,0 +1,12 @@
+.env
+.env.*
+!.env.example
+coverage
+dist
+e2e
+node_modules
+npm-debug.log*
+playwright-report
+test-results
+src/**/*.spec.ts
+src/**/*.spec.tsx
