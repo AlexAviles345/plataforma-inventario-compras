@@ -2,7 +2,7 @@
 
 Aplicación web empresarial unificada (SPA monolítica modular) en **React 19 + TypeScript 5 + Vite 6**, estilizada con **Tailwind CSS v4 + shadcn/ui (Radix UI)**, que consume exclusivamente el [API Gateway](../api-gateway/api-gateway.md) bajo `/api/**` y cumple el [estándar de respuestas HTTP](../../standards/api-responses.md), el [contrato de access tokens y sesiones](../../standards/jwt-and-sessions.md) y las [reglas comunes](../../standards/guidelines.md).
 
-Estado: **Fases 1 y 2 implementadas** en `apps/frontend`; incluye el scaffold, sistema de diseño, contratos y utilidades transversales, además del cliente HTTP, sesión JWT en memoria por sistema, login, guards RBAC, dashboard y shell responsive. Las fases de dominio 3 a 6 permanecen planificadas en el [plan detallado de implementación](./frontend-implementation-plan.md). En desarrollo se ejecuta sobre Node 24 con recarga en caliente y proxy local hacia `http://localhost:3000`; en despliegues accesibles se servirá detrás de [Nginx como capa edge](../../infrastructure/nginx-edge.md) en `/`.
+Estado: **Fases 1 a 3 implementadas** en `apps/frontend`; incluye el scaffold, sistema de diseño, cliente HTTP, sesión JWT en memoria, login, guards RBAC y shell responsive, junto con el módulo completo de órdenes de Compras. Las fases de Inventario, Administración y entrega (4 a 6) permanecen planificadas en el [plan detallado de implementación](./frontend-implementation-plan.md). En desarrollo se ejecuta sobre Node 24 con recarga en caliente y proxy local hacia `http://localhost:3000`; en despliegues accesibles se servirá detrás de [Nginx como capa edge](../../infrastructure/nginx-edge.md) en `/`.
 
 ## Alcance y principios arquitectónicos
 

@@ -2,7 +2,7 @@
 
 Aplicación web empresarial unificada (SPA monolítica modular) sobre **React 19, TypeScript 5, Vite 6, Tailwind CSS v4 y `shadcn/ui`**, diseñada para operar los dominios de **Administración (`auth`)**, **Inventario (`inventory`)** y **Compras (`purchases`)** a través del API Gateway (`http://localhost:3000` en desarrollo y `/` detrás de Nginx en despliegue).
 
-**Estado:** Fases 1 y 2 completadas. Además de la base visual y transversal, ya están implementados el cliente del API Gateway, la sesión JWT por sistema, el login, el enrutamiento protegido y el shell responsive. Los módulos de Compras, Inventario y Administración se incorporan en las fases 3 a 5.
+**Estado:** Fases 1 a 3 completadas. La base visual, cliente HTTP, sesión JWT, login y shell protegido ya incluyen el módulo funcional de Compras con listado, creación, edición, detalle, transiciones e historial. Inventario y Administración se incorporan en las fases 4 y 5.
 
 ## Inicio local
 
@@ -47,7 +47,7 @@ La Fase 6 incorporará las pruebas automatizadas y sus comandos `test` y `test:e
 
 1. **Fase 1 — completada:** Scaffold React + TypeScript + Vite, Tailwind CSS v4, primitivas `shadcn/ui`, tipos de envoltura HTTP y utilidades de dinero exacto (`decimal.js`) en `src/app/shared/`.
 2. **Fase 2 — completada:** Cliente HTTP con interceptores (`Authorization`, `Idempotency-Key`, `X-Request-Id` y reintentos automáticos ante `409 PROJECTION_NOT_READY`), store de sesión multi-sistema (`Zustand`), módulo `auth/login` y shell `modules/layout.tsx`.
-3. **Fase 3:** Módulo de Compras (`modules/purchases/orders`) — listado paginado, alta/edición maestro-detalle de hasta 100 líneas, snapshots históricos, transiciones `submit`/`cancel` e historial auditable.
+3. **Fase 3 — completada:** Módulo de Compras (`modules/purchases/orders`) — listado paginado, alta/edición maestro-detalle de hasta 100 líneas, snapshots históricos, transiciones `submit`/`cancel` e historial auditable.
 4. **Fase 4:** Módulo de Inventario (`modules/inventory/products`) — catálogo paginado, creación de productos, ajustes de stock con motivo saneado y desactivación lógica con `expectedVersion`.
 5. **Fase 5:** Módulo de Administración (`modules/administration`) — gestión de usuarios, matriz de asignaciones `{ system, role }` y configuración de TTL por sistema.
 6. **Fase 6:** Suite de pruebas automatizadas (`Vitest` + `MSW` + `Playwright`), `Dockerfile` multi-stage e integración con Nginx Edge y CI.

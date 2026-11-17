@@ -297,7 +297,10 @@ apps/frontend/
 
 ---
 
-### Fase 3: Módulo de Compras (`modules/purchases/orders`) — Órdenes, Líneas, Snapshots, Concurrencia e Idempotencia
+### Fase 3: Módulo de Compras (`modules/purchases/orders`) — Órdenes, Líneas, Snapshots, Concurrencia e Idempotencia — COMPLETADA
+
+**Estado:** completada el 17 de noviembre de 2026 contra los serializers, rutas y reglas vigentes de `purchases-service`.
+
 **Objetivo:** Construir el módulo completo de órdenes de compra aprovechando que `purchases-service` ya tiene sus 5 fases implementadas en el backend.
 
 - **Entregables:**
@@ -315,6 +318,16 @@ apps/frontend/
      - Manejo visual de `409 VERSION_CONFLICT` (`VersionConflictAlert.tsx`) y `409 ORDER_STATE_CONFLICT`.
   4. **Historial Auditable (`OrderHistorySheet.tsx`, `useOrderHistory.ts`):**
      - Panel deslizable (`Sheet`) que consulta `GET /api/purchases/orders/{id}/history` y representa en una línea de tiempo cada versión confirmada (`CREATED`, `UPDATED`, `SUBMITTED`, `CANCELLED`), actor, `requestId` y resumen de cambios.
+
+- **Evidencia de cierre:**
+  - Listado TanStack Table paginado con filtros sincronizados en URL, filtro administrativo por solicitante y tarjetas de resumen.
+  - Alta y edición maestro-detalle de 1 a 100 líneas con Zod, UUID únicos, cantidades enteras y cálculo monetario exacto con `decimal.js`.
+  - Borrador recuperable en `sessionStorage`, clave idempotente conservada ante resultados inciertos y rotación ante conflicto.
+  - Detalle que preserva snapshots históricos y compara separadamente nombre, SKU, unidad, estado y stock del catálogo actual.
+  - Transiciones `submit` y `cancel` con `expectedVersion`, `Idempotency-Key`, motivo opcional y resolución explícita de conflictos concurrentes.
+  - Historial auditable con versión, transición, actor, `requestId`, fecha y resumen estructurado de cambios.
+
+El selector buscable de productos queda deliberadamente para la integración con el catálogo de Inventario de la Fase 4. Hasta entonces, las líneas capturan el UUID de producto exigido por Purchases.
 
 ---
 
