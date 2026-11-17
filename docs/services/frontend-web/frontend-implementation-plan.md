@@ -269,7 +269,10 @@ apps/frontend/
 
 ---
 
-### Fase 2: Cliente HTTP, Interceptores, Store de Sesión Multi-Sistema y Shell de Navegación (`auth` + Layouts)
+### Fase 2: Cliente HTTP, Interceptores, Store de Sesión Multi-Sistema y Shell de Navegación (`auth` + Layouts) — COMPLETADA
+
+**Estado:** completada el 17 de noviembre de 2026. La sesión permanece exclusivamente en memoria, valida los claims estructurales del access token y deja la validación criptográfica al Gateway y al servicio destino.
+
 **Objetivo:** Implementar la capa de red conectada al API Gateway, el manejo de tokens JWT por sistema (`INVENTORY` y `PURCHASES`), la política global de reintentos ante proyecciones en vuelo y el flujo de Login + Layout protegido.
 
 - **Entregables:**
@@ -284,6 +287,13 @@ apps/frontend/
      - Modo de asistencia para desarrollo local (solo en `import.meta.env.DEV`): permite pegar un token generado con `python manage.py generate_dev_token` para probar módulos individuales aunque `auth-service` esté apagado.
   4. Shell principal `modules/layout.tsx`:
      - `DynamicSidebar.tsx`, `Header.tsx`, `SystemSwitcher.tsx` (permite cambiar entre `INVENTORY` y `PURCHASES` o solicitar credenciales del segundo sistema sin perder la sesión del primero), `BreadcrumbNav.tsx` y `ProtectedRouteGuard.tsx`.
+
+- **Evidencia de cierre:**
+  - Cliente Axios tipado con envoltura validada, `X-Request-Id`, `Authorization`, `Idempotency-Key`, timeout y errores `GatewayApiError`.
+  - TanStack Query con reintentos limitados para `409 PROJECTION_NOT_READY`, soporte de `Retry-After` y banner de sincronización.
+  - Store Zustand para tokens independientes de `INVENTORY` y `PURCHASES`, bloqueo de mezcla entre usuarios, expiración automática y selectores RBAC.
+  - Login responsive con selector de sistema, validación Zod, conexión a `POST /api/auth/login` y entrada manual de JWT limitada a desarrollo.
+  - React Router con carga diferida, guards por sesión/sistema/rol, dashboard, navegación adaptable y cambio de tema.
 
 ---
 
