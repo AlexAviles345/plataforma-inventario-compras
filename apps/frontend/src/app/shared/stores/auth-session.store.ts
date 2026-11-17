@@ -7,6 +7,7 @@ import type {
   SystemSessions,
 } from '@shared/types/auth-session.types';
 import {
+  InvalidAccessTokenError,
   decodeAndValidateAccessToken,
   isAccessTokenExpired,
 } from '@shared/utils/access-token.util';
@@ -26,6 +27,16 @@ export const useAuthSessionStore = create<AuthSessionState>((set, get) => ({
   setAccessToken: (accessToken) => {
     const normalizedToken = accessToken.trim();
     const claims = decodeAndValidateAccessToken(normalizedToken);
+    const belongsToAnotherUser = Object.values(get().sessions).some(
+      (session) => session.claims.sub !== claims.sub,
+    );
+
+    if (belongsToAnotherUser) {
+      throw new InvalidAccessTokenError(
+        'No se pueden combinar sesiones de usuarios distintos en la misma ventana',
+      );
+    }
+
     const session: SystemSession = { accessToken: normalizedToken, claims };
 
     set((state) => ({
