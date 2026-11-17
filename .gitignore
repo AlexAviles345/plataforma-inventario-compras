@@ -24,6 +24,9 @@ application-prod.yml
 # ===============
 node_modules/
 dist/
+coverage/
+playwright-report/
+test-results/
 npm-debug.log*
 yarn-error.log
 
