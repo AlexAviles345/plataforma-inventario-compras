@@ -96,7 +96,7 @@ Este documento detalla el plan técnico secuencial para implementar el microserv
 
 ## Fase 4: Login, emisión JWT y autorización local — [COMPLETADA]
 
-- Configuración: `JWT_SECRET` es obligatorio en todos los entornos, con la misma regla que el Gateway (al menos 32 bytes, sin valores de ejemplo). `JWT_ISSUER`, `JWT_AUDIENCE` y `JWT_MAX_TTL_SECONDS` usan por defecto los valores del estándar. `validateDatabaseEnvironment` permite que `migrate.js` funcione sin el secreto. `tools/dev.mjs` exige el `.env` de Auth.
+- Configuración: `JWT_SECRET` es obligatorio en todos los entornos, con la misma regla que el Gateway (al menos 32 bytes, sin valores de ejemplo). `JWT_ISSUER`, `JWT_AUDIENCE` y `JWT_MAX_TTL_SECONDS` usan por defecto los valores del estándar. `validateDatabaseEnvironment` permite que `migrate.js` funcione sin el secreto. `tools/doctor.mjs` exige el `.env` de Auth y que su `JWT_SECRET` coincida con el del Gateway y Purchases.
 - `POST /api/auth/login` (`src/auth/auth.controller.ts`, `auth.service.ts`):
   - Recibe `{email, password, system}`; el email se normaliza y la contraseña admite como máximo 128 caracteres.
   - Una sola consulta trae usuario, asignación al sistema y TTL. Siempre se ejecuta una verificación Argon2, contra un hash simulado si el usuario no existe.

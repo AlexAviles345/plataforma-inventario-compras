@@ -21,20 +21,35 @@ Cada servicio o frontend nuevo vive dentro de `apps/` con su configuración, dep
 
 Requisitos actuales: Docker con Compose, Node 24.x/npm 11.x, JDK 21 o posterior compatible y Python 3.14. Inventory usa Maven Wrapper, por lo que no requiere Maven global.
 
-La raíz incluye un supervisor multiplataforma para ejecutar todos los backends y
-los futuros frontends con logs identificados. Primero instala su única dependencia:
+Todo el proyecto se enciende con un solo comando desde la raíz, con Docker Desktop iniciado:
 
 ```bash
-npm install --ignore-scripts --no-audit
-npm run dev:check
+npm run dev
 ```
+
+`npm run dev` sigue estos pasos y se detiene en el primero que falle, explicando cómo corregirlo:
+
+1. **Preparación** (`tools/setup.mjs`): instala solo lo que falte.
+   - dependencias de la raíz, del Gateway y de Auth, y el binario de Kafka de Auth;
+   - el `.venv` de Purchases y los frontends;
+   - los `.env` ausentes, generados desde `.env.example` con un único `JWT_SECRET` compartido por Gateway, Auth y Purchases.
+
+   Nunca modifica un `.env` existente.
+2. **Diagnóstico** (`tools/doctor.mjs`): comprueba Node 24, npm 11, JDK 21+, Python 3.14, Docker Engine y Compose v2. Revisa también las dependencias, los `.env` y que el secreto, issuer y audience coincidan en los tres servicios. Por último revisa los puertos:
+   - los de las aplicaciones deben estar libres;
+   - los de PostgreSQL, MySQL y Kafka, libres o en uso por sus propios contenedores. Si otro contenedor o programa los ocupa, dice cuál.
+3. **Infraestructura:** levanta PostgreSQL de Auth y de Purchases, MySQL y Kafka, y crea los tópicos.
+4. **Migraciones:** aplica las de Auth y Purchases.
+5. **Aplicaciones:** levanta Gateway, Auth, Inventory, Purchases y los frontends en paralelo, con logs identificados.
 
 Comandos disponibles:
 
 | Comando | Acción |
 | --- | --- |
-| `npm run dev` | Inicia bases/Kafka, aplica migraciones locales y levanta todas las aplicaciones |
-| `npm run dev:apps` | Levanta aplicaciones sin iniciar Docker |
+| `npm run dev` | Prepara, verifica, inicia bases y Kafka, aplica migraciones y levanta todas las aplicaciones |
+| `npm run dev:check` | Solo diagnóstico, sin instalar ni iniciar nada (`npm run dev:check -- --no-infra` omite Docker) |
+| `npm run setup` | Solo preparación: dependencias y `.env` faltantes |
+| `npm run dev:apps` | Prepara y levanta aplicaciones sin iniciar Docker |
 | `npm run dev:infra` | Inicia únicamente PostgreSQL, MySQL y Kafka |
 | `npm run dev:status` | Muestra el estado de la infraestructura |
 | `npm run dev:logs` | Sigue los últimos logs de infraestructura |
@@ -42,8 +57,11 @@ Comandos disponibles:
 
 `Ctrl+C` detiene conjuntamente Gateway, Auth, Inventory, Purchases y frontends. La
 infraestructura iniciada en segundo plano permanece activa hasta ejecutar
-`npm run dev:down`. `npm run dev` requiere Docker Desktop iniciado;
-`npm run dev:apps` no.
+`npm run dev:down`.
+
+Las dependencias de npm exigen Node 24 (`engine-strict`). En la primera ejecución,
+Auth no tiene usuarios: crea el primer administrador con el
+[bootstrap](apps/backend/auth-service/README.md#primer-administrador-bootstrap).
 
 Cuando los healthchecks responden, el supervisor muestra una tabla con el estado,
 puerto y enlaces de cada backend. Swagger está disponible en desarrollo en:
@@ -57,14 +75,11 @@ puerto y enlaces de cada backend. Swagger está disponible en desarrollo en:
 
 El supervisor detecta un frontend si existe `apps/frontend/package.json` o un
 `package.json` dentro de un subdirectorio inmediato de `apps/frontend`, con script
-`dev` o `start:dev`. Sus dependencias deben instalarse previamente con `npm ci`.
+`dev` o `start:dev`. `npm run dev` instala sus dependencias si faltan.
 El recorrido futuro con Nginx se añadirá como `npm run dev:edge` cuando exista el
 [Compose de aplicaciones](docs/infrastructure/nginx-edge.md).
 
-Antes del primer arranque de cada servicio deben estar instaladas sus dependencias.
-Gateway requiere además su `.env` con un `JWT_SECRET` seguro. El comando
-`npm run dev:check` informa cualquier requisito faltante o puerto ocupado sin
-iniciar procesos.
+Para levantar solo la infraestructura a mano:
 
 ```bash
 docker compose -f docker-compose.example.yml up -d --wait postgres-auth postgres-purchases mysql-inventory kafka

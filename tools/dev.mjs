@@ -1,191 +1,25 @@
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { createConnection } from 'node:net';
-import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { concurrently } from 'concurrently';
+import { runDoctor } from './doctor.mjs';
 import { startInfrastructure } from './infra.mjs';
+import { setup } from './setup.mjs';
+import {
+  backendEndpoints,
+  frontendProjects,
+  isWindows,
+  npmCommand,
+  servicePaths,
+} from './project.mjs';
 
-const toolsDirectory = path.dirname(fileURLToPath(import.meta.url));
-const repositoryRoot = path.resolve(toolsDirectory, '..');
-const backendRoot = path.join(repositoryRoot, 'apps', 'backend');
-const frontendRoot = path.join(repositoryRoot, 'apps', 'frontend');
-const isWindows = process.platform === 'win32';
-
-const servicePaths = {
-  gateway: path.join(backendRoot, 'api-gateway'),
-  auth: path.join(backendRoot, 'auth-service'),
-  inventory: path.join(backendRoot, 'inventory-service'),
-  purchases: path.join(backendRoot, 'purchases-service'),
-};
-
-const backendEndpoints = [
-  {
-    service: 'API Gateway',
-    port: 3000,
-    health: 'http://localhost:3000/health/live',
-    swagger: 'http://localhost:3000/docs',
-  },
-  {
-    service: 'Auth',
-    port: 3001,
-    health: 'http://localhost:3001/health/live',
-    swagger: 'http://localhost:3001/docs',
-  },
-  {
-    service: 'Inventory',
-    port: 8081,
-    health: 'http://localhost:8081/health/live',
-    swagger: 'http://localhost:8081/docs',
-  },
-  {
-    service: 'Purchases',
-    port: 8000,
-    health: 'http://localhost:8000/health/live',
-    swagger: 'http://localhost:8000/docs',
-  },
-];
-
-function frontendProjects() {
-  const candidates = [];
-  if (existsSync(path.join(frontendRoot, 'package.json'))) candidates.push(frontendRoot);
-
-  if (existsSync(frontendRoot)) {
-    for (const entry of readdirSync(frontendRoot, { withFileTypes: true })) {
-      if (entry.isDirectory()) {
-        const directory = path.join(frontendRoot, entry.name);
-        if (existsSync(path.join(directory, 'package.json'))) candidates.push(directory);
-      }
-    }
-  }
-
-  return candidates.map((directory) => {
-    const packageJson = JSON.parse(
-      readFileSync(path.join(directory, 'package.json'), 'utf8'),
-    );
-    const script = packageJson.scripts?.dev
-      ? 'dev'
-      : packageJson.scripts?.['start:dev']
-        ? 'start:dev'
-        : undefined;
-    return {
-      directory,
-      name: packageJson.name || path.basename(directory),
-      script,
-    };
-  });
-}
-
-function requirements(frontends) {
-  const requirements_ = [
-    {
-      label: 'Dependencias del Gateway',
-      file: path.join(servicePaths.gateway, 'node_modules', '.bin', isWindows ? 'nest.cmd' : 'nest'),
-      fix: 'cd apps/backend/api-gateway && npm ci --ignore-scripts',
-    },
-    {
-      label: 'Configuración del Gateway',
-      file: path.join(servicePaths.gateway, '.env'),
-      fix: 'copia .env.example a .env y genera un JWT_SECRET seguro',
-    },
-    {
-      label: 'Dependencias de Auth',
-      file: path.join(servicePaths.auth, 'node_modules', '.bin', isWindows ? 'nest.cmd' : 'nest'),
-      fix: 'cd apps/backend/auth-service && npm ci --ignore-scripts',
-    },
-    {
-      label: 'Configuración de Auth',
-      file: path.join(servicePaths.auth, '.env'),
-      fix: 'copia .env.example a .env con el mismo JWT_SECRET que el Gateway',
-    },
-    {
-      label: 'Maven Wrapper de Inventory',
-      file: path.join(servicePaths.inventory, isWindows ? 'mvnw.cmd' : 'mvnw'),
-      fix: 'restaura el Maven Wrapper de apps/backend/inventory-service',
-    },
-    {
-      label: 'Entorno virtual de Purchases',
-      file: path.join(
-        servicePaths.purchases,
-        '.venv',
-        isWindows ? path.join('Scripts', 'python.exe') : path.join('bin', 'python'),
-      ),
-      fix: 'crea .venv e instala requirements-dev.txt en purchases-service',
-    },
-  ];
-
-  for (const frontend of frontends) {
-    requirements_.push({
-      label: `Dependencias del frontend ${frontend.name}`,
-      file: path.join(frontend.directory, 'node_modules'),
-      fix: `ejecuta npm ci en ${path.relative(repositoryRoot, frontend.directory)}`,
-    });
-  }
-
-  return requirements_;
-}
-
-function preflight(frontends) {
-  const missing = requirements(frontends).filter(({ file }) => !existsSync(file));
-  const invalidFrontends = frontends.filter(({ script }) => !script);
-
-  if (missing.length > 0 || invalidFrontends.length > 0) {
-    console.error('No se puede iniciar el entorno de desarrollo:');
-    for (const item of missing) console.error(`- ${item.label}: ${item.fix}`);
-    for (const frontend of invalidFrontends) {
-      console.error(
-        `- El frontend ${frontend.name} necesita un script "dev" o "start:dev"`,
-      );
-    }
-    return false;
-  }
-
-  console.log('Preflight correcto: Gateway, Auth, Inventory y Purchases están listos.');
-  if (frontends.length === 0) {
-    console.log('No hay frontends todavía; se detectarán automáticamente al agregarlos.');
-  } else {
-    console.log(`Frontends detectados: ${frontends.map(({ name }) => name).join(', ')}`);
-  }
-  return true;
-}
-
-function portIsInUse(port) {
-  return new Promise((resolve) => {
-    const socket = createConnection({ host: '127.0.0.1', port });
-    let settled = false;
-    const finish = (inUse) => {
-      if (settled) return;
-      settled = true;
-      socket.destroy();
-      resolve(inUse);
-    };
-
-    socket.setTimeout(750);
-    socket.once('connect', () => finish(true));
-    socket.once('timeout', () => finish(false));
-    socket.once('error', () => finish(false));
-  });
-}
-
-async function portsAreAvailable() {
-  const occupied = (
-    await Promise.all(
-      backendEndpoints.map(async (endpoint) => ({
-        endpoint,
-        inUse: await portIsInUse(endpoint.port),
-      })),
-    )
-  ).filter(({ inUse }) => inUse);
-
-  if (occupied.length === 0) return true;
-
-  console.error('No se puede iniciar: estos puertos ya están ocupados:');
-  for (const { endpoint } of occupied) {
-    console.error(`- ${endpoint.service}: ${endpoint.port}`);
-  }
-  console.error('Detén la ejecución anterior con Ctrl+C y vuelve a intentarlo.');
-  return false;
-}
+/**
+ * Enciende el proyecto completo con un comando:
+ *   1. setup: instala dependencias y crea los .env que falten;
+ *   2. doctor: verifica herramientas, Docker, configuración y puertos;
+ *   3. infraestructura (con --with-infra): bases de datos y Kafka en Docker;
+ *   4. migraciones de Auth y Purchases;
+ *   5. Gateway, Auth, Inventory, Purchases y frontends en paralelo.
+ * `npm run dev:check` ejecuta solo el diagnóstico (tools/doctor.mjs).
+ */
 
 function commands(frontends) {
   const python = isWindows
@@ -242,11 +76,8 @@ function runMigrations(service, command, args, options) {
 }
 
 function prepareApplications() {
-  // npm es un script .cmd en Windows y requiere shell; los argumentos son fijos.
-  runMigrations('Auth', 'npm', ['run', 'migration:run'], {
-    cwd: servicePaths.auth,
-    shell: isWindows,
-  });
+  const [npm, npmArgs, npmOptions] = npmCommand(['run', 'migration:run']);
+  runMigrations('Auth', npm, npmArgs, { cwd: servicePaths.auth, ...npmOptions });
 
   const python = isWindows
     ? path.join('.venv', 'Scripts', 'python.exe')
@@ -315,13 +146,19 @@ async function reportBackendEndpoints(signal) {
   }
 }
 
-const frontends = frontendProjects();
-if (!preflight(frontends)) process.exit(1);
-if (!(await portsAreAvailable())) process.exit(1);
+const withInfrastructure = process.argv.includes('--with-infra');
 
-if (process.argv.includes('--check')) process.exit(0);
+try {
+  setup();
+} catch (error) {
+  const message = error instanceof Error ? error.message : error;
+  console.error(`\nNo se pudo preparar el entorno:\n${message}`);
+  process.exit(1);
+}
 
-if (process.argv.includes('--with-infra')) {
+if (!(await runDoctor({ infrastructure: withInfrastructure }))) process.exit(1);
+
+if (withInfrastructure) {
   try {
     startInfrastructure();
   } catch (error) {
@@ -337,9 +174,12 @@ try {
   process.exit(1);
 }
 
+const frontends = frontendProjects();
 console.log('Iniciando aplicaciones. Presiona Ctrl+C para detenerlas.');
 console.log('La infraestructura permanece activa; usa npm run dev:down para detenerla.');
 
+// Se importa después de setup(), que instala concurrently si faltaba.
+const { concurrently } = await import('concurrently');
 const { result } = concurrently(commands(frontends), {
   prefix: 'name',
   killOthersOn: ['failure', 'success'],
