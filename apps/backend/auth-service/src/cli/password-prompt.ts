@@ -61,21 +61,24 @@ export function readHiddenLine(
 }
 
 /**
- * Entrada no interactiva (tubería): toma la primera línea sin el salto final.
+ * Entrada no interactiva (tubería): toma la primera línea sin el salto final
+ * ni el BOM inicial que antepone PowerShell 5.1 al redirigir texto a un
+ * proceso nativo.
  * Permite automatizar el bootstrap sin poner la contraseña en variables de
  * entorno ni en argumentos, que quedan visibles en el historial y en `ps`.
  */
 export async function readFirstLine(input: Readable): Promise<string> {
+  const clean = (line: string) => line.replace(/^﻿/, '').replace(/\r$/, '');
   let buffer = '';
   for await (const chunk of input) {
     buffer += (chunk as Buffer | string).toString();
     const newline = buffer.indexOf('\n');
     if (newline !== -1) {
       input.destroy();
-      return buffer.slice(0, newline).replace(/\r$/, '');
+      return clean(buffer.slice(0, newline));
     }
   }
-  return buffer.replace(/\r$/, '');
+  return clean(buffer);
 }
 
 /** En terminal pide la contraseña dos veces; por tubería la lee una vez. */

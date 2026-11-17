@@ -144,6 +144,8 @@ npm run test:e2e -- --runInBand
 
 Las pruebas e2e requieren PostgreSQL: crean la base `auth_db_test` si no existe, la vacían y aplican todas las migraciones antes de cada ejecución. Nunca usan `auth_db`.
 
+Para recorrer a mano cada funcionalidad (login, permisos, desactivación, expiración, outbox y Kafka caído) sigue la [guía de pruebas manuales](../../../docs/services/auth-service/auth-manual-testing.md).
+
 ## Siguientes fases
 
 El contrato está en [`docs/services/auth-service/auth-service.md`](../../../docs/services/auth-service/auth-service.md) y el avance por fases en [`auth-implementation-plan.md`](../../../docs/services/auth-service/auth-implementation-plan.md). Cada dependencia de dominio se agrega con la fase que realmente la utiliza.

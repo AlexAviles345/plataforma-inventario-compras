@@ -56,6 +56,7 @@ describe('readFirstLine', () => {
     [['clave', '-larga', '\n'], 'clave-larga'],
     [['sin salto final'], 'sin salto final'],
     [['  con espacios  \n'], '  con espacios  '],
+    [['﻿clave-de-powershell\r\n'], 'clave-de-powershell'],
   ])('reads the first line of %j', async (chunks, expected) => {
     await expect(readFirstLine(Readable.from(chunks))).resolves.toBe(expected);
   });
