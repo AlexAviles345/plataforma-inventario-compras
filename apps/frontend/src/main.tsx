@@ -3,6 +3,8 @@ import { createRoot } from 'react-dom/client';
 
 import { FoundationPage } from '@/app/page';
 import '@/app/globals.css';
+import { Toaster } from '@shared/components/ui/sonner';
+import { TooltipProvider } from '@shared/components/ui/tooltip';
 
 const root = document.getElementById('root');
 
@@ -12,6 +14,9 @@ if (!root) {
 
 createRoot(root).render(
   <StrictMode>
-    <FoundationPage />
+    <TooltipProvider>
+      <FoundationPage />
+      <Toaster richColors closeButton />
+    </TooltipProvider>
   </StrictMode>,
 );

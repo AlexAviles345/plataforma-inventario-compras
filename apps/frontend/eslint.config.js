@@ -20,5 +20,14 @@ export default tseslint.config(
       ecmaVersion: 2024,
       globals: globals.browser,
     },
+    rules: {
+      'react-refresh/only-export-components': [
+        'error',
+        {
+          allowConstantExport: true,
+          allowExportNames: ['badgeVariants', 'buttonVariants'],
+        },
+      ],
+    },
   },
 );
