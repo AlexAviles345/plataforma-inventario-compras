@@ -35,6 +35,11 @@ const OrderDetailPage = lazy(() =>
     default: module.OrderDetailPage,
   })),
 );
+const ProductsPage = lazy(() =>
+  import('@modules/inventory/products/page').then((module) => ({
+    default: module.ProductsPage,
+  })),
+);
 
 function RouteLoader() {
   return (
@@ -64,11 +69,7 @@ export function AppRouter() {
               path="/inventory/products"
               element={
                 <SystemTokenGuard system="INVENTORY">
-                  <ModuleComingSoonPage
-                    title="Productos de inventario"
-                    phase={4}
-                    description="Catálogo, existencias y control optimista de productos."
-                  />
+                  <ProductsPage />
                 </SystemTokenGuard>
               }
             />
