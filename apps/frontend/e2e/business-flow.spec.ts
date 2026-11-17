@@ -304,8 +304,12 @@ test('producto → orden → snapshot histórico → cancelación', async ({
   await page.getByRole('button', { name: 'Crear orden' }).click();
 
   await expect(page).toHaveURL(new RegExp(`/purchases/orders/${ORDER_ID}$`));
-  await expect(page.getByRole('heading', { name: /Orden 00000000/ })).toBeVisible();
-  await expect(page.getByText('Laptop Business', { exact: true }).first()).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: /Orden 00000000/ }),
+  ).toBeVisible();
+  await expect(
+    page.getByText('Laptop Business', { exact: true }).first(),
+  ).toBeVisible();
   await page.getByRole('button', { name: 'Enviar orden' }).click();
   await page.getByRole('button', { name: 'Confirmar envío' }).click();
   await expect(page.getByText('Enviada').first()).toBeVisible();
