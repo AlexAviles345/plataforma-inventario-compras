@@ -41,11 +41,13 @@ npm run lint
 npm run build
 npm test -- --runInBand
 npm run test:e2e -- --runInBand
-npm audit
+npm run audit:production
 ```
 
 Las pruebas HTTP levantan upstreams simulados y prueban cuerpos/rutas, JWT/claims/sistema, identidad falsificada, Swagger, fallos/timeout, tamaño, rate limit y estabilidad de listeners. No requieren bases ni Kafka. CI usa Node 24, ejecuta esos controles, construye la imagen y prueba infraestructura/Kafka por separado. La integración con los servicios de dominio queda pendiente de sus implementaciones.
 
 Jest se ejecuta con `--experimental-vm-modules` para cargar el proxy ESM; requiere Node 24.9+ y puede emitir la advertencia experimental de Node. Los overrides de multer/glob/minimatch fijan versiones corregidas y se verifican con build, lint y pruebas; revisarlos al actualizar sus dependencias padre.
 
-La auditoría actual deja ocho entradas de severidad baja exclusivamente de desarrollo, todas por `deepmerge` 4.3.1 en Jest/CLI ([advisory](https://github.com/advisories/GHSA-gcqx-w48m-w2h4)). El paquete todavía no publica una versión corregida. No pasar configuración no confiable a esas herramientas; revisar la alerta al actualizar. La auditoría de producción debe permanecer sin vulnerabilidades; no degradar Jest/Nest a versiones antiguas para silenciarla.
+La auditoría actual deja ocho entradas de severidad baja exclusivamente de desarrollo, todas por `deepmerge` 4.3.1 en Jest/CLI ([advisory](https://github.com/advisories/GHSA-gcqx-w48m-w2h4)). El paquete todavía no publica una versión corregida. No pasar configuración no confiable a esas herramientas; revisar la alerta al actualizar.
+
+`audit-ci.jsonc` mantiene una excepción temporal y con vencimiento el 18 de diciembre de 2026 para `GHSA-fc5q-39xc-vjpf`. `http-proxy-middleware` todavía depende de la rama vulnerable de `picomatch`, pero el Gateway no configura `pathFilter` ni patrones glob controlados por clientes, que son el vector del ReDoS. Cualquier otra vulnerabilidad alta o crítica continúa rompiendo CI. La excepción debe retirarse al publicarse una versión corregida; no ejecutar `npm audit fix --force`, porque propone degradar el proxy a una versión incompatible.
