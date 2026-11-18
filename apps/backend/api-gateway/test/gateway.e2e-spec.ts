@@ -69,7 +69,15 @@ describe('Gateway HTTP integration', () => {
           headers: req.headers as Echo['headers'],
         };
         received.push(data);
-        res.writeHead(200, { 'content-type': 'application/json' });
+        const headers: Record<string, string | string[]> = {
+          'content-type': 'application/json',
+        };
+        if (req.url === '/api/auth/refresh')
+          headers['set-cookie'] = [
+            'td_refresh=rotated; Path=/api/auth; HttpOnly; SameSite=Strict',
+            'td_csrf=rotated-csrf; Path=/; SameSite=Strict',
+          ];
+        res.writeHead(200, headers);
         res.end(JSON.stringify(data));
       });
     });
@@ -156,8 +164,29 @@ describe('Gateway HTTP integration', () => {
     ['post', '/api/auth/register'],
     ['post', '/api/auth/login/'],
     ['post', '/api/auth/users'],
+    ['get', '/api/auth/refresh'],
+    ['post', '/api/auth/refresh/'],
+    ['get', '/api/auth/logout'],
+    ['post', '/api/auth/logout/'],
   ] as const)('requires authentication for %s %s', async (method, path) => {
     await request(server)[method](path).expect(401);
+  });
+
+  it('forwards session cookies and CSRF and preserves rotated cookies', async () => {
+    const response = await request(server)
+      .post('/api/auth/refresh')
+      .set('Cookie', ['td_refresh=opaque', 'td_csrf=proof'])
+      .set('X-CSRF-Token', 'proof')
+      .expect(200);
+    const data = echo(response);
+    expect(data.headers.cookie).toBe('td_refresh=opaque; td_csrf=proof');
+    expect(data.headers['x-csrf-token']).toBe('proof');
+    expect(response.headers['set-cookie']).toEqual([
+      'td_refresh=rotated; Path=/api/auth; HttpOnly; SameSite=Strict',
+      'td_csrf=rotated-csrf; Path=/; SameSite=Strict',
+    ]);
+
+    await request(server).post('/api/auth/logout').expect(200);
   });
 
   it('rejects the old, undocumented prefix', async () => {
@@ -358,6 +387,7 @@ describe('Gateway HTTP integration', () => {
     expect(allowed.headers['access-control-allow-origin']).toBe(
       'http://localhost:5173',
     );
+    expect(allowed.headers['access-control-allow-credentials']).toBe('true');
     const other = await request(server)
       .get('/health/live')
       .set('Origin', 'https://other.example');

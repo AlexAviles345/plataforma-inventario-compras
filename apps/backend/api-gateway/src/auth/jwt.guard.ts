@@ -18,6 +18,12 @@ export const SCHEMA_PATHS = [
   '/api/purchases/openapi.json',
 ];
 
+export const SESSION_PATHS = [
+  '/api/auth/login',
+  '/api/auth/refresh',
+  '/api/auth/logout',
+];
+
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   constructor(
@@ -29,7 +35,7 @@ export class JwtAuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<Request>();
     // Never accept identity or forwarding assertions supplied by clients.
     stripUntrustedHeaders(request);
-    if (request.method === 'POST' && request.path === '/api/auth/login')
+    if (request.method === 'POST' && SESSION_PATHS.includes(request.path))
       return true;
     if (SCHEMA_PATHS.includes(request.path)) {
       if (request.method === 'GET' && this.config.get<boolean>('DOCS_ENABLED'))
