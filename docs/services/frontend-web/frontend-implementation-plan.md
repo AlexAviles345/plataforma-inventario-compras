@@ -291,7 +291,7 @@ apps/frontend/
      - Configura en **TanStack Query** el reintento automático cuando una consulta o mutación segura recibe `409 PROJECTION_NOT_READY`, esperando el número de segundos indicado en el header `Retry-After` (por defecto `2s`, hasta 4 intentos) y activando el componente `ProjectionSyncBanner.tsx`.
   3. Módulo `auth/login/`:
      - Pantalla de inicio de sesión con selección de sistema destino (`INVENTORY` o `PURCHASES`), conectada a `POST /api/auth/login`.
-     - Modo de asistencia para desarrollo local (solo en `import.meta.env.DEV`): permite pegar un token generado con `python manage.py generate_dev_token` para probar módulos individuales aunque `auth-service` esté apagado.
+     - Modo de asistencia para desarrollo local (solo con `import.meta.env.DEV` y `VITE_ENABLE_DEV_TOKEN_ACCESS=true`): permite pegar un token generado con `python manage.py generate_dev_token` para diagnosticar módulos individuales aunque `auth-service` esté apagado. Permanece oculto por defecto y nunca aparece en producción.
   4. Shell principal `modules/layout.tsx`:
      - `DynamicSidebar.tsx`, `Header.tsx`, `SystemSwitcher.tsx` (permite cambiar entre `INVENTORY` y `PURCHASES` o solicitar credenciales del segundo sistema sin perder la sesión del primero), `BreadcrumbNav.tsx` y `ProtectedRouteGuard.tsx`.
 

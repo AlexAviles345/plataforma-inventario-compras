@@ -15,6 +15,8 @@ npm run dev
 
 La aplicación queda disponible en <http://localhost:5173>. En desarrollo, Vite reenvía las solicitudes a `/api/**` hacia `API_PROXY_TARGET` o, si no se define, hacia `http://localhost:3000`.
 
+El login por correo y contraseña es el flujo normal. El acceso manual mediante un JWT está oculto por defecto y se reserva para diagnosticar módulos aislados sin Auth. Para habilitarlo temporalmente, define `VITE_ENABLE_DEV_TOKEN_ACCESS=true` en `.env`; nunca se muestra en builds de producción.
+
 También puede iniciarse junto con todos los backends mediante `npm run dev` desde la raíz del repositorio.
 
 | Comando                 | Acción                                                     |

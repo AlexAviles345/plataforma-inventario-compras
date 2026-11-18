@@ -14,6 +14,9 @@ function safeReturnPath(value: string | null): string {
 export function LoginPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const developmentTokenAccessEnabled =
+    import.meta.env.DEV &&
+    import.meta.env.VITE_ENABLE_DEV_TOKEN_ACCESS === 'true';
   const onAuthenticated = () => {
     navigate(safeReturnPath(searchParams.get('returnTo')), { replace: true });
   };
@@ -22,12 +25,12 @@ export function LoginPage() {
     <AuthLayout>
       <div className="space-y-4">
         <LoginFormCard onAuthenticated={onAuthenticated} />
-        {import.meta.env.DEV && (
+        {developmentTokenAccessEnabled && (
           <DevelopmentTokenAccess onAuthenticated={onAuthenticated} />
         )}
         <p className="text-center text-xs leading-5 text-muted-foreground">
-          El access token permanece únicamente en memoria. Al expirar deberás
-          autenticarte nuevamente.
+          Por seguridad, deberás iniciar sesión nuevamente cuando tu sesión
+          expire.
         </p>
       </div>
     </AuthLayout>
