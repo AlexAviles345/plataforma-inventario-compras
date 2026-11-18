@@ -68,7 +68,8 @@ export function readHiddenLine(
  * entorno ni en argumentos, que quedan visibles en el historial y en `ps`.
  */
 export async function readFirstLine(input: Readable): Promise<string> {
-  const clean = (line: string) => line.replace(/^﻿/, '').replace(/\r$/, '');
+  const clean = (line: string) =>
+    line.replace(/^\uFEFF/, '').replace(/\r$/, '');
   let buffer = '';
   for await (const chunk of input) {
     buffer += (chunk as Buffer | string).toString();
