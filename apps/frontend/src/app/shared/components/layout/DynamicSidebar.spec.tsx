@@ -1,14 +1,26 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { HttpResponse, http } from 'msw';
 import { describe, expect, it } from 'vitest';
 
 import { useAuthSessionStore } from '@shared/stores/auth-session.store';
 import { createAccessToken } from '@/test/token-fixture';
+import { mockApiServer } from '@/test/server';
 import { DynamicSidebar } from './DynamicSidebar';
 
 function renderSidebar() {
   useAuthSessionStore.getState().setAccessToken(createAccessToken());
+  mockApiServer.use(
+    http.post(/\/api\/auth\/logout$/, () =>
+      HttpResponse.json({
+        error: false,
+        statusCode: 200,
+        message: 'Sesión cerrada exitosamente',
+        data: null,
+      }),
+    ),
+  );
 
   return render(
     <MemoryRouter initialEntries={['/dashboard']}>
@@ -49,7 +61,7 @@ describe('DynamicSidebar', () => {
       }),
     );
 
-    expect(screen.getByText('Pantalla de acceso')).toBeInTheDocument();
+    expect(await screen.findByText('Pantalla de acceso')).toBeInTheDocument();
     expect(useAuthSessionStore.getState().sessions).toEqual({});
   });
 });

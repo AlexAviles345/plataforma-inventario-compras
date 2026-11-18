@@ -1,4 +1,4 @@
-import { LogOut } from 'lucide-react';
+import { LoaderCircle, LogOut } from 'lucide-react';
 
 import { Button } from '@shared/components/ui/button';
 import {
@@ -14,13 +14,15 @@ import {
 interface SignOutConfirmationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: () => void;
+  onConfirm: () => void | Promise<void>;
+  pending?: boolean;
 }
 
 export function SignOutConfirmationDialog({
   open,
   onOpenChange,
   onConfirm,
+  pending = false,
 }: SignOutConfirmationDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -36,12 +38,18 @@ export function SignOutConfirmationDialog({
         </DialogHeader>
         <DialogFooter>
           <DialogClose asChild>
-            <Button type="button" variant="outline">
+            <Button type="button" variant="outline" disabled={pending}>
               Cancelar
             </Button>
           </DialogClose>
-          <Button type="button" variant="destructive" onClick={onConfirm}>
-            Cerrar sesión
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={onConfirm}
+            disabled={pending}
+          >
+            {pending && <LoaderCircle className="animate-spin" />}
+            {pending ? 'Cerrando…' : 'Cerrar sesión'}
           </Button>
         </DialogFooter>
       </DialogContent>

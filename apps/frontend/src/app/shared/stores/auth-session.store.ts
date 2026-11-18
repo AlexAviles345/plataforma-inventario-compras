@@ -15,7 +15,9 @@ import {
 interface AuthSessionState {
   sessions: SystemSessions;
   activeSystem: SystemCode | null;
+  renewableSystem: SystemCode | null;
   setAccessToken: (accessToken: string) => AccessTokenClaims;
+  setRenewableAccessToken: (accessToken: string) => AccessTokenClaims;
   setActiveSystem: (system: SystemCode) => boolean;
   removeSystemSession: (system: SystemCode) => void;
   clearSession: () => void;
@@ -24,28 +26,10 @@ interface AuthSessionState {
 export const useAuthSessionStore = create<AuthSessionState>((set, get) => ({
   sessions: {},
   activeSystem: null,
-  setAccessToken: (accessToken) => {
-    const normalizedToken = accessToken.trim();
-    const claims = decodeAndValidateAccessToken(normalizedToken);
-    const belongsToAnotherUser = Object.values(get().sessions).some(
-      (session) => session.claims.sub !== claims.sub,
-    );
-
-    if (belongsToAnotherUser) {
-      throw new InvalidAccessTokenError(
-        'No se pueden combinar sesiones de usuarios distintos en la misma ventana',
-      );
-    }
-
-    const session: SystemSession = { accessToken: normalizedToken, claims };
-
-    set((state) => ({
-      sessions: { ...state.sessions, [claims.system]: session },
-      activeSystem: claims.system,
-    }));
-
-    return claims;
-  },
+  renewableSystem: null,
+  setAccessToken: (accessToken) => installAccessToken(accessToken, false),
+  setRenewableAccessToken: (accessToken) =>
+    installAccessToken(accessToken, true),
   setActiveSystem: (system) => {
     const session = get().sessions[system];
 
@@ -72,10 +56,45 @@ export const useAuthSessionStore = create<AuthSessionState>((set, get) => ({
           state.activeSystem === system
             ? (fallbackSystem ?? null)
             : state.activeSystem,
+        renewableSystem:
+          state.renewableSystem === system ? null : state.renewableSystem,
       };
     }),
-  clearSession: () => set({ sessions: {}, activeSystem: null }),
+  clearSession: () =>
+    set({ sessions: {}, activeSystem: null, renewableSystem: null }),
 }));
+
+function installAccessToken(
+  accessToken: string,
+  renewable: boolean,
+): AccessTokenClaims {
+  const store = useAuthSessionStore.getState();
+  const normalizedToken = accessToken.trim();
+  const claims = decodeAndValidateAccessToken(normalizedToken);
+  const belongsToAnotherUser = Object.values(store.sessions).some(
+    (session) => session.claims.sub !== claims.sub,
+  );
+
+  if (belongsToAnotherUser) {
+    throw new InvalidAccessTokenError(
+      'No se pueden combinar sesiones de usuarios distintos en la misma ventana',
+    );
+  }
+
+  const session: SystemSession = { accessToken: normalizedToken, claims };
+
+  useAuthSessionStore.setState((state) => ({
+    sessions: { ...state.sessions, [claims.system]: session },
+    activeSystem: claims.system,
+    renewableSystem: renewable
+      ? claims.system
+      : state.renewableSystem === claims.system
+        ? null
+        : state.renewableSystem,
+  }));
+
+  return claims;
+}
 
 export function getValidSystemSession(
   system: SystemCode,

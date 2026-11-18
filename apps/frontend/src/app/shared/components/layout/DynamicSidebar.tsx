@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { LogOut } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 import { NAVIGATION_ITEMS } from '@shared/config/navigation.config';
+import { logoutSession } from '@shared/services/auth-session.service';
 import {
   selectActiveSession,
   useAuthSessionStore,
@@ -17,6 +19,7 @@ interface DynamicSidebarProps {
 export function DynamicSidebar({ onNavigate }: DynamicSidebarProps) {
   const navigate = useNavigate();
   const [signOutDialogOpen, setSignOutDialogOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const activeSession = useAuthSessionStore(selectActiveSession);
   const sessions = useAuthSessionStore((state) => state.sessions);
   const clearSession = useAuthSessionStore((state) => state.clearSession);
@@ -33,11 +36,19 @@ export function DynamicSidebar({ onNavigate }: DynamicSidebarProps) {
     return true;
   });
 
-  const confirmSignOut = () => {
-    setSignOutDialogOpen(false);
-    clearSession();
-    navigate('/login', { replace: true });
-    onNavigate?.();
+  const confirmSignOut = async () => {
+    setSigningOut(true);
+    try {
+      await logoutSession();
+      setSignOutDialogOpen(false);
+      clearSession();
+      navigate('/login', { replace: true });
+      onNavigate?.();
+    } catch {
+      toast.error('No fue posible cerrar la sesión. Inténtalo nuevamente.');
+    } finally {
+      setSigningOut(false);
+    }
   };
 
   return (
@@ -102,6 +113,7 @@ export function DynamicSidebar({ onNavigate }: DynamicSidebarProps) {
         open={signOutDialogOpen}
         onOpenChange={setSignOutDialogOpen}
         onConfirm={confirmSignOut}
+        pending={signingOut}
       />
     </div>
   );

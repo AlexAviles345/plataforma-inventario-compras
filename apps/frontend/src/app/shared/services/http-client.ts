@@ -71,6 +71,7 @@ function isSuccessEnvelope<T>(value: unknown): value is ApiSuccessResponse<T> {
 const gatewayClient = axios.create({
   headers: { Accept: 'application/json' },
   timeout: 15_000,
+  withCredentials: true,
 });
 
 gatewayClient.interceptors.request.use((request) => {

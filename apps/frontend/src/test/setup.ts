@@ -13,6 +13,7 @@ afterEach(() => {
   mockApiServer.resetHandlers();
   useAuthSessionStore.getState().clearSession();
   sessionStorage.clear();
+  document.cookie = 'td_csrf=; Max-Age=0; Path=/';
 });
 
 afterAll(() => mockApiServer.close());

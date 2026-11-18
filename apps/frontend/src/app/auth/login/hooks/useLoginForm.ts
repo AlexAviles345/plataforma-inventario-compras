@@ -13,7 +13,9 @@ interface UseLoginFormOptions {
 }
 
 export function useLoginForm({ onAuthenticated }: UseLoginFormOptions) {
-  const setAccessToken = useAuthSessionStore((state) => state.setAccessToken);
+  const setRenewableAccessToken = useAuthSessionStore(
+    (state) => state.setRenewableAccessToken,
+  );
   const removeSystemSession = useAuthSessionStore(
     (state) => state.removeSystemSession,
   );
@@ -40,7 +42,7 @@ export function useLoginForm({ onAuthenticated }: UseLoginFormOptions) {
         );
       }
 
-      const claims = setAccessToken(response.accessToken);
+      const claims = setRenewableAccessToken(response.accessToken);
       if (claims.system !== credentials.system) {
         removeSystemSession(claims.system);
         throw new InvalidAccessTokenError(

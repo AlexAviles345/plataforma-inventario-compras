@@ -4,6 +4,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { AccessDeniedPage } from '@shared/components/layout/AccessDeniedPage';
 import { Skeleton } from '@shared/components/ui/skeleton';
 import { ProtectedRouteGuard } from './ProtectedRouteGuard';
+import { SessionBootstrap } from './SessionBootstrap';
 import { SystemTokenGuard } from './SystemTokenGuard';
 
 const LoginPage = lazy(() =>
@@ -67,73 +68,75 @@ function RouteLoader() {
 export function AppRouter() {
   return (
     <Suspense fallback={<RouteLoader />}>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route element={<ProtectedRouteGuard />}>
-          <Route element={<ModulesLayout />}>
-            <Route index element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/forbidden" element={<AccessDeniedPage />} />
-            <Route
-              path="/inventory/products"
-              element={
-                <SystemTokenGuard system="INVENTORY">
-                  <ProductsPage />
-                </SystemTokenGuard>
-              }
-            />
-            <Route
-              path="/purchases/orders"
-              element={
-                <SystemTokenGuard system="PURCHASES">
-                  <OrdersPage />
-                </SystemTokenGuard>
-              }
-            />
-            <Route
-              path="/purchases/orders/new"
-              element={
-                <SystemTokenGuard system="PURCHASES">
-                  <OrderFormPage />
-                </SystemTokenGuard>
-              }
-            />
-            <Route
-              path="/purchases/orders/:orderId"
-              element={
-                <SystemTokenGuard system="PURCHASES">
-                  <OrderDetailPage />
-                </SystemTokenGuard>
-              }
-            />
-            <Route
-              path="/purchases/orders/:orderId/edit"
-              element={
-                <SystemTokenGuard system="PURCHASES">
-                  <OrderFormPage />
-                </SystemTokenGuard>
-              }
-            />
-            <Route
-              path="/administration/users"
-              element={
-                <SystemTokenGuard roles={['ADMIN']}>
-                  <UsersPage />
-                </SystemTokenGuard>
-              }
-            />
-            <Route
-              path="/administration/systems"
-              element={
-                <SystemTokenGuard roles={['ADMIN']}>
-                  <SystemsPage />
-                </SystemTokenGuard>
-              }
-            />
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <SessionBootstrap>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route element={<ProtectedRouteGuard />}>
+            <Route element={<ModulesLayout />}>
+              <Route index element={<Navigate to="/dashboard" replace />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/forbidden" element={<AccessDeniedPage />} />
+              <Route
+                path="/inventory/products"
+                element={
+                  <SystemTokenGuard system="INVENTORY">
+                    <ProductsPage />
+                  </SystemTokenGuard>
+                }
+              />
+              <Route
+                path="/purchases/orders"
+                element={
+                  <SystemTokenGuard system="PURCHASES">
+                    <OrdersPage />
+                  </SystemTokenGuard>
+                }
+              />
+              <Route
+                path="/purchases/orders/new"
+                element={
+                  <SystemTokenGuard system="PURCHASES">
+                    <OrderFormPage />
+                  </SystemTokenGuard>
+                }
+              />
+              <Route
+                path="/purchases/orders/:orderId"
+                element={
+                  <SystemTokenGuard system="PURCHASES">
+                    <OrderDetailPage />
+                  </SystemTokenGuard>
+                }
+              />
+              <Route
+                path="/purchases/orders/:orderId/edit"
+                element={
+                  <SystemTokenGuard system="PURCHASES">
+                    <OrderFormPage />
+                  </SystemTokenGuard>
+                }
+              />
+              <Route
+                path="/administration/users"
+                element={
+                  <SystemTokenGuard roles={['ADMIN']}>
+                    <UsersPage />
+                  </SystemTokenGuard>
+                }
+              />
+              <Route
+                path="/administration/systems"
+                element={
+                  <SystemTokenGuard roles={['ADMIN']}>
+                    <SystemsPage />
+                  </SystemTokenGuard>
+                }
+              />
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Route>
           </Route>
-        </Route>
-      </Routes>
+        </Routes>
+      </SessionBootstrap>
     </Suspense>
   );
 }
