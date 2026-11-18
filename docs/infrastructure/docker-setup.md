@@ -29,7 +29,7 @@ npm run dev:down
 ```
 
 `npm run dev` inicia primero esta infraestructura y después todas las aplicaciones;
-`npm run dev:apps` omite Docker. Ninguno de los comandos elimina volúmenes.
+`npm run dev:apps` omite Docker y levanta las aplicaciones junto con los consumidores de proyecciones de Purchases. Kafka debe estar accesible para que `auth.users.events` e `inventory.products.events` se reflejen en su base local. Ninguno de los comandos elimina volúmenes.
 
 Luego, ejecuta el siguiente comando:
 

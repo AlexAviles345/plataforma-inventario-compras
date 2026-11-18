@@ -72,6 +72,8 @@ python manage.py consume_projections --domain user
 python manage.py consume_projections --domain product
 ```
 
+El supervisor raíz (`npm run dev` o `npm run dev:apps`) inicia ambos consumidores junto con el servidor Django. Los comandos manuales son útiles cuando se ejecuta Purchases de forma aislada.
+
 Para importar un snapshot JSON consistente con watermarks por partición:
 
 ```powershell

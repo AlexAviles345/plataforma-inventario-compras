@@ -41,7 +41,7 @@ npm run dev
    - los de PostgreSQL, MySQL y Kafka, libres o en uso por sus propios contenedores. Si otro contenedor o programa los ocupa, dice cuál.
 3. **Infraestructura:** levanta PostgreSQL de Auth y de Purchases, MySQL y Kafka, y crea los tópicos.
 4. **Migraciones:** aplica las de Auth y Purchases.
-5. **Aplicaciones:** levanta Gateway, Auth, Inventory, Purchases y los frontends en paralelo, con logs identificados.
+5. **Aplicaciones:** levanta Gateway, Auth, Inventory, Purchases, los consumidores de proyecciones de Purchases y los frontends en paralelo, con logs identificados.
 
 Comandos disponibles:
 
@@ -50,7 +50,7 @@ Comandos disponibles:
 | `npm run dev`           | Prepara, verifica, inicia bases y Kafka, aplica migraciones y levanta todas las aplicaciones    |
 | `npm run dev:check`     | Solo diagnóstico, sin instalar ni iniciar nada (`npm run dev:check -- --no-infra` omite Docker) |
 | `npm run setup`         | Solo preparación: dependencias y `.env` faltantes                                               |
-| `npm run dev:apps`      | Prepara y levanta aplicaciones sin iniciar Docker                                               |
+| `npm run dev:apps`      | Prepara y levanta aplicaciones y consumidores sin iniciar Docker                                |
 | `npm run dev:infra`     | Inicia únicamente PostgreSQL, MySQL y Kafka                                                     |
 | `npm run dev:status`    | Muestra el estado de la infraestructura                                                         |
 | `npm run dev:logs`      | Sigue los últimos logs de infraestructura                                                       |
@@ -58,7 +58,7 @@ Comandos disponibles:
 | `npm run dev:edge`      | Construye frontend y Nginx Edge sobre el Gateway local                                          |
 | `npm run dev:edge:down` | Detiene el frontend y Nginx Edge locales                                                        |
 
-`Ctrl+C` detiene conjuntamente Gateway, Auth, Inventory, Purchases y frontends. La
+`Ctrl+C` detiene conjuntamente Gateway, Auth, Inventory, Purchases, consumidores y frontends. La
 infraestructura iniciada en segundo plano permanece activa hasta ejecutar
 `npm run dev:down`.
 
