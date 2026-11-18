@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 import { DataSource, EntityManager, In, QueryFailedError } from 'typeorm';
+import type { SystemCode } from '../access/access-matrix';
 import { AuditAction, recordAudit } from '../audit/audit-log';
 import { AuthDomainError, ErrorCode, type ErrorDetail } from '../common/errors';
 import { currentRequestId } from '../common/request-context';
@@ -411,6 +412,30 @@ export class UsersService {
         if (changes.includes('assignments'))
           await this.replaceAssignments(manager, id, current, next.assignments);
 
+        if (changes.includes('password') || changes.includes('active')) {
+          await this.revokeRefreshSessions(manager, id);
+        } else if (changes.includes('assignments')) {
+          const currentBySystem = new Map(
+            current.map((assignment) => [assignment.system, assignment.role]),
+          );
+          const nextBySystem = new Map(
+            next.assignments.map((assignment) => [
+              assignment.system,
+              assignment.role,
+            ]),
+          );
+          const affectedSystems = [
+            ...new Set([
+              ...current.map((assignment) => assignment.system),
+              ...next.assignments.map((assignment) => assignment.system),
+            ]),
+          ].filter(
+            (system) =>
+              currentBySystem.get(system) !== nextBySystem.get(system),
+          );
+          await this.revokeRefreshSessions(manager, id, affectedSystems);
+        }
+
         const view = await this.loadView(manager, id);
         if (!view) throw notFound();
         const publicChange = changes.some((field) =>
@@ -508,6 +533,20 @@ export class UsersService {
           { role, updatedAt: () => 'now()' },
         );
     }
+  }
+
+  private async revokeRefreshSessions(
+    manager: EntityManager,
+    userId: string,
+    systems?: SystemCode[],
+  ): Promise<void> {
+    await manager.query(
+      `UPDATE refresh_sessions
+          SET revoked_at = COALESCE(revoked_at, now())
+        WHERE user_id = $1
+          AND ($2::varchar[] IS NULL OR system_code = ANY($2::varchar[]))`,
+      [userId, systems?.length ? systems : null],
+    );
   }
 
   private async recordChange(

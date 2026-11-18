@@ -5,7 +5,11 @@ import type { Role, SystemCode } from '../access/access-matrix';
 import { AuthDomainError, ErrorCode } from '../common/errors';
 import { PasswordHasher } from '../users/password-hasher';
 import { normalizeEmail } from '../users/user-rules';
-import { TokenService, type IssuedToken } from './token.service';
+import {
+  RefreshSessionService,
+  type RenewableSession,
+} from './refresh-session.service';
+import { TokenService } from './token.service';
 
 export interface LoginInput {
   email: string;
@@ -39,6 +43,7 @@ export class AuthService implements OnModuleInit {
     private readonly dataSource: DataSource,
     private readonly hasher: PasswordHasher,
     private readonly tokens: TokenService,
+    private readonly sessions: RefreshSessionService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -50,7 +55,7 @@ export class AuthService implements OnModuleInit {
    * Siempre ejecuta exactamente una verificación Argon2 (contra un hash
    * simulado si el email no existe) para no distinguir los casos por tiempo.
    */
-  async login(input: LoginInput): Promise<IssuedToken> {
+  async login(input: LoginInput): Promise<RenewableSession> {
     const [row] = await this.dataSource.query<LoginRow[]>(
       `SELECT u.id, u.email, u.password_hash, u.active, us.role,
               s.access_token_ttl_seconds AS ttl
@@ -69,7 +74,7 @@ export class AuthService implements OnModuleInit {
     if (!row || !passwordMatches || !row.active || !row.role)
       throw invalidCredentials();
 
-    return this.tokens.issue(
+    return this.sessions.start(
       {
         userId: row.id,
         email: row.email,
@@ -78,5 +83,21 @@ export class AuthService implements OnModuleInit {
       },
       this.tokens.effectiveTtl(row.ttl),
     );
+  }
+
+  refresh(input: {
+    refreshToken?: string;
+    csrfCookie?: string;
+    csrfHeader?: string;
+  }): Promise<RenewableSession> {
+    return this.sessions.rotate(input);
+  }
+
+  logout(input: {
+    refreshToken?: string;
+    csrfCookie?: string;
+    csrfHeader?: string;
+  }): Promise<void> {
+    return this.sessions.revoke(input);
   }
 }

@@ -75,8 +75,31 @@ export function validateEnvironment(
 
   Object.assign(result, databaseVariables(env, nodeEnvironment));
   Object.assign(result, jwtVariables(env));
+  Object.assign(result, refreshSessionVariables(env, nodeEnvironment));
   Object.assign(result, outboxVariables(env, nodeEnvironment));
   return result;
+}
+
+function refreshSessionVariables(
+  env: Record<string, unknown>,
+  nodeEnvironment: string,
+): Record<string, unknown> {
+  const secureDefault = nodeEnvironment === 'production' ? 'true' : 'false';
+  const secure = env.REFRESH_COOKIE_SECURE ?? secureDefault;
+  if (secure !== 'true' && secure !== 'false')
+    throw new Error('REFRESH_COOKIE_SECURE debe ser true o false');
+  if (nodeEnvironment === 'production' && secure !== 'true')
+    throw new Error('REFRESH_COOKIE_SECURE debe ser true en producción');
+
+  return {
+    REFRESH_TOKEN_TTL_SECONDS: integer(
+      env,
+      'REFRESH_TOKEN_TTL_SECONDS',
+      604_800,
+      2_592_000,
+    ),
+    REFRESH_COOKIE_SECURE: secure === 'true',
+  };
 }
 
 /**

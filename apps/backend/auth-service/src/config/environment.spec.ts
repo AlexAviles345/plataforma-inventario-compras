@@ -10,6 +10,7 @@ const PRODUCTION_DATABASE = {
   DB_NAME: 'auth',
   DB_USER: 'auth',
   DB_PASSWORD: 'secreto-externo',
+  REFRESH_COOKIE_SECURE: 'true',
 };
 
 const validate = (env: Record<string, unknown> = {}) =>
@@ -171,6 +172,35 @@ describe('validateEnvironment', () => {
     it('rejects an empty issuer or audience', () => {
       expect(() => validate({ JWT_ISSUER: ' ' })).toThrow(/JWT_ISSUER/);
       expect(() => validate({ JWT_AUDIENCE: '' })).toThrow(/JWT_AUDIENCE/);
+    });
+  });
+
+  describe('refresh sessions', () => {
+    it('uses a seven-day session and non-secure localhost cookies by default', () => {
+      expect(validate()).toMatchObject({
+        REFRESH_TOKEN_TTL_SECONDS: 604800,
+        REFRESH_COOKIE_SECURE: false,
+      });
+    });
+
+    it.each(['0', '2592001', 'invalid'])(
+      'rejects REFRESH_TOKEN_TTL_SECONDS=%p',
+      (value) => {
+        expect(() => validate({ REFRESH_TOKEN_TTL_SECONDS: value })).toThrow(
+          /REFRESH_TOKEN_TTL_SECONDS/,
+        );
+      },
+    );
+
+    it('requires secure cookies in production', () => {
+      expect(() =>
+        validate({
+          NODE_ENV: 'production',
+          ...PRODUCTION_DATABASE,
+          REFRESH_COOKIE_SECURE: 'false',
+          KAFKA_BOOTSTRAP_SERVERS: 'kafka:29092',
+        }),
+      ).toThrow(/REFRESH_COOKIE_SECURE/);
     });
   });
 });
