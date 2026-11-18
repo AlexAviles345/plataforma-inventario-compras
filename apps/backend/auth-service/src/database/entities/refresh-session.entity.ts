@@ -1,5 +1,16 @@
-import { Check, Column, Entity, Index, PrimaryColumn, Unique } from 'typeorm';
+import {
+  Check,
+  Column,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryColumn,
+  Unique,
+} from 'typeorm';
 import type { SystemCode } from '../../access/access-matrix';
+import { SystemEntity } from './system.entity';
+import { UserEntity } from './user.entity';
 
 @Entity({ name: 'refresh_sessions' })
 @Unique('uq_refresh_sessions_token_hash', ['tokenHash'])
@@ -41,4 +52,28 @@ export class RefreshSessionEntity {
 
   @Column({ name: 'replaced_by_id', type: 'uuid', nullable: true })
   replacedById!: string | null;
+
+  @ManyToOne(() => UserEntity, { onDelete: 'RESTRICT' })
+  @JoinColumn({
+    name: 'user_id',
+    foreignKeyConstraintName: 'fk_refresh_sessions_user',
+  })
+  user?: UserEntity;
+
+  @ManyToOne(() => SystemEntity, { onDelete: 'RESTRICT' })
+  @JoinColumn({
+    name: 'system_code',
+    foreignKeyConstraintName: 'fk_refresh_sessions_system',
+  })
+  system?: SystemEntity;
+
+  @ManyToOne(() => RefreshSessionEntity, {
+    nullable: true,
+    onDelete: 'RESTRICT',
+  })
+  @JoinColumn({
+    name: 'replaced_by_id',
+    foreignKeyConstraintName: 'fk_refresh_sessions_replacement',
+  })
+  replacement?: RefreshSessionEntity | null;
 }
