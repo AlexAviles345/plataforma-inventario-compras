@@ -60,7 +60,7 @@ class Command(BaseCommand):
 
         bootstrap_servers = str(
             options.get("bootstrap_servers")
-            or getattr(settings, "KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
+            or getattr(settings, "KAFKA_BOOTSTRAP_SERVERS", "127.0.0.1:9092")
         )
         max_messages = int(options["max_messages"])
         poll_timeout = float(options["poll_timeout"])

@@ -94,7 +94,7 @@ function outboxVariables(
 
   const production = nodeEnvironment === 'production';
   const raw =
-    env.KAFKA_BOOTSTRAP_SERVERS ?? (production ? undefined : 'localhost:9092');
+    env.KAFKA_BOOTSTRAP_SERVERS ?? (production ? undefined : '127.0.0.1:9092');
   if (typeof raw !== 'string' || raw.trim() === '')
     throw new Error(
       production

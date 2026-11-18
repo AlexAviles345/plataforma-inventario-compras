@@ -32,7 +32,7 @@ copy .env.example .env
 | `JWT_SECRET`                          | **ninguno, obligatorio**                     | Secreto HS256 de al menos 32 bytes; el mismo del Gateway          |
 | `JWT_ISSUER` / `JWT_AUDIENCE`         | techdistribution-auth / techdistribution-api | Deben coincidir con el Gateway y los servicios                    |
 | `JWT_MAX_TTL_SECONDS`                 | 900                                          | Vigencia máxima del access token (1–3600)                         |
-| `KAFKA_BOOTSTRAP_SERVERS`             | localhost:9092 (obligatorio en producción)   | Brokers `host:puerto` separados por comas                         |
+| `KAFKA_BOOTSTRAP_SERVERS`             | 127.0.0.1:9092 (obligatorio en producción)   | Brokers `host:puerto` separados por comas                         |
 | `OUTBOX_PUBLISHER_ENABLED`            | true                                         | `false` deja los eventos acumulados en el outbox                  |
 | `OUTBOX_POLL_INTERVAL_MS`             | 1000                                         | Pausa entre rondas del publicador cuando no hay trabajo (1–60000) |
 

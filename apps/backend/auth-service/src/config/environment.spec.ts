@@ -111,7 +111,7 @@ describe('validateEnvironment', () => {
     it('defaults to the local Kafka and an enabled publisher', () => {
       expect(validate()).toMatchObject({
         OUTBOX_PUBLISHER_ENABLED: true,
-        KAFKA_BOOTSTRAP_SERVERS: 'localhost:9092',
+        KAFKA_BOOTSTRAP_SERVERS: '127.0.0.1:9092',
         OUTBOX_POLL_INTERVAL_MS: 1000,
       });
     });
