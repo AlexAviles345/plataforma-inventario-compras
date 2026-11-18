@@ -67,6 +67,20 @@ jobs:
     defaults:
       run:
         working-directory: apps/backend/auth-service
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: auth_db
+          POSTGRES_USER: auth_user
+          POSTGRES_PASSWORD: auth_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U auth_user -d auth_db"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -75,13 +89,28 @@ jobs:
           cache: npm
           cache-dependency-path: apps/backend/auth-service/package-lock.json
       - run: npm ci --ignore-scripts
+      # Único paquete con script de instalación: descarga el binario de librdkafka.
+      - run: npm rebuild @confluentinc/kafka-javascript
       - run: npm run format:check
       - run: npm run lint
       - run: npm run build
       - run: npm test -- --runInBand
+      - name: Start Kafka and create topics
+        working-directory: .
+        run: |
+          docker compose -f docker-compose.example.yml up -d --wait kafka
+          docker compose -f docker-compose.example.yml run --rm kafka-init
       - run: npm run test:e2e -- --runInBand
-      - run: npm audit --registry=https://registry.npmjs.org/ --omit=dev --audit-level=high
+        env:
+          KAFKA_E2E: 'true'
+          KAFKA_BOOTSTRAP_SERVERS: localhost:9092
+      - run: node dist/database/migrate.js run
+      - run: node dist/database/migrate.js show
+      - run: npm run audit:production
       - run: docker build -t techdistribution-auth .
+      - if: always()
+        working-directory: .
+        run: docker compose -f docker-compose.example.yml down -v
   gateway:
     runs-on: ubuntu-latest
     defaults:
@@ -99,7 +128,7 @@ jobs:
       - run: npm run build
       - run: npm test -- --runInBand
       - run: npm run test:e2e -- --runInBand
-      - run: npm audit --registry=https://registry.npmjs.org/ --omit=dev --audit-level=high
+      - run: npm run audit:production
       - run: docker build -t techdistribution-gateway .
   infrastructure:
     runs-on: ubuntu-latest

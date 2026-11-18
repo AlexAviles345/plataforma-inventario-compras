@@ -6,10 +6,11 @@
   "private": true,
   "license": "UNLICENSED",
   "engines": {
-    "node": ">=24.9 <25",
+    "node": ">=24.11 <25",
     "npm": ">=11 <12"
   },
   "scripts": {
+    "audit:production": "audit-ci --config audit-ci.jsonc",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\"",
@@ -17,6 +18,10 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
+    "migration:run": "nest build && node dist/database/migrate.js run",
+    "migration:revert": "nest build && node dist/database/migrate.js revert",
+    "migration:show": "nest build && node dist/database/migrate.js show",
+    "bootstrap:admin": "nest build && node dist/cli/bootstrap-admin.js",
     "lint": "eslint \"{src,test}/**/*.ts\"",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -25,13 +30,23 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@confluentinc/kafka-javascript": "^1.11.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^11.0.1",
+    "@nestjs/jwt": "^11.0.2",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/swagger": "^11.4.5",
+    "@nestjs/typeorm": "^11.0.3",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "argon2": "^0.45.1",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
+    "pg": "^8.23.1",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "typeorm": "^1.1.2"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
@@ -43,6 +58,7 @@
     "@types/jest": "^30.0.0",
     "@types/node": "^24.0.0",
     "@types/supertest": "^7.0.0",
+    "audit-ci": "^7.1.0",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",

@@ -10,7 +10,8 @@
   "scripts": {
     "dev": "node tools/dev.mjs --with-infra",
     "dev:apps": "node tools/dev.mjs",
-    "dev:check": "node tools/dev.mjs --check",
+    "dev:check": "node tools/doctor.mjs",
+    "setup": "node tools/setup.mjs",
     "dev:infra": "node tools/infra.mjs up",
     "dev:status": "node tools/infra.mjs status",
     "dev:logs": "node tools/infra.mjs logs",

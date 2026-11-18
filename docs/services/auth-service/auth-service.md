@@ -2,7 +2,7 @@
 
 Las respuestas JSON de negocio siguen el [estándar común](../../standards/api-responses.md) y las credenciales siguen el [contrato de tokens y sesiones](../../standards/jwt-and-sessions.md).
 
-Estado: base NestJS ejecutable con configuración validada, salud, OpenAPI, Docker y pruebas. El dominio, PostgreSQL y el productor Kafka siguen planificados. No consulta a otros dominios por HTTP.
+Estado: implementados PostgreSQL con migraciones, dominio de usuarios con outbox transaccional, bootstrap del primer ADMIN, login con JWT, endpoints administrativos y publicador del outbox hacia Kafka (`auth.users.events`). Quedan las pruebas de aceptación y el cierre ([plan](./auth-implementation-plan.md)). No consulta a otros dominios por HTTP.
 
 ## Datos y seguridad
 
@@ -22,10 +22,14 @@ Login recibe `{email,password,system}`. Verificar usuario activo, contraseña y 
 | --- | --- | --- |
 | `POST /api/auth/login` | Público | Credenciales/sistema → accessToken, tokenType Bearer, expiresIn |
 | `POST /api/auth/users` | ADMIN | Crear usuario/asignaciones; 201; email duplicado 409 |
+| `GET /api/auth/users` | ADMIN | Listado paginado de usuarios con sus asignaciones, sin hash de contraseña |
+| `GET /api/auth/users/{id}` | ADMIN | Consultar un usuario; inexistente 404 |
 | `PUT /api/auth/users/{id}` | ADMIN | Actualizar con expectedVersion; conflicto 409; desactivar con active:false |
 | `GET /api/auth/systems` | ADMIN | Consultar sistemas y TTL |
-| `PUT /api/auth/systems/{code}` | ADMIN | Cambiar TTL con expectedVersion para futuras emisiones |
+| `PUT /api/auth/systems/{code}` | ADMIN | Cambiar TTL (1 a `JWT_MAX_TTL_SECONDS`) con expectedVersion para futuras emisiones |
 | `GET /api/auth/openapi.json` | Desarrollo | Schema con paths completos y servidor `/` |
+
+Códigos propios de Auth, además del [catálogo común](../../standards/api-responses.md): `401 INVALID_CREDENTIALS` (cualquier fallo de login, sin revelar la causa), `409 EMAIL_ALREADY_EXISTS` (email ya registrado tras normalizar) y `409 LAST_ACTIVE_ADMIN` (el cambio dejaría sin ningún ADMIN activo). Las rutas ADMIN aceptan un token ADMIN de cualquiera de los dos sistemas y además comprueban en la base que el usuario siga activo y conserve ese rol. `PUT /api/auth/users/{id}` es parcial: conserva los campos omitidos y `assignments` reemplaza la lista completa.
 
 `POST /api/auth/refresh` y `POST /api/auth/logout` están reservados por el estándar, pero no forman parte de los endpoints del MVP ni deben exponerse parcialmente. Se habilitan juntos después de implementar sesiones renovables y los cambios correspondientes en el Gateway.
 

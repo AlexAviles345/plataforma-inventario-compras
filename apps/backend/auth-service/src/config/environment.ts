@@ -20,6 +20,31 @@ function integer(
   return value;
 }
 
+/** Valores del docker-compose.example.yml; nunca se aplican en producción. */
+const LOCAL_DATABASE: Record<string, string> = {
+  DB_HOST: '127.0.0.1',
+  DB_NAME: 'auth_db',
+  DB_USER: 'auth_user',
+  DB_PASSWORD: 'auth_password',
+};
+
+function requiredText(
+  env: Record<string, unknown>,
+  key: string,
+  production: boolean,
+  trim = true,
+): string {
+  const raw = env[key] ?? (production ? undefined : LOCAL_DATABASE[key]);
+  if (typeof raw !== 'string' || raw.trim() === '') {
+    throw new Error(
+      production
+        ? `${key} es obligatorio en producción`
+        : `${key} no puede estar vacío`,
+    );
+  }
+  return trim ? raw.trim() : raw;
+}
+
 export function validateEnvironment(
   env: Record<string, unknown>,
 ): Record<string, unknown> {
@@ -47,5 +72,100 @@ export function validateEnvironment(
     throw new Error('DOCS_ENABLED debe ser false en producción');
   }
   result.DOCS_ENABLED = docs === 'true';
+
+  Object.assign(result, databaseVariables(env, nodeEnvironment));
+  Object.assign(result, jwtVariables(env));
+  Object.assign(result, outboxVariables(env, nodeEnvironment));
   return result;
+}
+
+/**
+ * Publicador del outbox. Fuera de producción apunta al Kafka del Compose
+ * (puerto publicado en loopback). Desactivarlo no pierde eventos: quedan en
+ * `outbox_events` y se publican cuando vuelva a activarse.
+ */
+function outboxVariables(
+  env: Record<string, unknown>,
+  nodeEnvironment: string,
+): Record<string, unknown> {
+  const enabled = env.OUTBOX_PUBLISHER_ENABLED ?? 'true';
+  if (enabled !== 'true' && enabled !== 'false')
+    throw new Error('OUTBOX_PUBLISHER_ENABLED debe ser true o false');
+
+  const production = nodeEnvironment === 'production';
+  const raw =
+    env.KAFKA_BOOTSTRAP_SERVERS ?? (production ? undefined : 'localhost:9092');
+  if (typeof raw !== 'string' || raw.trim() === '')
+    throw new Error(
+      production
+        ? 'KAFKA_BOOTSTRAP_SERVERS es obligatorio en producción'
+        : 'KAFKA_BOOTSTRAP_SERVERS no puede estar vacío',
+    );
+  const brokers = raw.split(',').map((broker) => broker.trim());
+  if (brokers.some((broker) => !/^[A-Za-z0-9.-]+:\d{1,5}$/.test(broker)))
+    throw new Error(
+      'KAFKA_BOOTSTRAP_SERVERS debe ser una lista host:puerto separada por comas',
+    );
+
+  return {
+    OUTBOX_PUBLISHER_ENABLED: enabled === 'true',
+    KAFKA_BOOTSTRAP_SERVERS: brokers.join(','),
+    OUTBOX_POLL_INTERVAL_MS: integer(
+      env,
+      'OUTBOX_POLL_INTERVAL_MS',
+      1000,
+      60_000,
+    ),
+  };
+}
+
+/**
+ * Solo las variables de PostgreSQL. La usa el CLI de migraciones, que no firma
+ * tokens y por lo tanto no debe exigir JWT_SECRET.
+ */
+export function validateDatabaseEnvironment(
+  env: Record<string, unknown>,
+): Record<string, unknown> {
+  return { ...env, ...databaseVariables(env, env.NODE_ENV ?? 'development') };
+}
+
+function databaseVariables(
+  env: Record<string, unknown>,
+  nodeEnvironment: unknown,
+): Record<string, unknown> {
+  const production = nodeEnvironment === 'production';
+  return {
+    DB_HOST: requiredText(env, 'DB_HOST', production),
+    DB_PORT: integer(env, 'DB_PORT', 5432, 65535),
+    DB_NAME: requiredText(env, 'DB_NAME', production),
+    DB_USER: requiredText(env, 'DB_USER', production),
+    DB_PASSWORD: requiredText(env, 'DB_PASSWORD', production, false),
+    DB_POOL_MAX: integer(env, 'DB_POOL_MAX', 10, 100),
+  };
+}
+
+/** Mismas reglas que el Gateway: ambos deben compartir secreto, emisor y audiencia. */
+function jwtVariables(env: Record<string, unknown>): Record<string, unknown> {
+  const secret = env.JWT_SECRET;
+  if (
+    typeof secret !== 'string' ||
+    Buffer.byteLength(secret) < 32 ||
+    /^(tu_|change|replace|generate)/i.test(secret)
+  ) {
+    throw new Error(
+      'JWT_SECRET debe ser un secreto aleatorio de al menos 32 bytes, igual al del Gateway',
+    );
+  }
+  const text = (key: string, fallback: string) => {
+    const value = env[key] ?? fallback;
+    if (typeof value !== 'string' || !value.trim())
+      throw new Error(`${key} no puede estar vacío`);
+    return value;
+  };
+  return {
+    JWT_SECRET: secret,
+    JWT_ISSUER: text('JWT_ISSUER', 'techdistribution-auth'),
+    JWT_AUDIENCE: text('JWT_AUDIENCE', 'techdistribution-api'),
+    JWT_MAX_TTL_SECONDS: integer(env, 'JWT_MAX_TTL_SECONDS', 900, 3600),
+  };
 }
