@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { LogOut } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router-dom';
 
@@ -7,6 +8,7 @@ import {
   useAuthSessionStore,
 } from '@shared/stores/auth-session.store';
 import { cn } from '@shared/utils/cn';
+import { SignOutConfirmationDialog } from './SignOutConfirmationDialog';
 
 interface DynamicSidebarProps {
   onNavigate?: () => void;
@@ -14,6 +16,7 @@ interface DynamicSidebarProps {
 
 export function DynamicSidebar({ onNavigate }: DynamicSidebarProps) {
   const navigate = useNavigate();
+  const [signOutDialogOpen, setSignOutDialogOpen] = useState(false);
   const activeSession = useAuthSessionStore(selectActiveSession);
   const sessions = useAuthSessionStore((state) => state.sessions);
   const clearSession = useAuthSessionStore((state) => state.clearSession);
@@ -30,7 +33,8 @@ export function DynamicSidebar({ onNavigate }: DynamicSidebarProps) {
     return true;
   });
 
-  const signOut = () => {
+  const confirmSignOut = () => {
+    setSignOutDialogOpen(false);
     clearSession();
     navigate('/login', { replace: true });
     onNavigate?.();
@@ -86,13 +90,19 @@ export function DynamicSidebar({ onNavigate }: DynamicSidebarProps) {
         </div>
         <button
           type="button"
-          onClick={signOut}
+          onClick={() => setSignOutDialogOpen(true)}
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-slate-400 hover:bg-white/8 hover:text-white"
         >
           <LogOut className="size-4" aria-hidden="true" />
-          Cerrar sesión local
+          Cerrar sesión
         </button>
       </div>
+
+      <SignOutConfirmationDialog
+        open={signOutDialogOpen}
+        onOpenChange={setSignOutDialogOpen}
+        onConfirm={confirmSignOut}
+      />
     </div>
   );
 }

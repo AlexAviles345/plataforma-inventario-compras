@@ -294,6 +294,7 @@ apps/frontend/
      - Modo de asistencia para desarrollo local (solo con `import.meta.env.DEV` y `VITE_ENABLE_DEV_TOKEN_ACCESS=true`): permite pegar un token generado con `python manage.py generate_dev_token` para diagnosticar módulos individuales aunque `auth-service` esté apagado. Permanece oculto por defecto y nunca aparece en producción.
   4. Shell principal `modules/layout.tsx`:
      - `DynamicSidebar.tsx`, `Header.tsx`, `SystemSwitcher.tsx` (permite cambiar entre `INVENTORY` y `PURCHASES` o solicitar credenciales del segundo sistema sin perder la sesión del primero), `BreadcrumbNav.tsx` y `ProtectedRouteGuard.tsx`.
+     - El cierre de sesión solicita confirmación con lenguaje orientado al usuario antes de abandonar la sesión y volver al login.
 
 - **Evidencia de cierre:**
   - Cliente Axios tipado con envoltura validada, `X-Request-Id`, `Authorization`, `Idempotency-Key`, timeout y errores `GatewayApiError`.
