@@ -1,3 +1,4 @@
+import type { PaginationMeta } from '@shared/types/api-envelope.types';
 import type { SystemCode, UserRole } from '@shared/types/auth-session.types';
 
 export interface UserSystemAssignment {
@@ -14,6 +15,16 @@ export interface AdminUser {
   version: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface AdminUsersListFilters {
+  page: number;
+  limit: number;
+}
+
+export interface PaginatedAdminUsers {
+  users: AdminUser[];
+  meta: PaginationMeta;
 }
 
 export interface CreateAdminUserInput {

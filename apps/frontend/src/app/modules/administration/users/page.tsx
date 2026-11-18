@@ -1,24 +1,36 @@
 import { useState } from 'react';
-import { Info, UserRoundPen, Users } from 'lucide-react';
+import { Users } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 
-import { Button } from '@shared/components/ui/button';
+import { ApiErrorAlert } from '@shared/components/data-display/ApiErrorAlert';
+import { PaginationControls } from '@shared/components/data-display/PaginationControls';
+import { Skeleton } from '@shared/components/ui/skeleton';
 
 import { UserCreateDialog } from './components/UserCreateDialog';
 import { UserEditSheet } from './components/UserEditSheet';
 import { UsersSummaryCards } from './components/UsersSummaryCards';
 import { UsersTable } from './components/UsersTable';
-import { useKnownAdminUsers } from './hooks/useKnownAdminUsers';
+import { useAdminUsersList } from './hooks/useAdminUsersList';
 import type { AdminUser } from './types/users-admin.types';
 
-export function UsersPage() {
-  const usersQuery = useKnownAdminUsers();
-  const [editOpen, setEditOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<AdminUser>();
-  const users = usersQuery.data;
+function positiveInteger(value: string | null, fallback: number): number {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
 
-  const editUser = (user?: AdminUser) => {
-    setSelectedUser(user);
-    setEditOpen(true);
+export function UsersPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [selectedUser, setSelectedUser] = useState<AdminUser>();
+  const filters = {
+    page: positiveInteger(searchParams.get('page'), 1),
+    limit: Math.min(positiveInteger(searchParams.get('limit'), 20), 100),
+  };
+  const usersQuery = useAdminUsersList(filters);
+  const setPage = (page: number) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('page', String(page));
+    params.set('limit', String(filters.limit));
+    setSearchParams(params);
   };
 
   return (
@@ -34,45 +46,53 @@ export function UsersPage() {
             mediante control optimista.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="lg" onClick={() => editUser()}>
-            <UserRoundPen /> Editar por UUID
-          </Button>
-          <UserCreateDialog />
-        </div>
+        <UserCreateDialog />
       </header>
 
-      <div className="flex gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-100">
-        <Info className="size-5 shrink-0" />
-        <p>
-          Auth ya ofrece una consulta paginada de usuarios, pero esta versión
-          del frontend aún no la integra. La tabla muestra únicamente usuarios
-          creados o actualizados durante la sesión actual.
-        </p>
-      </div>
-
-      <UsersSummaryCards users={users} />
-
-      {users.length ? (
-        <UsersTable users={users} onEdit={editUser} />
-      ) : (
-        <div className="rounded-xl border border-dashed bg-card py-16 text-center">
-          <Users className="mx-auto size-9 text-muted-foreground" />
-          <h2 className="mt-4 font-semibold">
-            Sin usuarios conocidos en sesión
-          </h2>
-          <p className="mx-auto mt-1 max-w-lg text-sm text-muted-foreground">
-            Crea un usuario nuevo o usa “Editar por UUID” con una referencia y
-            versión conocidas.
-          </p>
+      {usersQuery.isLoading && (
+        <div className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {[0, 1, 2, 3].map((item) => (
+              <Skeleton key={item} className="h-24" />
+            ))}
+          </div>
+          <Skeleton className="h-72" />
         </div>
+      )}
+
+      {usersQuery.error && <ApiErrorAlert error={usersQuery.error} />}
+
+      {usersQuery.data && (
+        <>
+          <UsersSummaryCards
+            users={usersQuery.data.users}
+            total={usersQuery.data.meta.total}
+          />
+          {usersQuery.data.users.length ? (
+            <UsersTable
+              users={usersQuery.data.users}
+              onEdit={setSelectedUser}
+            />
+          ) : (
+            <div className="rounded-xl border border-dashed bg-card py-16 text-center">
+              <Users className="mx-auto size-9 text-muted-foreground" />
+              <h2 className="mt-4 font-semibold">No hay usuarios</h2>
+              <p className="mx-auto mt-1 max-w-lg text-sm text-muted-foreground">
+                Registra el primer usuario para comenzar a asignar permisos.
+              </p>
+            </div>
+          )}
+          <PaginationControls
+            meta={usersQuery.data.meta}
+            onPageChange={setPage}
+          />
+        </>
       )}
 
       <UserEditSheet
         user={selectedUser}
-        open={editOpen}
+        open={Boolean(selectedUser)}
         onOpenChange={(open) => {
-          setEditOpen(open);
           if (!open) setSelectedUser(undefined);
         }}
       />

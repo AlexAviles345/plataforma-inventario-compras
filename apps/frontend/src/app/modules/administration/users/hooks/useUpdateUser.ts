@@ -40,19 +40,16 @@ export function useUpdateUser(
         active: values.active,
         assignments: toAssignments(values.inventoryRole, values.purchasesRole),
       }),
-    onSuccess: (updatedUser) => {
-      queryClient.setQueryData<AdminUser[]>(
-        userQueryKeys.known(),
-        (current) => [
-          updatedUser,
-          ...(current ?? []).filter((item) => item.id !== updatedUser.id),
-        ],
-      );
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: userQueryKeys.all });
       toast.success('Usuario actualizado correctamente');
       onUpdated();
     },
     onError: (error) => {
       if (!(error instanceof GatewayApiError)) return;
+      if (error.code === 'VERSION_CONFLICT') {
+        void queryClient.invalidateQueries({ queryKey: userQueryKeys.all });
+      }
       error.details?.forEach((detail) => {
         if (detail.field) {
           form.setError(detail.field as FieldPath<UserEditFormValues>, {

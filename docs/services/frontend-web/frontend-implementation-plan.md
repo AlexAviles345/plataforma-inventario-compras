@@ -368,7 +368,7 @@ La implementación frontend está completa, pero no se considera evidencia de fu
 
 ### Fase 5: Módulo de Administración (`modules/administration`) — Usuarios, Asignaciones y Sistemas — COMPLETADA EN FRONTEND
 
-**Estado:** completada en el frontend el 17 de noviembre de 2026. `auth-service` ya implementa las operaciones de usuarios y sistemas, incluida la consulta paginada `GET /api/auth/users`; la versión actual del frontend todavía conserva en memoria únicamente los usuarios creados o actualizados durante la sesión.
+**Estado:** completada en el frontend el 18 de noviembre de 2026. `auth-service` y el frontend implementan las operaciones de usuarios y sistemas, incluida la consulta paginada `GET /api/auth/users`.
 
 **Objetivo:** Implementar las pantallas exclusivas para el rol `ADMIN` conectadas a `/api/auth/users` y `/api/auth/systems`.
 
@@ -384,9 +384,9 @@ La implementación frontend está completa, pero no se considera evidencia de fu
   - Formularios React Hook Form + Zod para creación y actualización de usuarios, normalización de correo, contraseña inicial no persistida y matriz válida de un rol por sistema.
   - Actualización de usuario con `expectedVersion`, desactivación lógica, aviso de protección del último administrador y manejo normalizado de errores del Gateway.
   - Catálogo de sistemas con lectura de TTL, equivalencia visual en minutos y actualización concurrente mediante `expectedVersion`.
-  - Caché exclusivamente en memoria para usuarios creados o actualizados en la sesión y edición manual por UUID/versión. La integración de la consulta paginada de Auth queda pendiente en el frontend.
+  - Catálogo paginado de usuarios con metadatos del servidor, parámetros de página en URL y refresco automático tras crear o actualizar.
 
-Las operaciones de alta, actualización y sistemas pueden validarse extremo a extremo contra Auth. Para obtener el catálogo administrativo completo en pantalla, el frontend deberá consumir la consulta paginada ya implementada por el servicio.
+Las operaciones de catálogo, alta, actualización y sistemas pueden validarse extremo a extremo contra Auth.
 
 ---
 

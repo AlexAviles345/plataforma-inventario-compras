@@ -51,13 +51,6 @@ function UserEditForm({
   return (
     <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col" noValidate>
       <div className="flex-1 space-y-5 overflow-y-auto px-4">
-        {!user && (
-          <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-100">
-            La consulta paginada de Auth todavía no está integrada en esta
-            pantalla. Captura los datos y la versión del recurso obtenidos por
-            un medio administrativo confiable.
-          </div>
-        )}
         <div className="grid gap-4 sm:grid-cols-[1fr_8rem]">
           <div className="space-y-2">
             <Label htmlFor="editUserId">UUID del usuario</Label>
@@ -203,16 +196,14 @@ export function UserEditSheet({
           <div className="mb-2 flex size-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200">
             <UserRoundPen />
           </div>
-          <SheetTitle>
-            {user ? 'Editar usuario' : 'Editar usuario por referencia'}
-          </SheetTitle>
+          <SheetTitle>Editar usuario</SheetTitle>
           <SheetDescription>
             Envía el snapshot completo con control optimista por versión.
           </SheetDescription>
         </SheetHeader>
         {open && (
           <UserEditForm
-            key={user ? `${user.id}-${user.version}` : 'manual-reference'}
+            key={`${user?.id}-${user?.version}`}
             user={user}
             close={() => onOpenChange(false)}
           />

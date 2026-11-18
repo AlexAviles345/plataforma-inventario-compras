@@ -4,21 +4,27 @@ import { Card, CardContent } from '@shared/components/ui/card';
 
 import type { AdminUser } from '../types/users-admin.types';
 
-export function UsersSummaryCards({ users }: { users: AdminUser[] }) {
+export function UsersSummaryCards({
+  users,
+  total,
+}: {
+  users: AdminUser[];
+  total: number;
+}) {
   const cards = [
-    { label: 'Conocidos en sesión', value: users.length, icon: Users },
+    { label: 'Usuarios totales', value: total, icon: Users },
     {
-      label: 'Activos',
+      label: 'Activos en página',
       value: users.filter((user) => user.active).length,
       icon: UserRoundCheck,
     },
     {
-      label: 'Inactivos',
+      label: 'Inactivos en página',
       value: users.filter((user) => !user.active).length,
       icon: UserRoundX,
     },
     {
-      label: 'Administradores',
+      label: 'Administradores en página',
       value: users.filter((user) =>
         user.assignments.some((assignment) => assignment.role === 'ADMIN'),
       ).length,

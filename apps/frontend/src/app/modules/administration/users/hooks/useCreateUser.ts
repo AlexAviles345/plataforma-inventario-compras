@@ -10,7 +10,6 @@ import {
   type UserCreateFormValues,
 } from '../schemas/user-form.schema';
 import { createAdminUser } from '../services/users-admin.service';
-import type { AdminUser } from '../types/users-admin.types';
 import { toAssignments } from '../utils/user-assignments';
 import { userQueryKeys } from './user-query-keys';
 
@@ -34,14 +33,8 @@ export function useCreateUser(onCreated: () => void) {
         password: values.password,
         assignments: toAssignments(values.inventoryRole, values.purchasesRole),
       }),
-    onSuccess: (createdUser) => {
-      queryClient.setQueryData<AdminUser[]>(
-        userQueryKeys.known(),
-        (current) => [
-          createdUser,
-          ...(current ?? []).filter((user) => user.id !== createdUser.id),
-        ],
-      );
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: userQueryKeys.all });
       toast.success('Usuario creado correctamente');
       form.reset();
       onCreated();

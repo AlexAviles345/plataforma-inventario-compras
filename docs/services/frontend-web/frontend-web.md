@@ -6,7 +6,7 @@ Estado: **Fases 1 a 6 implementadas** en `apps/frontend`; incluye el scaffold, s
 
 > **Disponibilidad de Inventario:** la interfaz de la Fase 4 consume el contrato documentado `GET/POST /api/inventory/products` y `PUT /api/inventory/products/{id}` a través del Gateway. `inventory-service` conserva por ahora únicamente su scaffold ejecutable, por lo que esas operaciones no estarán disponibles extremo a extremo hasta implementar el dominio y los controladores correspondientes en el backend.
 
-> **Disponibilidad de Administración:** `auth-service` ya implementa `GET/POST/PUT /api/auth/users` y `GET/PUT /api/auth/systems`. La interfaz de la Fase 5 consume las operaciones de escritura y sistemas; la tabla de usuarios todavía conserva en memoria los recursos creados o actualizados durante la sesión y permite actualizar por UUID y versión conocida. Integrar la consulta paginada ya disponible queda pendiente en el frontend.
+> **Disponibilidad de Administración:** `auth-service` ya implementa `GET/POST/PUT /api/auth/users` y `GET/PUT /api/auth/systems`. La interfaz de la Fase 5 consume el catálogo paginado, las operaciones de escritura y la configuración de sistemas a través del Gateway.
 
 ## Alcance y principios arquitectónicos
 
@@ -43,7 +43,7 @@ El contrato de autenticación emite un `accessToken` JWT por sistema destino (`s
 | ---------------------------- | ------------------------------------ | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | `/login`                     | Público                              | Selección (`INVENTORY` o `PURCHASES`) | `POST /api/auth/login`                                                                                                      |
 | `/dashboard`                 | Todos los autenticados               | Activo en sesión                      | Resumen de sesión, accesos por rol y estado rápido                                                                          |
-| `/administration/users`      | `ADMIN`                              | Token válido (`ADMIN`)                | `POST /api/auth/users`, `PUT /api/auth/users/{id}`; integración de `GET /api/auth/users` pendiente en frontend              |
+| `/administration/users`      | `ADMIN`                              | Token válido (`ADMIN`)                | `GET /api/auth/users`, `POST /api/auth/users`, `PUT /api/auth/users/{id}`                                                   |
 | `/administration/systems`    | `ADMIN`                              | Token válido (`ADMIN`)                | `GET /api/auth/systems`, `PUT /api/auth/systems/{code}`                                                                     |
 | `/inventory/products`        | `ADMIN`, `INVENTORY_MANAGER`         | `INVENTORY`                           | `GET /api/inventory/products`, `POST /api/inventory/products`, `PUT /api/inventory/products/{id}`                           |
 | `/purchases/orders`          | `ADMIN`, `PURCHASES_AGENT`           | `PURCHASES`                           | `GET /api/purchases/orders` (paginado + filtros)                                                                            |

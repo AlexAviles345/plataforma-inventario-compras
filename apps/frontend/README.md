@@ -2,7 +2,7 @@
 
 Aplicación web empresarial unificada (SPA monolítica modular) sobre **React 19, TypeScript 5, Vite 6, Tailwind CSS v4 y `shadcn/ui`**, diseñada para operar los dominios de **Administración (`auth`)**, **Inventario (`inventory`)** y **Compras (`purchases`)** a través del API Gateway (`http://localhost:3000` en desarrollo y `/` detrás de Nginx en despliegue).
 
-**Estado:** Fases 1 a 6 completadas. La aplicación incluye Compras, Inventario, Administración, pruebas Vitest/MSW y Playwright, imagen Docker multi-stage, Nginx Edge y validación en GitHub Actions. Auth ya implementa login, usuarios y sistemas; Inventory continúa condicionado a la implementación de sus rutas de negocio. La pantalla de usuarios aún conserva en memoria los recursos creados o actualizados durante la sesión y tiene pendiente integrar la consulta paginada ya disponible en Auth.
+**Estado:** Fases 1 a 6 completadas. La aplicación incluye Compras, Inventario, Administración, pruebas Vitest/MSW y Playwright, imagen Docker multi-stage, Nginx Edge y validación en GitHub Actions. Auth ya implementa login, usuarios y sistemas, incluido el catálogo paginado consumido por Administración; Inventory continúa condicionado a la implementación de sus rutas de negocio.
 
 ## Inicio local
 
@@ -64,5 +64,5 @@ El edge queda en <http://localhost:8088>, entrega el frontend en `/` y reenvía 
 2. **Fase 2 — completada:** Cliente HTTP con interceptores (`Authorization`, `Idempotency-Key`, `X-Request-Id` y reintentos automáticos ante `409 PROJECTION_NOT_READY`), store de sesión multi-sistema (`Zustand`), módulo `auth/login`, confirmación de cierre de sesión y shell `modules/layout.tsx`.
 3. **Fase 3 — completada:** Módulo de Compras (`modules/purchases/orders`) — listado paginado, alta/edición maestro-detalle de hasta 100 líneas, snapshots históricos, transiciones `submit`/`cancel` e historial auditable.
 4. **Fase 4 — completada en frontend:** Módulo de Inventario (`modules/inventory/products`) — catálogo paginado, creación de productos, ajustes de stock con motivo saneado, desactivación lógica con `expectedVersion` y selector buscable para las líneas de Compras. El backend de Inventory aún debe implementar los endpoints para habilitar el recorrido extremo a extremo.
-5. **Fase 5 — completada en frontend:** Módulo de Administración (`modules/administration`) — alta y actualización de usuarios, matriz de asignaciones `{ system, role }`, desactivación protegida, control optimista y configuración de TTL por sistema. Auth ya expone `GET /api/auth/users`; su integración en la tabla del frontend queda como mejora posterior.
+5. **Fase 5 — completada en frontend:** Módulo de Administración (`modules/administration`) — catálogo paginado, alta y actualización de usuarios, matriz de asignaciones `{ system, role }`, desactivación protegida, control optimista y configuración de TTL por sistema.
 6. **Fase 6 — completada:** Suite Vitest/Testing Library/MSW, recorridos Playwright de autenticación, RBAC y flujo Inventario → Compras, `Dockerfile` multi-stage sin root, Nginx Edge, perfiles Compose y job frontend en GitHub Actions.
