@@ -2,7 +2,7 @@
 
 Aplicación web empresarial unificada (SPA monolítica modular) en **React 19 + TypeScript 5 + Vite 6**, estilizada con **Tailwind CSS v4 + shadcn/ui (Radix UI)**, que consume exclusivamente el [API Gateway](../api-gateway/api-gateway.md) bajo `/api/**` y cumple el [estándar de respuestas HTTP](../../standards/api-responses.md), el [contrato de access tokens y sesiones](../../standards/jwt-and-sessions.md) y las [reglas comunes](../../standards/guidelines.md).
 
-Estado: **Fases 1 a 6 implementadas** en `apps/frontend`; incluye el scaffold, sistema de diseño, cliente HTTP, sesión JWT en memoria, login, guards RBAC, Compras, Inventario, Administración, pruebas automatizadas y empaquetado Docker/Nginx. En desarrollo se ejecuta sobre Node 24 con recarga en caliente y proxy local hacia `http://localhost:3000`; el perfil edge sirve la aplicación en `http://localhost:8088` y conserva `/api/**` detrás del Gateway.
+Estado: **Fases 1 a 6 implementadas** en `apps/frontend`; incluye el scaffold, sistema de diseño, cliente HTTP, access token en memoria, sesión renovable, login/logout, guards RBAC, Compras, Inventario, Administración, pruebas automatizadas y empaquetado Docker/Nginx. En desarrollo se ejecuta sobre Node 24 con recarga en caliente y proxy local hacia `http://localhost:3000`; el perfil edge sirve la aplicación en `http://localhost:8088` y conserva `/api/**` detrás del Gateway.
 
 > **Disponibilidad de Inventario:** la interfaz de la Fase 4 consume el contrato documentado `GET/POST /api/inventory/products` y `PUT /api/inventory/products/{id}` a través del Gateway. `inventory-service` conserva por ahora únicamente su scaffold ejecutable, por lo que esas operaciones no estarán disponibles extremo a extremo hasta implementar el dominio y los controladores correspondientes en el backend.
 
@@ -23,7 +23,8 @@ El contrato de autenticación emite un `accessToken` JWT por sistema destino (`s
    - Un `INVENTORY_MANAGER` opera en el módulo de Inventario (`system: "INVENTORY"`).
    - Un `PURCHASES_AGENT` opera en el módulo de Compras (`system: "PURCHASES"`).
    - Un `ADMIN` puede autenticarse en cualquiera de los dos sistemas (o mantener tokens activos para ambos en su sesión en memoria) y gestionar además usuarios y sistemas en `/administration/*`.
-3. **Renovación y expiración en el MVP:** dado que `refresh` y `logout` están reservados fuera del MVP actual, el frontend verifica la vigencia (`exp`) del token y, ante expiración o respuesta `401 AUTHENTICATION_REQUIRED` / `401 INVALID_TOKEN`, limpia el estado del sistema afectado y redirige al flujo de login conservando la ruta de retorno.
+3. **Renovación y expiración:** el refresh token opaco permanece exclusivamente en la cookie `td_refresh` `HttpOnly`; la SPA sólo lee `td_csrf`. Al recargar ejecuta `POST /api/auth/refresh` antes de mostrar rutas protegidas y rota nuevamente 30 segundos antes de `exp`. El access token nuevo vuelve al store en memoria y nunca se persiste en Web Storage.
+4. **Logout:** la confirmación ejecuta `POST /api/auth/logout`; sólo después de que Auth revoca la familia y limpia cookies se elimina el estado local y se vuelve a `/login`.
 
 ## Invariantes de datos, concurrencia, idempotencia y proyecciones
 
@@ -41,7 +42,7 @@ El contrato de autenticación emite un `accessToken` JWT por sistema destino (`s
 
 | Módulo / Ruta UI             | Roles permitidos                     | Sistema JWT                           | Endpoints en API Gateway                                                                                                    |
 | ---------------------------- | ------------------------------------ | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `/login`                     | Público                              | Selección (`INVENTORY` o `PURCHASES`) | `POST /api/auth/login`                                                                                                      |
+| `/login`                     | Público                              | Selección (`INVENTORY` o `PURCHASES`) | `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`                                                    |
 | `/dashboard`                 | Todos los autenticados               | Activo en sesión                      | Resumen de sesión, accesos por rol y estado rápido                                                                          |
 | `/administration/users`      | `ADMIN`                              | Token válido (`ADMIN`)                | `GET /api/auth/users`, `POST /api/auth/users`, `PUT /api/auth/users/{id}`                                                   |
 | `/administration/systems`    | `ADMIN`                              | Token válido (`ADMIN`)                | `GET /api/auth/systems`, `PUT /api/auth/systems/{code}`                                                                     |

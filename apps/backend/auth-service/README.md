@@ -1,6 +1,6 @@
 # Auth Service
 
-Base ejecutable del servicio de autenticación de TechDistribution. Usa NestJS 11, Node 24, npm 11, PostgreSQL y TypeORM 1.x. La implementación de usuarios, sistemas, login, JWT y publicación Kafka se agrega por fases según el [plan de implementación](../../../docs/services/auth-service/auth-implementation-plan.md).
+Servicio de autenticación de TechDistribution. Usa NestJS 11, Node 24, npm 11, PostgreSQL y TypeORM 1.x e implementa usuarios, sistemas, access tokens JWT, sesiones renovables y publicación Kafka.
 
 ## Requisitos
 
@@ -32,6 +32,8 @@ copy .env.example .env
 | `JWT_SECRET`                          | **ninguno, obligatorio**                     | Secreto HS256 de al menos 32 bytes; el mismo del Gateway          |
 | `JWT_ISSUER` / `JWT_AUDIENCE`         | techdistribution-auth / techdistribution-api | Deben coincidir con el Gateway y los servicios                    |
 | `JWT_MAX_TTL_SECONDS`                 | 900                                          | Vigencia máxima del access token (1–3600)                         |
+| `REFRESH_TOKEN_TTL_SECONDS`           | 604800                                       | Vigencia absoluta de la sesión renovable (1–2592000)              |
+| `REFRESH_COOKIE_SECURE`               | false (true y obligatorio en producción)     | Envía cookies únicamente por HTTPS fuera de desarrollo local      |
 | `KAFKA_BOOTSTRAP_SERVERS`             | 127.0.0.1:9092 (obligatorio en producción)   | Brokers `host:puerto` separados por comas                         |
 | `OUTBOX_PUBLISHER_ENABLED`            | true                                         | `false` deja los eventos acumulados en el outbox                  |
 | `OUTBOX_POLL_INTERVAL_MS`             | 1000                                         | Pausa entre rondas del publicador cuando no hay trabajo (1–60000) |
@@ -81,10 +83,11 @@ curl -X POST http://localhost:3001/api/auth/login -H "Content-Type: application/
   -d '{"email":"admin@techdistribution.com","password":"<contraseña>","system":"INVENTORY"}'
 ```
 
-- Responde `{accessToken, tokenType: "Bearer", expiresIn}` con `Cache-Control: no-store`. El token es HS256 con `sub`, `email`, `role`, `system`, `iat`, `exp`, `iss` y `aud`, y el rol es el asignado al usuario en el sistema pedido.
+- Responde `{accessToken, tokenType: "Bearer", expiresIn}` con `Cache-Control: no-store`. Además crea una familia de sesión y entrega `td_refresh` como cookie `HttpOnly` y `td_csrf` como cookie legible para double-submit CSRF; el refresh token nunca aparece en JSON.
+- `POST /api/auth/refresh` rota una sola vez ambos secretos y conserva la expiración absoluta. `POST /api/auth/logout` revoca la familia y limpia las cookies.
 - `expiresIn` es el TTL del sistema (`systems.access_token_ttl_seconds`), limitado por `JWT_MAX_TTL_SECONDS`.
 - Contraseña incorrecta, usuario inexistente o inactivo, y usuario sin asignación al sistema responden el mismo `401 INVALID_CREDENTIALS`. Siempre se hace una verificación Argon2, aunque el usuario no exista, para no revelar la causa por tiempo de respuesta.
-- No hay revocación inmediata: un token emitido sigue siendo válido para el Gateway y los servicios hasta `exp` (como máximo 15 minutos con la configuración por defecto). Las rutas administrativas de Auth sí comprueban en la base que el usuario siga activo y conserve el rol ADMIN.
+- Logout, cambio de contraseña, desactivación o cambio de asignación revocan las familias afectadas e impiden nuevas renovaciones. Un access token ya emitido sigue siendo válido para el Gateway y los servicios hasta `exp` (como máximo 15 minutos con la configuración por defecto).
 
 ## Usuarios y eventos
 
@@ -123,6 +126,8 @@ Rutas de negocio bajo `/api/auth`:
 | Ruta                      | Acceso  | Respuesta                                                                   |
 | ------------------------- | ------- | --------------------------------------------------------------------------- |
 | `POST /login`             | Público | 200 token; 401 `INVALID_CREDENTIALS`                                        |
+| `POST /refresh`           | Cookie + CSRF | Rota la sesión; 401 `INVALID_REFRESH_TOKEN` o 403 `CSRF_VALIDATION_FAILED` |
+| `POST /logout`            | Cookie + CSRF | Revoca y limpia cookies; idempotente                                        |
 | `POST /users`             | ADMIN   | 201 + `Location`; 409 `EMAIL_ALREADY_EXISTS`                                |
 | `GET /users?page=&limit=` | ADMIN   | Lista paginada ordenada por email (`limit` ≤ 100)                           |
 | `GET /users/{id}`         | ADMIN   | 200; 404 si no existe                                                       |

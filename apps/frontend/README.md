@@ -2,7 +2,7 @@
 
 Aplicación web empresarial unificada (SPA monolítica modular) sobre **React 19, TypeScript 5, Vite 6, Tailwind CSS v4 y `shadcn/ui`**, diseñada para operar los dominios de **Administración (`auth`)**, **Inventario (`inventory`)** y **Compras (`purchases`)** a través del API Gateway (`http://localhost:3000` en desarrollo y `/` detrás de Nginx en despliegue).
 
-**Estado:** Fases 1 a 6 completadas. La aplicación incluye Compras, Inventario, Administración, pruebas Vitest/MSW y Playwright, imagen Docker multi-stage, Nginx Edge y validación en GitHub Actions. Auth ya implementa login, usuarios y sistemas, incluido el catálogo paginado consumido por Administración; Inventory continúa condicionado a la implementación de sus rutas de negocio.
+**Estado:** Fases 1 a 6 completadas. La aplicación incluye Compras, Inventario, Administración, sesión renovable, pruebas Vitest/MSW y Playwright, imagen Docker multi-stage, Nginx Edge y validación en GitHub Actions. Auth implementa login, refresh/logout, usuarios y sistemas; Inventory continúa condicionado a la implementación de sus rutas de negocio.
 
 ## Inicio local
 
@@ -16,6 +16,8 @@ npm run dev
 La aplicación queda disponible en <http://localhost:5173>. En desarrollo, Vite reenvía las solicitudes a `/api/**` hacia `API_PROXY_TARGET` o, si no se define, hacia `http://localhost:3000`.
 
 El login por correo y contraseña es el flujo normal. El acceso manual mediante un JWT está oculto por defecto y se reserva para diagnosticar módulos aislados sin Auth. Para habilitarlo temporalmente, define `VITE_ENABLE_DEV_TOKEN_ACCESS=true` en `.env`; nunca se muestra en builds de producción.
+
+El access token vive únicamente en memoria. Auth entrega el refresh token opaco en una cookie `HttpOnly`; al recargar, la SPA usa la cookie CSRF legible para rotarlo y reconstruir la sesión sin guardar tokens en `localStorage` o `sessionStorage`. Cerrar sesión revoca la familia en Auth antes de limpiar el estado local.
 
 También puede iniciarse junto con todos los backends mediante `npm run dev` desde la raíz del repositorio.
 
@@ -61,7 +63,7 @@ El edge queda en <http://localhost:8088>, entrega el frontend en `/` y reenvía 
 ## Resumen de fases de implementación
 
 1. **Fase 1 — completada:** Scaffold React + TypeScript + Vite, Tailwind CSS v4, primitivas `shadcn/ui`, tipos de envoltura HTTP y utilidades de dinero exacto (`decimal.js`) en `src/app/shared/`.
-2. **Fase 2 — completada:** Cliente HTTP con interceptores (`Authorization`, `Idempotency-Key`, `X-Request-Id` y reintentos automáticos ante `409 PROJECTION_NOT_READY`), store de sesión multi-sistema (`Zustand`), módulo `auth/login`, confirmación de cierre de sesión y shell `modules/layout.tsx`.
+2. **Fase 2 — completada y ampliada:** Cliente HTTP con interceptores (`Authorization`, cookies, `Idempotency-Key`, `X-Request-Id` y reintentos ante `409 PROJECTION_NOT_READY`), store de sesión multi-sistema (`Zustand`), restauración/rotación con refresh `HttpOnly`, login, logout revocable y shell `modules/layout.tsx`.
 3. **Fase 3 — completada:** Módulo de Compras (`modules/purchases/orders`) — listado paginado, alta/edición maestro-detalle de hasta 100 líneas, snapshots históricos, transiciones `submit`/`cancel` e historial auditable.
 4. **Fase 4 — completada en frontend:** Módulo de Inventario (`modules/inventory/products`) — catálogo paginado, creación de productos, ajustes de stock con motivo saneado, desactivación lógica con `expectedVersion` y selector buscable para las líneas de Compras. El backend de Inventory aún debe implementar los endpoints para habilitar el recorrido extremo a extremo.
 5. **Fase 5 — completada en frontend:** Módulo de Administración (`modules/administration`) — catálogo paginado, alta y actualización de usuarios, matriz de asignaciones `{ system, role }`, desactivación protegida, control optimista y configuración de TTL por sistema.

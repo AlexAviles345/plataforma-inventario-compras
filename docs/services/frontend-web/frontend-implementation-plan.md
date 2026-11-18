@@ -278,7 +278,7 @@ apps/frontend/
 
 ### Fase 2: Cliente HTTP, Interceptores, Store de Sesión Multi-Sistema y Shell de Navegación (`auth` + Layouts) — COMPLETADA
 
-**Estado:** completada el 17 de noviembre de 2026. La sesión permanece exclusivamente en memoria, valida los claims estructurales del access token y deja la validación criptográfica al Gateway y al servicio destino.
+**Estado:** completada el 17 de noviembre de 2026 y ampliada el 18 de noviembre de 2026 con sesión renovable. El access token permanece exclusivamente en memoria, valida sus claims estructurales y deja la validación criptográfica al Gateway y al servicio destino. El refresh token opaco sólo viaja en cookie `HttpOnly`.
 
 **Objetivo:** Implementar la capa de red conectada al API Gateway, el manejo de tokens JWT por sistema (`INVENTORY` y `PURCHASES`), la política global de reintentos ante proyecciones en vuelo y el flujo de Login + Layout protegido.
 
@@ -289,12 +289,14 @@ apps/frontend/
      - Adjunta el `Bearer` token del sistema requerido por cada prefijo (`/api/inventory/*` usa el token `INVENTORY`; `/api/purchases/*` usa el token `PURCHASES`; `/api/auth/*` usa el token administrativo activo).
      - Desempaqueta automáticamente la respuesta exitosa y adjunta `requestId` (`X-Request-Id`).
      - Configura en **TanStack Query** el reintento automático cuando una consulta o mutación segura recibe `409 PROJECTION_NOT_READY`, esperando el número de segundos indicado en el header `Retry-After` (por defecto `2s`, hasta 4 intentos) y activando el componente `ProjectionSyncBanner.tsx`.
+     - Envía cookies con credenciales y usa `auth-session.service.ts` para refresh/logout con double-submit CSRF, sin exponer el refresh token al JavaScript.
   3. Módulo `auth/login/`:
      - Pantalla de inicio de sesión con selección de sistema destino (`INVENTORY` o `PURCHASES`), conectada a `POST /api/auth/login`.
      - Modo de asistencia para desarrollo local (solo con `import.meta.env.DEV` y `VITE_ENABLE_DEV_TOKEN_ACCESS=true`): permite pegar un token generado con `python manage.py generate_dev_token` para diagnosticar módulos individuales aunque `auth-service` esté apagado. Permanece oculto por defecto y nunca aparece en producción.
   4. Shell principal `modules/layout.tsx`:
      - `DynamicSidebar.tsx`, `Header.tsx`, `SystemSwitcher.tsx` (permite cambiar entre `INVENTORY` y `PURCHASES` o solicitar credenciales del segundo sistema sin perder la sesión del primero), `BreadcrumbNav.tsx` y `ProtectedRouteGuard.tsx`.
      - El cierre de sesión solicita confirmación con lenguaje orientado al usuario antes de abandonar la sesión y volver al login.
+     - `SessionBootstrap.tsx` restaura la sesión al recargar y `ProtectedRouteGuard.tsx` rota el access token antes de expirar; ambos conservan el JWT sólo en Zustand.
 
 - **Evidencia de cierre:**
   - Cliente Axios tipado con envoltura validada, `X-Request-Id`, `Authorization`, `Idempotency-Key`, timeout y errores `GatewayApiError`.
