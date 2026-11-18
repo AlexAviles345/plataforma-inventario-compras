@@ -103,7 +103,7 @@ jobs:
       - run: npm run build
       - run: npm test -- --runInBand
       - run: npm run test:e2e -- --runInBand
-      - run: npm audit --registry=https://registry.npmjs.org/ --omit=dev --audit-level=high
+      - run: npm run audit:production
       - run: docker build -t techdistribution-gateway .
   infrastructure:
     runs-on: ubuntu-latest

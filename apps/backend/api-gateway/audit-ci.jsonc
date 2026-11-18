@@ -1,0 +1,16 @@
+{
+  "$schema": "https://raw.githubusercontent.com/IBM/audit-ci/main/docs/schema.json",
+  "high": true,
+  "skip-dev": true,
+  "registry": "https://registry.npmjs.org/",
+  "report-type": "summary",
+  "allowlist": [
+    {
+      "GHSA-fc5q-39xc-vjpf": {
+        "active": true,
+        "expiry": "2026-12-18T23:59:59-06:00",
+        "notes": "Excepción temporal: http-proxy-middleware 4.2.2 aún depende de micromatch 4.0.8 y picomatch 2.3.2, sin versión corregida disponible. El Gateway no configura pathFilter ni patrones glob controlados por clientes. Revisar al publicarse el parche upstream.",
+      },
+    },
+  ],
+}
