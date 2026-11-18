@@ -45,9 +45,9 @@ export function UsersPage() {
       <div className="flex gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-100">
         <Info className="size-5 shrink-0" />
         <p>
-          El contrato actual de Auth no incluye una consulta de usuarios. Esta
-          tabla muestra únicamente usuarios creados o actualizados durante la
-          sesión actual; no representa el catálogo completo del servidor.
+          Auth ya ofrece una consulta paginada de usuarios, pero esta versión
+          del frontend aún no la integra. La tabla muestra únicamente usuarios
+          creados o actualizados durante la sesión actual.
         </p>
       </div>
 

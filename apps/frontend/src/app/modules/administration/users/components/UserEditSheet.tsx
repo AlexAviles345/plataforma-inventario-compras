@@ -53,8 +53,9 @@ function UserEditForm({
       <div className="flex-1 space-y-5 overflow-y-auto px-4">
         {!user && (
           <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-100">
-            Auth todavía no ofrece consulta de usuarios. Captura los datos y la
-            versión del recurso obtenidos por un medio administrativo confiable.
+            La consulta paginada de Auth todavía no está integrada en esta
+            pantalla. Captura los datos y la versión del recurso obtenidos por
+            un medio administrativo confiable.
           </div>
         )}
         <div className="grid gap-4 sm:grid-cols-[1fr_8rem]">

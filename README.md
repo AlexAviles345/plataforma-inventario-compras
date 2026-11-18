@@ -35,6 +35,7 @@ npm run dev
    - los `.env` ausentes, generados desde `.env.example` con un único `JWT_SECRET` compartido por Gateway, Auth y Purchases.
 
    Nunca modifica un `.env` existente.
+
 2. **Diagnóstico** (`tools/doctor.mjs`): comprueba Node 24, npm 11, JDK 21+, Python 3.14, Docker Engine y Compose v2. Revisa también las dependencias, los `.env` y que el secreto, issuer y audience coincidan en los tres servicios. Por último revisa los puertos:
    - los de las aplicaciones deben estar libres;
    - los de PostgreSQL, MySQL y Kafka, libres o en uso por sus propios contenedores. Si otro contenedor o programa los ocupa, dice cuál.
@@ -44,18 +45,18 @@ npm run dev
 
 Comandos disponibles:
 
-| Comando                 | Acción                                                                                              |
-| ----------------------- | --------------------------------------------------------------------------------------------------- |
-| `npm run dev`           | Prepara, verifica, inicia bases y Kafka, aplica migraciones y levanta todas las aplicaciones        |
-| `npm run dev:check`     | Solo diagnóstico, sin instalar ni iniciar nada (`npm run dev:check -- --no-infra` omite Docker)     |
-| `npm run setup`         | Solo preparación: dependencias y `.env` faltantes                                                   |
-| `npm run dev:apps`      | Prepara y levanta aplicaciones sin iniciar Docker                                                   |
-| `npm run dev:infra`     | Inicia únicamente PostgreSQL, MySQL y Kafka                                                         |
-| `npm run dev:status`    | Muestra el estado de la infraestructura                                                             |
-| `npm run dev:logs`      | Sigue los últimos logs de infraestructura                                                           |
-| `npm run dev:down`      | Detiene contenedores sin borrar volúmenes                                                           |
-| `npm run dev:edge`      | Construye frontend y Nginx Edge sobre el Gateway local                                              |
-| `npm run dev:edge:down` | Detiene el frontend y Nginx Edge locales                                                            |
+| Comando                 | Acción                                                                                          |
+| ----------------------- | ----------------------------------------------------------------------------------------------- |
+| `npm run dev`           | Prepara, verifica, inicia bases y Kafka, aplica migraciones y levanta todas las aplicaciones    |
+| `npm run dev:check`     | Solo diagnóstico, sin instalar ni iniciar nada (`npm run dev:check -- --no-infra` omite Docker) |
+| `npm run setup`         | Solo preparación: dependencias y `.env` faltantes                                               |
+| `npm run dev:apps`      | Prepara y levanta aplicaciones sin iniciar Docker                                               |
+| `npm run dev:infra`     | Inicia únicamente PostgreSQL, MySQL y Kafka                                                     |
+| `npm run dev:status`    | Muestra el estado de la infraestructura                                                         |
+| `npm run dev:logs`      | Sigue los últimos logs de infraestructura                                                       |
+| `npm run dev:down`      | Detiene contenedores sin borrar volúmenes                                                       |
+| `npm run dev:edge`      | Construye frontend y Nginx Edge sobre el Gateway local                                          |
+| `npm run dev:edge:down` | Detiene el frontend y Nginx Edge locales                                                        |
 
 `Ctrl+C` detiene conjuntamente Gateway, Auth, Inventory, Purchases y frontends. La
 infraestructura iniciada en segundo plano permanece activa hasta ejecutar
@@ -105,4 +106,4 @@ npm run test:e2e -- --runInBand
 npm run audit:production
 ```
 
-GitHub Actions valida actualmente cada backend, el frontend, sus imágenes y la infraestructura, incluida publicación/consumo tras recrear Kafka. Playwright recorre login, RBAC y producto→orden→snapshot→cancelación con contratos HTTP simulados; no equivale todavía a una prueba integral de Auth e Inventory reales. En el futuro, [Jenkins conectado con GitHub](docs/infrastructure/jenkins-github.md) realizará integración completa, publicación de imágenes y despliegues sin sustituir los checks rápidos de pull requests. No se considera validada la plataforma completa hasta que los dominios pendientes funcionen con sus bases y Kafka reales.
+GitHub Actions valida actualmente cada backend, el frontend, sus imágenes y la infraestructura, incluida publicación/consumo tras recrear Kafka. Playwright recorre login, RBAC y producto→orden→snapshot→cancelación con contratos HTTP simulados; Auth ya está implementado, pero esos recorridos aún no constituyen una prueba integral contra servicios reales e Inventory continúa pendiente. En el futuro, [Jenkins conectado con GitHub](docs/infrastructure/jenkins-github.md) realizará integración completa, publicación de imágenes y despliegues sin sustituir los checks rápidos de pull requests. No se considera validada la plataforma completa hasta que los dominios pendientes funcionen con sus bases y Kafka reales.

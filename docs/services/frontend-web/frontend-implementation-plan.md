@@ -367,7 +367,7 @@ La implementación frontend está completa, pero no se considera evidencia de fu
 
 ### Fase 5: Módulo de Administración (`modules/administration`) — Usuarios, Asignaciones y Sistemas — COMPLETADA EN FRONTEND
 
-**Estado:** completada en el frontend el 17 de noviembre de 2026 contra el contrato planificado de `auth-service`. Auth todavía mantiene solo su scaffold y no define una ruta de consulta de usuarios, limitaciones que se representan explícitamente en la interfaz.
+**Estado:** completada en el frontend el 17 de noviembre de 2026. `auth-service` ya implementa las operaciones de usuarios y sistemas, incluida la consulta paginada `GET /api/auth/users`; la versión actual del frontend todavía conserva en memoria únicamente los usuarios creados o actualizados durante la sesión.
 
 **Objetivo:** Implementar las pantallas exclusivas para el rol `ADMIN` conectadas a `/api/auth/users` y `/api/auth/systems`.
 
@@ -383,15 +383,15 @@ La implementación frontend está completa, pero no se considera evidencia de fu
   - Formularios React Hook Form + Zod para creación y actualización de usuarios, normalización de correo, contraseña inicial no persistida y matriz válida de un rol por sistema.
   - Actualización de usuario con `expectedVersion`, desactivación lógica, aviso de protección del último administrador y manejo normalizado de errores del Gateway.
   - Catálogo de sistemas con lectura de TTL, equivalencia visual en minutos y actualización concurrente mediante `expectedVersion`.
-  - Caché exclusivamente en memoria para usuarios creados o actualizados en la sesión y edición manual por UUID/versión; no se inventa una operación `GET /api/auth/users` ausente del contrato.
+  - Caché exclusivamente en memoria para usuarios creados o actualizados en la sesión y edición manual por UUID/versión. La integración de la consulta paginada de Auth queda pendiente en el frontend.
 
-La implementación frontend está completa, pero la operación extremo a extremo depende de implementar el dominio de Auth. Para obtener un catálogo administrativo completo, el contrato de Auth deberá incorporar en una fase posterior una consulta paginada de usuarios.
+Las operaciones de alta, actualización y sistemas pueden validarse extremo a extremo contra Auth. Para obtener el catálogo administrativo completo en pantalla, el frontend deberá consumir la consulta paginada ya implementada por el servicio.
 
 ---
 
 ### Fase 6: Pruebas Automatizadas (Vitest + MSW + Playwright), Dockerización e Integración con Nginx Edge — COMPLETADA
 
-**Estado:** completada el 17 de noviembre de 2026. Las pruebas de contratos usan MSW y rutas Playwright simuladas para Auth e Inventory mientras sus backends permanecen pendientes; no sustituyen la futura integración con servicios reales.
+**Estado:** completada el 17 de noviembre de 2026. Las pruebas de contratos usan MSW y rutas Playwright simuladas para aislar el frontend. Auth ya está implementado e Inventory permanece pendiente; estos dobles no sustituyen la integración con servicios reales.
 
 **Objetivo:** Asegurar la calidad del frontend en CI/CD, empaquetarlo en Docker y validar el recorrido completo a través de Nginx y el API Gateway.
 
