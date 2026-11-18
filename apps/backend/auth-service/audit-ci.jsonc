@@ -1,0 +1,16 @@
+{
+  "$schema": "https://raw.githubusercontent.com/IBM/audit-ci/main/docs/schema.json",
+  "high": true,
+  "skip-dev": true,
+  "registry": "https://registry.npmjs.org/",
+  "report-type": "summary",
+  "allowlist": [
+    {
+      "GHSA-fc5q-39xc-vjpf": {
+        "active": true,
+        "expiry": "2026-12-18T23:59:59-06:00",
+        "notes": "Excepción temporal: TypeORM 1.1.2 aún depende de tinyglobby y picomatch sin versión corregida. Auth registra entidades y migraciones mediante listas explícitas de clases, sin globs configurables ni patrones controlados por clientes. Revisar al publicarse el parche upstream.",
+      },
+    },
+  ],
+}

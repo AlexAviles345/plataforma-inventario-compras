@@ -81,7 +81,7 @@ jobs:
           KAFKA_BOOTSTRAP_SERVERS: localhost:9092
       - run: node dist/database/migrate.js run
       - run: node dist/database/migrate.js show
-      - run: npm audit --registry=https://registry.npmjs.org/ --omit=dev --audit-level=high
+      - run: npm run audit:production
       - run: docker build -t techdistribution-auth .
       - if: always()
         working-directory: .

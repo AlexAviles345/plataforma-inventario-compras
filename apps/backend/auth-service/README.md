@@ -20,21 +20,21 @@ npm ci
 copy .env.example .env
 ```
 
-| Variable | Por defecto fuera de producción | Uso |
-| --- | --- | --- |
-| `PORT` | 3001 | Puerto HTTP |
-| `NODE_ENV` | development | `development`, `test` o `production` |
-| `DOCS_ENABLED` | true (false en producción) | Swagger y OpenAPI; prohibido en producción |
-| `DB_HOST` / `DB_PORT` | 127.0.0.1 / 5432 | Servidor PostgreSQL |
-| `DB_NAME` / `DB_USER` / `DB_PASSWORD` | auth_db / auth_user / auth_password | Credenciales de demostración del Compose |
-| `DB_POOL_MAX` | 10 | Conexiones máximas del pool (1–100) |
-| `DB_TEST_NAME` | auth_db_test | Base de las pruebas e2e; debe terminar en `_test` |
-| `JWT_SECRET` | **ninguno, obligatorio** | Secreto HS256 de al menos 32 bytes; el mismo del Gateway |
-| `JWT_ISSUER` / `JWT_AUDIENCE` | techdistribution-auth / techdistribution-api | Deben coincidir con el Gateway y los servicios |
-| `JWT_MAX_TTL_SECONDS` | 900 | Vigencia máxima del access token (1–3600) |
-| `KAFKA_BOOTSTRAP_SERVERS` | localhost:9092 (obligatorio en producción) | Brokers `host:puerto` separados por comas |
-| `OUTBOX_PUBLISHER_ENABLED` | true | `false` deja los eventos acumulados en el outbox |
-| `OUTBOX_POLL_INTERVAL_MS` | 1000 | Pausa entre rondas del publicador cuando no hay trabajo (1–60000) |
+| Variable                              | Por defecto fuera de producción              | Uso                                                               |
+| ------------------------------------- | -------------------------------------------- | ----------------------------------------------------------------- |
+| `PORT`                                | 3001                                         | Puerto HTTP                                                       |
+| `NODE_ENV`                            | development                                  | `development`, `test` o `production`                              |
+| `DOCS_ENABLED`                        | true (false en producción)                   | Swagger y OpenAPI; prohibido en producción                        |
+| `DB_HOST` / `DB_PORT`                 | 127.0.0.1 / 5432                             | Servidor PostgreSQL                                               |
+| `DB_NAME` / `DB_USER` / `DB_PASSWORD` | auth_db / auth_user / auth_password          | Credenciales de demostración del Compose                          |
+| `DB_POOL_MAX`                         | 10                                           | Conexiones máximas del pool (1–100)                               |
+| `DB_TEST_NAME`                        | auth_db_test                                 | Base de las pruebas e2e; debe terminar en `_test`                 |
+| `JWT_SECRET`                          | **ninguno, obligatorio**                     | Secreto HS256 de al menos 32 bytes; el mismo del Gateway          |
+| `JWT_ISSUER` / `JWT_AUDIENCE`         | techdistribution-auth / techdistribution-api | Deben coincidir con el Gateway y los servicios                    |
+| `JWT_MAX_TTL_SECONDS`                 | 900                                          | Vigencia máxima del access token (1–3600)                         |
+| `KAFKA_BOOTSTRAP_SERVERS`             | localhost:9092 (obligatorio en producción)   | Brokers `host:puerto` separados por comas                         |
+| `OUTBOX_PUBLISHER_ENABLED`            | true                                         | `false` deja los eventos acumulados en el outbox                  |
+| `OUTBOX_POLL_INTERVAL_MS`             | 1000                                         | Pausa entre rondas del publicador cuando no hay trabajo (1–60000) |
 
 En producción `DB_HOST`, `DB_NAME`, `DB_USER` y `DB_PASSWORD` son obligatorios y no tienen valores por defecto. `JWT_SECRET` es obligatorio en todos los entornos y rechaza los valores de ejemplo: copia en `.env` el mismo `JWT_SECRET` de `apps/backend/api-gateway/.env`. `migrate.js` solo valida las variables de PostgreSQL.
 
@@ -120,15 +120,15 @@ Endpoints disponibles:
 
 Rutas de negocio bajo `/api/auth`:
 
-| Ruta | Acceso | Respuesta |
-| --- | --- | --- |
-| `POST /login` | Público | 200 token; 401 `INVALID_CREDENTIALS` |
-| `POST /users` | ADMIN | 201 + `Location`; 409 `EMAIL_ALREADY_EXISTS` |
-| `GET /users?page=&limit=` | ADMIN | Lista paginada ordenada por email (`limit` ≤ 100) |
-| `GET /users/{id}` | ADMIN | 200; 404 si no existe |
-| `PUT /users/{id}` | ADMIN | Parcial con `expectedVersion`; 409 `VERSION_CONFLICT` o `LAST_ACTIVE_ADMIN` |
-| `GET /systems` | ADMIN | Sistemas con `accessTokenTtlSeconds` y `maxAccessTokenTtlSeconds` |
-| `PUT /systems/{code}` | ADMIN | `{expectedVersion, accessTokenTtlSeconds}` entre 1 y `JWT_MAX_TTL_SECONDS` |
+| Ruta                      | Acceso  | Respuesta                                                                   |
+| ------------------------- | ------- | --------------------------------------------------------------------------- |
+| `POST /login`             | Público | 200 token; 401 `INVALID_CREDENTIALS`                                        |
+| `POST /users`             | ADMIN   | 201 + `Location`; 409 `EMAIL_ALREADY_EXISTS`                                |
+| `GET /users?page=&limit=` | ADMIN   | Lista paginada ordenada por email (`limit` ≤ 100)                           |
+| `GET /users/{id}`         | ADMIN   | 200; 404 si no existe                                                       |
+| `PUT /users/{id}`         | ADMIN   | Parcial con `expectedVersion`; 409 `VERSION_CONFLICT` o `LAST_ACTIVE_ADMIN` |
+| `GET /systems`            | ADMIN   | Sistemas con `accessTokenTtlSeconds` y `maxAccessTokenTtlSeconds`           |
+| `PUT /systems/{code}`     | ADMIN   | `{expectedVersion, accessTokenTtlSeconds}` entre 1 y `JWT_MAX_TTL_SECONDS`  |
 
 Las rutas ADMIN aceptan un token ADMIN de cualquiera de los dos sistemas. Swagger documenta la envoltura completa y un ejemplo por cada código de error; se rechaza en producción cuando `NODE_ENV=production`.
 
@@ -140,9 +140,12 @@ npm run lint
 npm run build
 npm test -- --runInBand
 npm run test:e2e -- --runInBand
+npm run audit:production
 ```
 
 Las pruebas e2e requieren PostgreSQL: crean la base `auth_db_test` si no existe, la vacían y aplican todas las migraciones antes de cada ejecución. Nunca usan `auth_db`.
+
+`audit-ci.jsonc` mantiene una excepción temporal y con vencimiento el 18 de diciembre de 2026 para `GHSA-fc5q-39xc-vjpf`. TypeORM todavía depende de `tinyglobby` y una rama vulnerable de `picomatch`, pero Auth registra entidades y migraciones mediante listas explícitas de clases, sin patrones glob configurables ni entrada de clientes en esa resolución. Cualquier otra vulnerabilidad alta o crítica continúa rompiendo CI. La excepción debe retirarse cuando exista una versión corregida; no ejecutar `npm audit fix --force`, porque propone una degradación incompatible de TypeORM.
 
 Para recorrer a mano cada funcionalidad (login, permisos, desactivación, expiración, outbox y Kafka caído) sigue la [guía de pruebas manuales](../../../docs/services/auth-service/auth-manual-testing.md).
 
