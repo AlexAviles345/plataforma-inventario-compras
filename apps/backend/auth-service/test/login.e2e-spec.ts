@@ -42,6 +42,11 @@ interface TokenData {
   accessToken: string;
   tokenType: string;
   expiresIn: number;
+  tokens?: Array<{
+    accessToken: string;
+    tokenType: string;
+    expiresIn: number;
+  }>;
 }
 
 interface Envelope<T = unknown> {
@@ -223,6 +228,36 @@ describe('Login and admin authorization (HTTP)', () => {
       expect(purchases.payload).toMatchObject({
         role: 'PURCHASES_AGENT',
         system: 'PURCHASES',
+      });
+    });
+
+    it('issues tokens for every assigned system when system is omitted', async () => {
+      const adminResponse = await login({
+        email: 'admin@techdistribution.com',
+        password: PASSWORD,
+      }).expect(200);
+
+      const adminData = body<TokenData>(adminResponse).data;
+      expect(adminData.tokens).toHaveLength(2);
+      const adminClaims = (adminData.tokens ?? []).map(
+        (entry) => decode(entry.accessToken).payload,
+      );
+      expect(adminClaims).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ role: 'ADMIN', system: 'INVENTORY' }),
+          expect.objectContaining({ role: 'ADMIN', system: 'PURCHASES' }),
+        ]),
+      );
+
+      const managerResponse = await login({
+        email: 'gestor@techdistribution.com',
+        password: PASSWORD,
+      }).expect(200);
+      const managerData = body<TokenData>(managerResponse).data;
+      expect(managerData.tokens).toHaveLength(1);
+      expect(decode(managerData.tokens![0].accessToken).payload).toMatchObject({
+        role: 'INVENTORY_MANAGER',
+        system: 'INVENTORY',
       });
     });
 

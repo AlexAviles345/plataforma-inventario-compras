@@ -14,7 +14,7 @@ import { TokenService } from './token.service';
 export interface LoginInput {
   email: string;
   password: string;
-  system: SystemCode;
+  system?: SystemCode;
 }
 
 interface LoginRow {
@@ -22,8 +22,9 @@ interface LoginRow {
   email: string;
   password_hash: string;
   active: boolean;
+  system_code: SystemCode | null;
   role: Role | null;
-  ttl: number;
+  ttl: number | null;
 }
 
 /** El mismo 401 para cualquier causa: no revela qué comprobación falló. */
@@ -51,37 +52,51 @@ export class AuthService implements OnModuleInit {
   }
 
   /**
-   * Verifica contraseña, usuario activo y asignación explícita al sistema.
+   * Verifica contraseña, usuario activo y sus asignaciones de sistema.
+   * Si se especifica `system`, exige asignación explícita a ese sistema.
    * Siempre ejecuta exactamente una verificación Argon2 (contra un hash
    * simulado si el email no existe) para no distinguir los casos por tiempo.
    */
   async login(input: LoginInput): Promise<RenewableSession> {
-    const [row] = await this.dataSource.query<LoginRow[]>(
-      `SELECT u.id, u.email, u.password_hash, u.active, us.role,
-              s.access_token_ttl_seconds AS ttl
+    const rows = await this.dataSource.query<LoginRow[]>(
+      `SELECT u.id, u.email, u.password_hash, u.active,
+              us.system_code, us.role, s.access_token_ttl_seconds AS ttl
          FROM users u
-         JOIN systems s ON s.code = $2
-         LEFT JOIN user_systems us
-           ON us.user_id = u.id AND us.system_code = s.code
-        WHERE u.email = $1`,
-      [normalizeEmail(input.email), input.system],
+         LEFT JOIN user_systems us ON us.user_id = u.id
+         LEFT JOIN systems s ON s.code = us.system_code
+        WHERE u.email = $1
+        ORDER BY s.code ASC`,
+      [normalizeEmail(input.email)],
     );
 
+    const userRow = rows[0];
     const passwordMatches = await this.hasher.verify(
-      row?.password_hash ?? this.dummyHash,
+      userRow?.password_hash ?? this.dummyHash,
       input.password,
     );
-    if (!row || !passwordMatches || !row.active || !row.role)
+
+    const assignments = rows.flatMap((row) =>
+      row.system_code && row.role && row.ttl !== null
+        ? [{ system: row.system_code, role: row.role, ttl: row.ttl }]
+        : [],
+    );
+
+    const primaryAssignment = input.system
+      ? assignments.find((item) => item.system === input.system)
+      : assignments[0];
+
+    if (!userRow || !passwordMatches || !userRow.active || !primaryAssignment)
       throw invalidCredentials();
 
     return this.sessions.start(
       {
-        userId: row.id,
-        email: row.email,
-        role: row.role,
-        system: input.system,
+        userId: userRow.id,
+        email: userRow.email,
+        role: primaryAssignment.role,
+        system: primaryAssignment.system,
       },
-      this.tokens.effectiveTtl(row.ttl),
+      this.tokens.effectiveTtl(primaryAssignment.ttl),
+      assignments,
     );
   }
 

@@ -5,11 +5,15 @@ import type { Role, SystemCode } from '../access/access-matrix';
 import { AuthDomainError, ErrorCode } from '../common/errors';
 import { isAccessTokenClaims, type AccessTokenClaims } from './token-claims';
 
-export interface IssuedToken {
+export interface IssuedSystemToken {
   accessToken: string;
   tokenType: 'Bearer';
   /** Segundos; coincide exactamente con `exp - iat`. */
   expiresIn: number;
+}
+
+export interface IssuedToken extends IssuedSystemToken {
+  tokens?: IssuedSystemToken[];
 }
 
 const invalidToken = () =>

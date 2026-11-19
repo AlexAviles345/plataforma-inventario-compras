@@ -11,7 +11,11 @@ import type { Role, SystemCode } from '../access/access-matrix';
 import { AuditAction, recordAudit } from '../audit/audit-log';
 import { AuthDomainError, ErrorCode } from '../common/errors';
 import { currentRequestId } from '../common/request-context';
-import { TokenService, type IssuedToken } from './token.service';
+import {
+  TokenService,
+  type IssuedSystemToken,
+  type IssuedToken,
+} from './token.service';
 
 const SECRET_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 
@@ -24,6 +28,12 @@ export interface RefreshCredentials {
 export interface RenewableSession {
   token: IssuedToken;
   credentials: RefreshCredentials;
+}
+
+export interface SystemAssignment {
+  system: SystemCode;
+  role: Role;
+  ttl: number;
 }
 
 interface SessionPrincipal {
@@ -48,11 +58,18 @@ interface RefreshRow {
   ttl: number;
 }
 
+interface UserSystemAssignmentRow {
+  system_code: SystemCode;
+  role: Role;
+  ttl: number;
+}
+
 type RotationResult =
   | {
       status: 'rotated';
       principal: SessionPrincipal;
       ttl: number;
+      assignments: SystemAssignment[];
       credentials: RefreshCredentials;
     }
   | { status: 'invalid' };
@@ -99,6 +116,7 @@ export class RefreshSessionService {
   async start(
     principal: SessionPrincipal,
     accessTokenTtl: number,
+    assignments: SystemAssignment[] = [],
   ): Promise<RenewableSession> {
     const id = randomUUID();
     const now = new Date();
@@ -122,7 +140,11 @@ export class RefreshSessionService {
     );
 
     return {
-      token: await this.tokens.issue(principal, accessTokenTtl),
+      token: await this.issueTokenBundle(
+        principal,
+        accessTokenTtl,
+        assignments,
+      ),
       credentials,
     };
   }
@@ -177,6 +199,15 @@ export class RefreshSessionService {
           return { status: 'invalid' };
         }
 
+        const assignmentRows = await manager.query<UserSystemAssignmentRow[]>(
+          `SELECT us.system_code, us.role, s.access_token_ttl_seconds AS ttl
+             FROM user_systems us
+             JOIN systems s ON s.code = us.system_code
+            WHERE us.user_id = $1
+            ORDER BY s.code ASC`,
+          [row.user_id],
+        );
+
         const successorId = randomUUID();
         const remainingSeconds = Math.max(
           1,
@@ -216,6 +247,11 @@ export class RefreshSessionService {
             system: row.system_code,
           },
           ttl: this.tokens.effectiveTtl(row.ttl),
+          assignments: assignmentRows.map((item) => ({
+            system: item.system_code,
+            role: item.role,
+            ttl: item.ttl,
+          })),
           credentials,
         };
       },
@@ -223,8 +259,40 @@ export class RefreshSessionService {
 
     if (rotation.status === 'invalid') throw invalidRefresh();
     return {
-      token: await this.tokens.issue(rotation.principal, rotation.ttl),
+      token: await this.issueTokenBundle(
+        rotation.principal,
+        rotation.ttl,
+        rotation.assignments,
+      ),
       credentials: rotation.credentials,
+    };
+  }
+
+  private async issueTokenBundle(
+    principal: SessionPrincipal,
+    primaryTtl: number,
+    assignments: SystemAssignment[],
+  ): Promise<IssuedToken> {
+    const primaryToken = await this.tokens.issue(principal, primaryTtl);
+    const additionalAssignments = assignments.filter(
+      (item) => item.system !== principal.system,
+    );
+    const additionalTokens: IssuedSystemToken[] = await Promise.all(
+      additionalAssignments.map((assignment) =>
+        this.tokens.issue(
+          {
+            userId: principal.userId,
+            email: principal.email,
+            role: assignment.role,
+            system: assignment.system,
+          },
+          this.tokens.effectiveTtl(assignment.ttl),
+        ),
+      ),
+    );
+    return {
+      ...primaryToken,
+      tokens: [primaryToken, ...additionalTokens],
     };
   }
 

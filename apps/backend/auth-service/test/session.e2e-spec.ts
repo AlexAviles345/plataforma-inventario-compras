@@ -12,6 +12,7 @@ interface TokenData {
   accessToken: string;
   tokenType: string;
   expiresIn: number;
+  tokens?: TokenData[];
 }
 
 interface Envelope<T = unknown> {
@@ -137,6 +138,7 @@ describe('Refresh sessions (HTTP)', () => {
     expect(cookie(rotatedCookies, 'td_refresh')).not.toBe(oldRefresh);
     expect(cookie(rotatedCookies, 'td_csrf')).not.toBe(oldCsrf);
     expect(body<TokenData>(response).data.accessToken).toMatch(/^ey/);
+    expect(body<TokenData>(response).data.tokens).toHaveLength(1);
 
     const rows = await dataSource.query<
       { expires_at: Date; replaced_by_id: string | null }[]

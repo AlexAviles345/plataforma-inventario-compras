@@ -47,9 +47,9 @@ export class AuthController {
   @Header('Cache-Control', 'no-store')
   @ResponseMessage('Inicio de sesión exitoso')
   @ApiOperation({
-    summary: 'Emite un access token para un sistema',
+    summary: 'Emite access tokens para los sistemas autorizados del usuario',
     description:
-      'Público. Usuario desconocido, inactivo, contraseña incorrecta o sin asignación al sistema responden el mismo 401.',
+      'Público. Emite tokens para los sistemas asignados al usuario (o valida acceso al sistema indicado). Credenciales inválidas responden el mismo 401.',
   })
   @ApiOkResponse({
     schema: {
