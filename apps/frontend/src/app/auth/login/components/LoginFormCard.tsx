@@ -1,4 +1,12 @@
-import { ArrowRight, LoaderCircle, LockKeyhole, Mail } from 'lucide-react';
+import { useState } from 'react';
+import {
+  ArrowRight,
+  Eye,
+  EyeOff,
+  LoaderCircle,
+  LockKeyhole,
+  Mail,
+} from 'lucide-react';
 
 import { GatewayApiError } from '@shared/services/gateway-api-error';
 import { Button } from '@shared/components/ui/button';
@@ -43,6 +51,7 @@ function LoginError({ error }: { error: unknown }) {
 }
 
 export function LoginFormCard({ onAuthenticated }: LoginFormCardProps) {
+  const [showPassword, setShowPassword] = useState(false);
   const { form, mutation, submit } = useLoginForm({ onAuthenticated });
   const disabled = mutation.isPending;
 
@@ -88,13 +97,28 @@ export function LoginFormCard({ onAuthenticated }: LoginFormCardProps) {
               <LockKeyhole className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 id="password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 autoComplete="current-password"
-                className="pl-9"
+                className="pl-9 pr-10"
                 aria-invalid={Boolean(form.formState.errors.password)}
                 disabled={disabled}
                 {...form.register('password')}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
+                aria-label={
+                  showPassword ? 'Ocultar contraseña' : 'Ver contraseña'
+                }
+                disabled={disabled}
+              >
+                {showPassword ? (
+                  <EyeOff className="size-4" aria-hidden="true" />
+                ) : (
+                  <Eye className="size-4" aria-hidden="true" />
+                )}
+              </button>
             </div>
             {form.formState.errors.password && (
               <p className="text-sm text-destructive">

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LoaderCircle, UserPlus } from 'lucide-react';
+import { Eye, EyeOff, LoaderCircle, UserPlus } from 'lucide-react';
 
 import { ApiErrorAlert } from '@shared/components/data-display/ApiErrorAlert';
 import { Button } from '@shared/components/ui/button';
@@ -20,6 +20,7 @@ import { UserSystemAssignmentsField } from './UserSystemAssignmentsField';
 
 export function UserCreateDialog() {
   const [open, setOpen] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { form, mutation, submit } = useCreateUser(() => setOpen(false));
   const disabled = mutation.isPending;
 
@@ -74,16 +75,34 @@ export function UserCreateDialog() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="createUserPassword">Contraseña inicial</Label>
-            <Input
-              id="createUserPassword"
-              type="password"
-              autoComplete="new-password"
-              minLength={12}
-              maxLength={128}
-              disabled={disabled}
-              aria-invalid={Boolean(form.formState.errors.password)}
-              {...form.register('password')}
-            />
+            <div className="relative">
+              <Input
+                id="createUserPassword"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="new-password"
+                minLength={12}
+                maxLength={128}
+                disabled={disabled}
+                className="pr-10"
+                aria-invalid={Boolean(form.formState.errors.password)}
+                {...form.register('password')}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
+                aria-label={
+                  showPassword ? 'Ocultar contraseña' : 'Ver contraseña'
+                }
+                disabled={disabled}
+              >
+                {showPassword ? (
+                  <EyeOff className="size-4" aria-hidden="true" />
+                ) : (
+                  <Eye className="size-4" aria-hidden="true" />
+                )}
+              </button>
+            </div>
             {form.formState.errors.password ? (
               <p className="text-sm text-destructive">
                 {form.formState.errors.password.message}
