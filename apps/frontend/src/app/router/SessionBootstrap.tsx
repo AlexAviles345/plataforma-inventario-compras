@@ -28,8 +28,12 @@ function SessionLoader() {
 
 export function SessionBootstrap({ children }: PropsWithChildren) {
   const location = useLocation();
-  const initialLocation = useRef(location);
   const navigate = useNavigate();
+  const locationRef = useRef(location);
+  const navigateRef = useRef(navigate);
+  locationRef.current = location;
+  navigateRef.current = navigate;
+
   const [ready, setReady] = useState(false);
   const setRenewableSessionBundle = useAuthSessionStore(
     (state) => state.setRenewableSessionBundle,
@@ -52,9 +56,11 @@ export function SessionBootstrap({ children }: PropsWithChildren) {
           response.tokens?.map((entry) => entry.accessToken),
         );
 
-        if (initialLocation.current.pathname === '/login') {
-          const search = new URLSearchParams(initialLocation.current.search);
-          navigate(safeReturnPath(search.get('returnTo')), { replace: true });
+        if (locationRef.current.pathname === '/login') {
+          const search = new URLSearchParams(locationRef.current.search);
+          navigateRef.current(safeReturnPath(search.get('returnTo')), {
+            replace: true,
+          });
         }
       } catch {
         // Auth limpia las cookies inválidas. Sin sesión, las rutas protegidas
@@ -68,7 +74,7 @@ export function SessionBootstrap({ children }: PropsWithChildren) {
     return () => {
       mounted = false;
     };
-  }, [navigate, setRenewableSessionBundle]);
+  }, [setRenewableSessionBundle]);
 
   return ready ? children : <SessionLoader />;
 }

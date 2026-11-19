@@ -67,8 +67,8 @@ function RouteLoader() {
 
 export function AppRouter() {
   return (
-    <Suspense fallback={<RouteLoader />}>
-      <SessionBootstrap>
+    <SessionBootstrap>
+      <Suspense fallback={<RouteLoader />}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route element={<ProtectedRouteGuard />}>
@@ -136,7 +136,7 @@ export function AppRouter() {
             </Route>
           </Route>
         </Routes>
-      </SessionBootstrap>
-    </Suspense>
+      </Suspense>
+    </SessionBootstrap>
   );
 }
