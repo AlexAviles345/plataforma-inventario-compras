@@ -64,4 +64,91 @@ describe('DynamicSidebar', () => {
     expect(await screen.findByText('Pantalla de acceso')).toBeInTheDocument();
     expect(useAuthSessionStore.getState().sessions).toEqual({});
   });
+
+  it('muestra todas las secciones autorizadas para ADMIN con ambos sistemas', () => {
+    useAuthSessionStore
+      .getState()
+      .setRenewableSessionBundle(
+        createAccessToken({ system: 'INVENTORY', role: 'ADMIN' }),
+        [
+          createAccessToken({ system: 'INVENTORY', role: 'ADMIN' }),
+          createAccessToken({ system: 'PURCHASES', role: 'ADMIN' }),
+        ],
+      );
+
+    render(
+      <MemoryRouter initialEntries={['/dashboard']}>
+        <Routes>
+          <Route path="/dashboard" element={<DynamicSidebar />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('link', { name: 'Resumen' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Productos' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: 'Órdenes de compra' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Usuarios' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: 'Configuración' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Inventario')).toBeInTheDocument();
+    expect(screen.getByText('Compras')).toBeInTheDocument();
+  });
+
+  it('muestra solo las secciones permitidas para INVENTORY_MANAGER y PURCHASES_AGENT', () => {
+    useAuthSessionStore
+      .getState()
+      .setAccessToken(
+        createAccessToken({ system: 'INVENTORY', role: 'INVENTORY_MANAGER' }),
+      );
+
+    const { unmount } = render(
+      <MemoryRouter initialEntries={['/dashboard']}>
+        <Routes>
+          <Route path="/dashboard" element={<DynamicSidebar />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('link', { name: 'Resumen' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Productos' })).toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: 'Órdenes de compra' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: 'Usuarios' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: 'Configuración' }),
+    ).not.toBeInTheDocument();
+
+    unmount();
+    useAuthSessionStore.getState().clearSession();
+    useAuthSessionStore
+      .getState()
+      .setAccessToken(
+        createAccessToken({ system: 'PURCHASES', role: 'PURCHASES_AGENT' }),
+      );
+
+    render(
+      <MemoryRouter initialEntries={['/dashboard']}>
+        <Routes>
+          <Route path="/dashboard" element={<DynamicSidebar />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('link', { name: 'Resumen' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: 'Órdenes de compra' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: 'Productos' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: 'Usuarios' }),
+    ).not.toBeInTheDocument();
+  });
 });

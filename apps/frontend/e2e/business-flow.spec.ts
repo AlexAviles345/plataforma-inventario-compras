@@ -46,10 +46,7 @@ async function fulfill(
   });
 }
 
-async function authenticate(page: Page, system: SystemCode) {
-  if (system === 'PURCHASES') {
-    await page.getByRole('radio', { name: /Compras/ }).click();
-  }
+async function authenticate(page: Page) {
   await page
     .getByLabel('Correo electrónico')
     .fill('admin@techdistribution.test');
@@ -126,11 +123,16 @@ test('producto → orden → snapshot histórico → cancelación', async ({
   };
 
   await page.route('**/api/auth/login', async (route) => {
-    const body = route.request().postDataJSON() as { system: SystemCode };
+    const invToken = accessToken('INVENTORY');
+    const purToken = accessToken('PURCHASES');
     await fulfill(route, {
-      accessToken: accessToken(body.system),
+      accessToken: invToken,
       tokenType: 'Bearer',
       expiresIn: 900,
+      tokens: [
+        { accessToken: invToken, tokenType: 'Bearer', expiresIn: 900 },
+        { accessToken: purToken, tokenType: 'Bearer', expiresIn: 900 },
+      ],
     });
   });
 
@@ -278,7 +280,7 @@ test('producto → orden → snapshot histórico → cancelación', async ({
   });
 
   await page.goto('/login');
-  await authenticate(page, 'INVENTORY');
+  await authenticate(page);
   await page.getByRole('link', { name: 'Productos' }).click();
   await page.getByRole('button', { name: 'Nuevo producto' }).click();
   await page.getByLabel('SKU').fill('LAP-001');
@@ -287,11 +289,6 @@ test('producto → orden → snapshot histórico → cancelación', async ({
   await page.getByRole('button', { name: 'Crear producto' }).click();
   await expect(page.getByText('Laptop Business')).toBeVisible();
 
-  await page.getByRole('button', { name: /Inventario/ }).click();
-  await page.getByRole('menuitem', { name: 'Conectar otro sistema' }).click();
-  await authenticate(page, 'PURCHASES');
-  await page.getByRole('button', { name: /Inventario/ }).click();
-  await page.getByRole('menuitem', { name: 'Compras' }).click();
   await page.getByRole('link', { name: 'Órdenes de compra' }).click();
   await page.getByRole('link', { name: 'Nueva orden' }).click();
 
@@ -314,16 +311,12 @@ test('producto → orden → snapshot histórico → cancelación', async ({
   await page.getByRole('button', { name: 'Confirmar envío' }).click();
   await expect(page.getByText('Enviada').first()).toBeVisible();
 
-  await page.getByRole('button', { name: /Compras/ }).click();
-  await page.getByRole('menuitem', { name: 'Inventario' }).click();
   await page.getByRole('link', { name: 'Productos' }).click();
   await page.getByRole('button', { name: 'Editar' }).click();
   await page.getByLabel('Nombre').fill('Laptop Business Pro');
   await page.getByRole('button', { name: 'Guardar versión' }).click();
   await expect(page.getByText('Laptop Business Pro')).toBeVisible();
 
-  await page.getByRole('button', { name: /Inventario/ }).click();
-  await page.getByRole('menuitem', { name: 'Compras' }).click();
   await page.getByRole('link', { name: 'Órdenes de compra' }).click();
   await page.getByRole('link', { name: 'Ver' }).click();
 

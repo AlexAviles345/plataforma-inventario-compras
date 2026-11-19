@@ -70,14 +70,12 @@ apps/frontend/
 │   │   ├── auth/                                       # Rutas públicas de autenticación
 │   │   │   ├── login/
 │   │   │   │   ├── components/
-│   │   │   │   │   ├── LoginFormCard.tsx               # Formulario con selector de sistema (INVENTORY / PURCHASES)
-│   │   │   │   │   └── SystemBadgeSelector.tsx
-│   │   │   │   ├── config/
-│   │   │   │   │   └── login-systems.config.ts
+│   │   │   │   │   ├── DevelopmentTokenAccess.tsx    # Entrada manual opcional en desarrollo
+│   │   │   │   │   └── LoginFormCard.tsx               # Formulario unificado { email, password }
 │   │   │   │   ├── hooks/
 │   │   │   │   │   └── useLoginForm.ts
 │   │   │   │   ├── schemas/
-│   │   │   │   │   └── login.schema.ts                 # Validación Zod de { email, password, system }
+│   │   │   │   │   └── login.schema.ts                 # Validación Zod de { email, password }
 │   │   │   │   ├── services/
 │   │   │   │   │   └── auth-login.service.ts           # POST /api/auth/login
 │   │   │   │   ├── types/
@@ -197,12 +195,11 @@ apps/frontend/
 │   │   │   │   │   ├── DecimalMoneyInput.tsx           # Input controlado para montos exactos (18,2)
 │   │   │   │   │   └── SearchableSelect.tsx
 │   │   │   │   ├── layout/
+│   │   │   │   │   ├── AccessDeniedPage.tsx
 │   │   │   │   │   ├── BreadcrumbNav.tsx
-│   │   │   │   │   ├── DynamicSidebar.tsx              # Menú filtrado por rol y sistema activo
-│   │   │   │   │   ├── ErrorPage404.tsx
-│   │   │   │   │   ├── GlobalLoader.tsx
-│   │   │   │   │   ├── Header.tsx                      # Incluye SystemSwitcher y estado del JWT
-│   │   │   │   │   └── SystemSwitcher.tsx
+│   │   │   │   │   ├── DynamicSidebar.tsx              # Menú filtrado dinámicamente por permisos y roles en sesión
+│   │   │   │   │   ├── Header.tsx                      # Barra superior con breadcrumb y cambio de tema
+│   │   │   │   │   └── SignOutConfirmationDialog.tsx
 │   │   │   │   ├── ui/                                 # Primitivas oficiales de shadcn/ui
 │   │   │   │   └── index.ts
 │   │   │   ├── config/
@@ -291,19 +288,19 @@ apps/frontend/
      - Configura en **TanStack Query** el reintento automático cuando una consulta o mutación segura recibe `409 PROJECTION_NOT_READY`, esperando el número de segundos indicado en el header `Retry-After` (por defecto `2s`, hasta 4 intentos) y activando el componente `ProjectionSyncBanner.tsx`.
      - Envía cookies con credenciales y usa `auth-session.service.ts` para refresh/logout con double-submit CSRF, sin exponer el refresh token al JavaScript.
   3. Módulo `auth/login/`:
-     - Pantalla de inicio de sesión con selección de sistema destino (`INVENTORY` o `PURCHASES`), conectada a `POST /api/auth/login`.
+     - Pantalla unificada de inicio de sesión (`{ email, password }`), conectada a `POST /api/auth/login`, que recibe e instala automáticamente todos los access tokens asignados al usuario en `tokens`.
      - Modo de asistencia para desarrollo local (solo con `import.meta.env.DEV` y `VITE_ENABLE_DEV_TOKEN_ACCESS=true`): permite pegar un token generado con `python manage.py generate_dev_token` para diagnosticar módulos individuales aunque `auth-service` esté apagado. Permanece oculto por defecto y nunca aparece en producción.
   4. Shell principal `modules/layout.tsx`:
-     - `DynamicSidebar.tsx`, `Header.tsx`, `SystemSwitcher.tsx` (permite cambiar entre `INVENTORY` y `PURCHASES` o solicitar credenciales del segundo sistema sin perder la sesión del primero), `BreadcrumbNav.tsx` y `ProtectedRouteGuard.tsx`.
+     - `DynamicSidebar.tsx` (filtra dinámicamente las secciones de Inventario, Compras y Administración según los permisos presentes en sesión), `Header.tsx`, `BreadcrumbNav.tsx` y `ProtectedRouteGuard.tsx`.
      - El cierre de sesión solicita confirmación con lenguaje orientado al usuario antes de abandonar la sesión y volver al login.
-     - `SessionBootstrap.tsx` restaura la sesión al recargar y `ProtectedRouteGuard.tsx` rota el access token antes de expirar; ambos conservan el JWT sólo en Zustand.
+     - `SessionBootstrap.tsx` restaura los tokens vigentes al recargar y `ProtectedRouteGuard.tsx` rota el access token antes de expirar; ambos conservan los JWT sólo en Zustand.
 
 - **Evidencia de cierre:**
   - Cliente Axios tipado con envoltura validada, `X-Request-Id`, `Authorization`, `Idempotency-Key`, timeout y errores `GatewayApiError`.
   - TanStack Query con reintentos limitados para `409 PROJECTION_NOT_READY`, soporte de `Retry-After` y banner de sincronización.
   - Store Zustand para tokens independientes de `INVENTORY` y `PURCHASES`, bloqueo de mezcla entre usuarios, expiración automática y selectores RBAC.
-  - Login responsive con selector de sistema, validación Zod, conexión a `POST /api/auth/login` y entrada manual de JWT limitada a desarrollo.
-  - React Router con carga diferida, guards por sesión/sistema/rol, dashboard, navegación adaptable y cambio de tema.
+  - Login unificado con validación Zod, conexión a `POST /api/auth/login` con emisión automática por permisos y entrada manual de JWT limitada a desarrollo.
+  - React Router con carga diferida, guards por sesión/sistema/rol (`403` vía `/forbidden` si falta permiso de sistema), dashboard multi-permiso, barra lateral dinámica y cambio de tema.
 
 ---
 

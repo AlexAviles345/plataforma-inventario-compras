@@ -14,14 +14,14 @@ outbox y `refresh_sessions` está en el
 
 Bootstrap: comando administrativo local idempotente, fuera del HTTP público, crea el primer ADMIN desde variables temporales/secreto interactivo. No usar contraseña por defecto y no recrear/reactivar administradores existentes automáticamente. Registrar auditoría del bootstrap sin credenciales. Solo administradores gestionan usuarios/asignaciones; impedir desactivar al último administrador activo.
 
-Login recibe `{email,password,system}`. Verifica usuario activo, contraseña y asignación explícita al sistema y crea una familia en `refresh_sessions`; sólo persiste hashes SHA-256. Credenciales incorrectas, usuario desconocido/inactivo y falta de asignación devuelven un mensaje genérico 401. Auth emite HS256 con todos los claims del [contrato de access token](../../standards/jwt-and-sessions.md) y TTL por sistema. Refresh rota token y CSRF de forma transaccional sin extender la expiración absoluta. Contraseña, desactivación y cambios de asignación revocan las familias correspondientes; los JWT ya emitidos conservan su vigencia corta hasta `exp`.
+Login recibe `{email,password}` (y `system` opcional para clientes que requieran un único sistema). Verifica usuario activo, contraseña y al menos una asignación válida (o asignación explícita si se envió `system`), crea una familia en `refresh_sessions` persistiendo sólo hashes SHA-256 y devuelve en `tokens` el conjunto completo de access tokens para los sistemas autorizados del usuario. Credenciales incorrectas, usuario desconocido/inactivo y falta de asignación devuelven un mensaje genérico 401. Auth emite HS256 con todos los claims del [contrato de access token](../../standards/jwt-and-sessions.md) y TTL por sistema. Refresh rota token y CSRF de forma transaccional sin extender la expiración absoluta, emitiendo también `tokens` actualizados. Contraseña, desactivación y cambios de asignación revocan las familias correspondientes; los JWT ya emitidos conservan su vigencia corta hasta `exp`.
 
 ## HTTP
 
 | Endpoint | Permiso | Comportamiento |
 | --- | --- | --- |
-| `POST /api/auth/login` | Público | Credenciales/sistema → accessToken, tokenType Bearer, expiresIn |
-| `POST /api/auth/refresh` | Cookie + CSRF | Rotación de un solo uso → nuevo access token y cookies |
+| `POST /api/auth/login` | Público | `{email, password}` (y `system` opcional) → `accessToken`, `tokenType`, `expiresIn` y `tokens[]` |
+| `POST /api/auth/refresh` | Cookie + CSRF | Rotación de un solo uso → nuevo `accessToken`, `tokens[]` vigentes y cookies |
 | `POST /api/auth/logout` | Cookie + CSRF | Revoca la familia y limpia cookies; idempotente |
 | `POST /api/auth/users` | ADMIN | Crear usuario/asignaciones; 201; email duplicado 409 |
 | `GET /api/auth/users` | ADMIN | Listado paginado de usuarios con sus asignaciones, sin hash de contraseña |

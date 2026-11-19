@@ -49,6 +49,34 @@ describe('SystemTokenGuard', () => {
     expect(screen.getByText('Sin permisos')).toBeInTheDocument();
   });
 
+  it('redirige a forbidden si el usuario autenticado no tiene permiso en el sistema solicitado', () => {
+    useAuthSessionStore.getState().setAccessToken(
+      createAccessToken({
+        role: 'INVENTORY_MANAGER',
+        system: 'INVENTORY',
+      }),
+    );
+
+    render(
+      <MemoryRouter initialEntries={['/purchases/orders']}>
+        <Routes>
+          <Route
+            path="/purchases/orders"
+            element={
+              <SystemTokenGuard system="PURCHASES">
+                <p>Órdenes</p>
+              </SystemTokenGuard>
+            }
+          />
+          <Route path="/login" element={<p>Acceso</p>} />
+          <Route path="/forbidden" element={<p>Sin permisos</p>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText('Sin permisos')).toBeInTheDocument();
+  });
+
   it('redirige al login cuando no existe sesión', () => {
     renderGuard();
 

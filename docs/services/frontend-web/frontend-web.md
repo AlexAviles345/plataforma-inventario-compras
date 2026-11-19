@@ -16,14 +16,15 @@ Estado: **Fases 1 a 6 implementadas** en `apps/frontend`; incluye el scaffold, s
 
 ## Sesión, tokens por sistema y RBAC en cliente
 
-El contrato de autenticación emite un `accessToken` JWT por sistema destino (`system: "INVENTORY"` o `system: "PURCHASES"`) con `role` singular (`ADMIN`, `INVENTORY_MANAGER` o `PURCHASES_AGENT`):
+El contrato de autenticación emite un `accessToken` JWT por cada sistema asignado al usuario (`system: "INVENTORY"` o `system: "PURCHASES"`) con `role` singular (`ADMIN`, `INVENTORY_MANAGER` o `PURCHASES_AGENT`):
 
-1. **Almacenamiento seguro en memoria:** los access tokens se conservan en memoria dentro del store de sesión (Zustand) indexados por sistema (`tokens.INVENTORY`, `tokens.PURCHASES`), evitando exponer credenciales sensibles en URLs, logs o eventos.
-2. **Selección y cambio de sistema (`System Switcher`):**
-   - Un `INVENTORY_MANAGER` opera en el módulo de Inventario (`system: "INVENTORY"`).
-   - Un `PURCHASES_AGENT` opera en el módulo de Compras (`system: "PURCHASES"`).
-   - Un `ADMIN` puede autenticarse en cualquiera de los dos sistemas (o mantener tokens activos para ambos en su sesión en memoria) y gestionar además usuarios y sistemas en `/administration/*`.
-3. **Renovación y expiración:** el refresh token opaco permanece exclusivamente en la cookie `td_refresh` `HttpOnly`; la SPA sólo lee `td_csrf`. Al recargar ejecuta `POST /api/auth/refresh` antes de mostrar rutas protegidas y rota nuevamente 30 segundos antes de `exp`. El access token nuevo vuelve al store en memoria y nunca se persiste en Web Storage.
+1. **Almacenamiento seguro en memoria:** los access tokens devueltos tras el login único se conservan en memoria dentro del store de sesión (Zustand) indexados por sistema (`sessions.INVENTORY`, `sessions.PURCHASES`), evitando exponer credenciales sensibles en URLs, logs o eventos.
+2. **Carga dinámica de módulos y RBAC por sesión:**
+   - Al iniciar sesión con `{ email, password }`, Auth emite automáticamente en `tokens` todos los access tokens para los sistemas autorizados del usuario.
+   - Un `INVENTORY_MANAGER` recibe token de `INVENTORY` y ve en la barra lateral únicamente el módulo de Inventario.
+   - Un `PURCHASES_AGENT` recibe token de `PURCHASES` y ve únicamente el módulo de Compras.
+   - Un `ADMIN` recibe tokens para sus sistemas asignados (p. ej. `INVENTORY` y `PURCHASES`) y accede en la misma barra lateral dinámica a Inventario, Compras y Administración (`/administration/*`), seleccionando el cliente HTTP el token correspondiente según la ruta consumida.
+3. **Renovación y expiración:** el refresh token opaco permanece exclusivamente en la cookie `td_refresh` `HttpOnly`; la SPA sólo lee `td_csrf`. Al recargar ejecuta `POST /api/auth/refresh` antes de mostrar rutas protegidas y rota nuevamente 30 segundos antes de `exp`, restaurando los tokens vigentes de todos los sistemas asignados. Los access tokens viven únicamente en el store en memoria y nunca se persisten en Web Storage.
 4. **Logout:** la confirmación ejecuta `POST /api/auth/logout`; sólo después de que Auth revoca la familia y limpia cookies se elimina el estado local y se vuelve a `/login`.
 
 ## Invariantes de datos, concurrencia, idempotencia y proyecciones
@@ -42,8 +43,8 @@ El contrato de autenticación emite un `accessToken` JWT por sistema destino (`s
 
 | Módulo / Ruta UI             | Roles permitidos                     | Sistema JWT                           | Endpoints en API Gateway                                                                                                    |
 | ---------------------------- | ------------------------------------ | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `/login`                     | Público                              | Selección (`INVENTORY` o `PURCHASES`) | `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`                                                    |
-| `/dashboard`                 | Todos los autenticados               | Activo en sesión                      | Resumen de sesión, accesos por rol y estado rápido                                                                          |
+| `/login`                     | Público                              | Sin token previo (emite bundle por permisos) | `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`                                                    |
+| `/dashboard`                 | Todos los autenticados               | Todos los sistemas asignados               | Resumen de sesión, accesos por rol/permisos y estado rápido                                                                 |
 | `/administration/users`      | `ADMIN`                              | Token válido (`ADMIN`)                | `GET /api/auth/users`, `POST /api/auth/users`, `PUT /api/auth/users/{id}`                                                   |
 | `/administration/systems`    | `ADMIN`                              | Token válido (`ADMIN`)                | `GET /api/auth/systems`, `PUT /api/auth/systems/{code}`                                                                     |
 | `/inventory/products`        | `ADMIN`, `INVENTORY_MANAGER`         | `INVENTORY`                           | `GET /api/inventory/products`, `POST /api/inventory/products`, `PUT /api/inventory/products/{id}`                           |
