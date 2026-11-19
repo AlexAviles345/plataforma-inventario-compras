@@ -3,7 +3,6 @@ import { useTheme } from 'next-themes';
 
 import { Button } from '@shared/components/ui/button';
 import { BreadcrumbNav } from './BreadcrumbNav';
-import { SystemSwitcher } from './SystemSwitcher';
 
 interface HeaderProps {
   onOpenMenu: () => void;
@@ -37,7 +36,6 @@ export function Header({ onOpenMenu }: HeaderProps) {
       >
         {dark ? <Sun aria-hidden="true" /> : <Moon aria-hidden="true" />}
       </Button>
-      <SystemSwitcher />
     </header>
   );
 }

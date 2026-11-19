@@ -24,8 +24,8 @@ export function AuthLayout({ children }: PropsWithChildren) {
               Inventario y compras, en un mismo lugar.
             </h1>
             <p className="max-w-lg text-lg leading-8 text-slate-300">
-              Accede al sistema autorizado para tu rol. Cada sesión conserva su
-              contexto y permisos de forma independiente.
+              Inicia sesión una sola vez y accede automáticamente a los módulos
+              autorizados para tus permisos.
             </p>
           </div>
 

@@ -2,35 +2,42 @@ import { ArrowUpRight, Boxes, Settings2, ShoppingCart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import { Badge } from '@shared/components/ui/badge';
-import { useAuthSessionStore } from '@shared/stores/auth-session.store';
+import {
+  selectIsAdmin,
+  useAuthSessionStore,
+} from '@shared/stores/auth-session.store';
+import { isAccessTokenExpired } from '@shared/utils/access-token.util';
 
 export function QuickModuleAccessGrid() {
   const sessions = useAuthSessionStore((state) => state.sessions);
-  const activeSystem = useAuthSessionStore((state) => state.activeSystem);
-  const activeRole = activeSystem
-    ? sessions[activeSystem]?.claims.role
-    : undefined;
+  const isAdmin = useAuthSessionStore(selectIsAdmin);
+  const hasInventory = Boolean(
+    sessions.INVENTORY && !isAccessTokenExpired(sessions.INVENTORY.claims),
+  );
+  const hasPurchases = Boolean(
+    sessions.PURCHASES && !isAccessTokenExpired(sessions.PURCHASES.claims),
+  );
   const modules = [
-    sessions.INVENTORY && {
+    hasInventory && {
       title: 'Inventario',
       description: 'Consulta el catálogo y controla existencias.',
       path: '/inventory/products',
       icon: Boxes,
-      phase: 'Fase 4',
+      badge: 'INVENTORY',
     },
-    sessions.PURCHASES && {
+    hasPurchases && {
       title: 'Compras',
       description: 'Gestiona órdenes y su historial auditable.',
       path: '/purchases/orders',
       icon: ShoppingCart,
-      phase: 'Fase 3',
+      badge: 'PURCHASES',
     },
-    activeRole === 'ADMIN' && {
+    isAdmin && {
       title: 'Administración',
       description: 'Usuarios, asignaciones y sistemas.',
       path: '/administration/users',
       icon: Settings2,
-      phase: 'Fase 5',
+      badge: 'ADMIN',
     },
   ].filter(Boolean);
 
@@ -56,7 +63,7 @@ export function QuickModuleAccessGrid() {
               {module.description}
             </p>
             <Badge variant="outline" className="mt-4">
-              Implementación {module.phase}
+              {module.badge}
             </Badge>
           </Link>
         );

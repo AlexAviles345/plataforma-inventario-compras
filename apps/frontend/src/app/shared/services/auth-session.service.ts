@@ -1,11 +1,10 @@
+import type { IssuedTokenEntry } from '@shared/types/auth-session.types';
 import { apiRequest } from './http-client';
 
 const CSRF_COOKIE = 'td_csrf';
 
-export interface RenewableAccessToken {
-  accessToken: string;
-  tokenType: 'Bearer';
-  expiresIn: number;
+export interface RenewableAccessToken extends IssuedTokenEntry {
+  tokens?: IssuedTokenEntry[];
 }
 
 let refreshInFlight: Promise<RenewableAccessToken> | null = null;

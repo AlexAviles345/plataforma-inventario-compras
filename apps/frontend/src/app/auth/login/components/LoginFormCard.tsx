@@ -1,4 +1,3 @@
-import { Controller } from 'react-hook-form';
 import { ArrowRight, LoaderCircle, LockKeyhole, Mail } from 'lucide-react';
 
 import { GatewayApiError } from '@shared/services/gateway-api-error';
@@ -14,7 +13,6 @@ import { Input } from '@shared/components/ui/input';
 import { Label } from '@shared/components/ui/label';
 
 import { useLoginForm } from '../hooks/useLoginForm';
-import { SystemBadgeSelector } from './SystemBadgeSelector';
 
 interface LoginFormCardProps {
   onAuthenticated: () => void;
@@ -56,23 +54,12 @@ export function LoginFormCard({ onAuthenticated }: LoginFormCardProps) {
         </div>
         <CardTitle className="text-2xl">Inicia sesión</CardTitle>
         <CardDescription>
-          Elige el sistema al que deseas ingresar con tus credenciales.
+          Ingresa tus credenciales para acceder a los módulos autorizados para
+          tu rol.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form className="space-y-5" onSubmit={submit} noValidate>
-          <Controller
-            control={form.control}
-            name="system"
-            render={({ field }) => (
-              <SystemBadgeSelector
-                value={field.value}
-                onChange={field.onChange}
-                disabled={disabled}
-              />
-            )}
-          />
-
           <div className="space-y-2">
             <Label htmlFor="email">Correo electrónico</Label>
             <div className="relative">

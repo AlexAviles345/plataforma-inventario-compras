@@ -18,6 +18,10 @@ interface AuthSessionState {
   renewableSystem: SystemCode | null;
   setAccessToken: (accessToken: string) => AccessTokenClaims;
   setRenewableAccessToken: (accessToken: string) => AccessTokenClaims;
+  setRenewableSessionBundle: (
+    primaryToken: string,
+    additionalTokens?: string[],
+  ) => AccessTokenClaims;
   setActiveSystem: (system: SystemCode) => boolean;
   removeSystemSession: (system: SystemCode) => void;
   clearSession: () => void;
@@ -30,6 +34,8 @@ export const useAuthSessionStore = create<AuthSessionState>((set, get) => ({
   setAccessToken: (accessToken) => installAccessToken(accessToken, false),
   setRenewableAccessToken: (accessToken) =>
     installAccessToken(accessToken, true),
+  setRenewableSessionBundle: (primaryToken, additionalTokens) =>
+    installSessionBundle(primaryToken, additionalTokens, true),
   setActiveSystem: (system) => {
     const session = get().sessions[system];
 
@@ -96,6 +102,57 @@ function installAccessToken(
   return claims;
 }
 
+function installSessionBundle(
+  primaryToken: string,
+  additionalTokens: string[] | undefined,
+  renewable: boolean,
+): AccessTokenClaims {
+  const normalizedPrimary = primaryToken.trim();
+  const primaryClaims = decodeAndValidateAccessToken(normalizedPrimary);
+  const bundledSessions: SystemSessions = {
+    [primaryClaims.system]: {
+      accessToken: normalizedPrimary,
+      claims: primaryClaims,
+    },
+  };
+
+  for (const rawToken of additionalTokens ?? []) {
+    const trimmed = rawToken.trim();
+    if (!trimmed) continue;
+    const claims = decodeAndValidateAccessToken(trimmed);
+    if (claims.sub !== primaryClaims.sub) {
+      throw new InvalidAccessTokenError(
+        'No se pueden combinar sesiones de usuarios distintos en la misma ventana',
+      );
+    }
+    bundledSessions[claims.system] = { accessToken: trimmed, claims };
+  }
+
+  useAuthSessionStore.setState((state) => {
+    const storeHasDifferentUser = Object.values(state.sessions).some(
+      (session) => session && session.claims.sub !== primaryClaims.sub,
+    );
+    const hasExplicitBundle =
+      Array.isArray(additionalTokens) && additionalTokens.length > 0;
+    const nextSessions: SystemSessions =
+      hasExplicitBundle || storeHasDifferentUser
+        ? bundledSessions
+        : { ...state.sessions, ...bundledSessions };
+
+    return {
+      sessions: nextSessions,
+      activeSystem: primaryClaims.system,
+      renewableSystem: renewable
+        ? primaryClaims.system
+        : state.renewableSystem === primaryClaims.system
+          ? null
+          : state.renewableSystem,
+    };
+  });
+
+  return primaryClaims;
+}
+
 export function getValidSystemSession(
   system: SystemCode,
 ): SystemSession | undefined {
@@ -108,18 +165,31 @@ export function getValidSystemSession(
   return undefined;
 }
 
+export function getValidSessions(): SystemSession[] {
+  const { sessions } = useAuthSessionStore.getState();
+  return (Object.keys(sessions) as SystemCode[])
+    .map((system) => getValidSystemSession(system))
+    .filter((session): session is SystemSession => Boolean(session));
+}
+
 export function getActiveSystemSession(): SystemSession | undefined {
   const { activeSystem } = useAuthSessionStore.getState();
-  return activeSystem ? getValidSystemSession(activeSystem) : undefined;
+  return (
+    (activeSystem ? getValidSystemSession(activeSystem) : undefined) ??
+    getValidSessions()[0]
+  );
 }
 
 export const selectActiveSession = (
   state: AuthSessionState,
 ): SystemSession | undefined =>
-  state.activeSystem ? state.sessions[state.activeSystem] : undefined;
+  (state.activeSystem ? state.sessions[state.activeSystem] : undefined) ??
+  Object.values(state.sessions).find(Boolean);
 
 export const selectIsAdmin = (state: AuthSessionState): boolean =>
-  selectActiveSession(state)?.claims.role === 'ADMIN';
+  Object.values(state.sessions).some(
+    (session) => session?.claims.role === 'ADMIN',
+  );
 
 export const selectCanAccessInventory = (state: AuthSessionState): boolean =>
   Boolean(state.sessions.INVENTORY);

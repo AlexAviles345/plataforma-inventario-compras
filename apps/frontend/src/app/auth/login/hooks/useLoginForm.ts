@@ -13,18 +13,14 @@ interface UseLoginFormOptions {
 }
 
 export function useLoginForm({ onAuthenticated }: UseLoginFormOptions) {
-  const setRenewableAccessToken = useAuthSessionStore(
-    (state) => state.setRenewableAccessToken,
-  );
-  const removeSystemSession = useAuthSessionStore(
-    (state) => state.removeSystemSession,
+  const setRenewableSessionBundle = useAuthSessionStore(
+    (state) => state.setRenewableSessionBundle,
   );
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: '',
       password: '',
-      system: 'INVENTORY',
     },
   });
 
@@ -42,13 +38,10 @@ export function useLoginForm({ onAuthenticated }: UseLoginFormOptions) {
         );
       }
 
-      const claims = setRenewableAccessToken(response.accessToken);
-      if (claims.system !== credentials.system) {
-        removeSystemSession(claims.system);
-        throw new InvalidAccessTokenError(
-          'El token emitido no corresponde al sistema solicitado',
-        );
-      }
+      setRenewableSessionBundle(
+        response.accessToken,
+        response.tokens?.map((entry) => entry.accessToken),
+      );
 
       return credentials;
     },

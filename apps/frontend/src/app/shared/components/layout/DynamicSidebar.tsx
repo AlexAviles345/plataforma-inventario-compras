@@ -3,14 +3,25 @@ import { LogOut } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
+import { Badge } from '@shared/components/ui/badge';
 import { NAVIGATION_ITEMS } from '@shared/config/navigation.config';
 import { logoutSession } from '@shared/services/auth-session.service';
 import {
   selectActiveSession,
   useAuthSessionStore,
 } from '@shared/stores/auth-session.store';
+import type {
+  SystemCode,
+  SystemSession,
+} from '@shared/types/auth-session.types';
+import { isAccessTokenExpired } from '@shared/utils/access-token.util';
 import { cn } from '@shared/utils/cn';
 import { SignOutConfirmationDialog } from './SignOutConfirmationDialog';
+
+const SYSTEM_LABELS: Record<SystemCode, string> = {
+  INVENTORY: 'Inventario',
+  PURCHASES: 'Compras',
+};
 
 interface DynamicSidebarProps {
   onNavigate?: () => void;
@@ -25,16 +36,40 @@ export function DynamicSidebar({ onNavigate }: DynamicSidebarProps) {
   const clearSession = useAuthSessionStore((state) => state.clearSession);
   const appName = import.meta.env.VITE_APP_NAME || 'TechDistribution';
 
+  const validSessions = (['INVENTORY', 'PURCHASES'] as const)
+    .map((system) => sessions[system])
+    .filter((session): session is SystemSession =>
+      Boolean(session && !isAccessTokenExpired(session.claims)),
+    );
+
   const items = NAVIGATION_ITEMS.filter((item) => {
-    if (item.system && !sessions[item.system]) return false;
+    if (item.system) {
+      const systemSession = sessions[item.system];
+      if (!systemSession || isAccessTokenExpired(systemSession.claims)) {
+        return false;
+      }
+      if (item.roles && !item.roles.includes(systemSession.claims.role)) {
+        return false;
+      }
+      return true;
+    }
+
     if (
       item.roles &&
-      !item.roles.includes(activeSession?.claims.role ?? 'PURCHASES_AGENT')
+      !validSessions.some((session) =>
+        item.roles!.includes(session.claims.role),
+      )
     ) {
       return false;
     }
+
     return true;
   });
+
+  const displaySession = activeSession ?? validSessions[0];
+  const displayRoles = Array.from(
+    new Set(validSessions.map((session) => session.claims.role)),
+  ).join(' · ');
 
   const confirmSignOut = async () => {
     setSigningOut(true);
@@ -91,13 +126,26 @@ export function DynamicSidebar({ onNavigate }: DynamicSidebarProps) {
       </nav>
 
       <div className="border-t border-white/10 p-3">
-        <div className="mb-2 rounded-lg bg-white/5 px-3 py-2">
+        <div className="mb-2 space-y-1.5 rounded-lg bg-white/5 px-3 py-2">
           <p className="truncate text-xs font-medium">
-            {activeSession?.claims.email}
+            {displaySession?.claims.email}
           </p>
-          <p className="mt-0.5 text-[11px] text-slate-500">
-            {activeSession?.claims.role}
+          <p className="text-[11px] text-slate-400">
+            {displayRoles || displaySession?.claims.role}
           </p>
+          {validSessions.length > 0 && (
+            <div className="flex flex-wrap gap-1 pt-0.5">
+              {validSessions.map((session) => (
+                <Badge
+                  key={session.claims.system}
+                  variant="secondary"
+                  className="bg-white/10 px-1.5 py-0 text-[10px] font-medium text-teal-300 hover:bg-white/15"
+                >
+                  {SYSTEM_LABELS[session.claims.system]}
+                </Badge>
+              ))}
+            </div>
+          )}
         </div>
         <button
           type="button"

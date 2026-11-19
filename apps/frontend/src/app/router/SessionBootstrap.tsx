@@ -31,8 +31,8 @@ export function SessionBootstrap({ children }: PropsWithChildren) {
   const initialLocation = useRef(location);
   const navigate = useNavigate();
   const [ready, setReady] = useState(false);
-  const setRenewableAccessToken = useAuthSessionStore(
-    (state) => state.setRenewableAccessToken,
+  const setRenewableSessionBundle = useAuthSessionStore(
+    (state) => state.setRenewableSessionBundle,
   );
 
   useEffect(() => {
@@ -47,7 +47,10 @@ export function SessionBootstrap({ children }: PropsWithChildren) {
       try {
         const response = await refreshSession();
         if (!mounted) return;
-        setRenewableAccessToken(response.accessToken);
+        setRenewableSessionBundle(
+          response.accessToken,
+          response.tokens?.map((entry) => entry.accessToken),
+        );
 
         if (initialLocation.current.pathname === '/login') {
           const search = new URLSearchParams(initialLocation.current.search);
@@ -65,7 +68,7 @@ export function SessionBootstrap({ children }: PropsWithChildren) {
     return () => {
       mounted = false;
     };
-  }, [navigate, setRenewableAccessToken]);
+  }, [navigate, setRenewableSessionBundle]);
 
   return ready ? children : <SessionLoader />;
 }

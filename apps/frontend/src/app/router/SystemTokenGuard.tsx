@@ -1,8 +1,13 @@
-import { useEffect, type PropsWithChildren } from 'react';
+import { type PropsWithChildren } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 
 import { useAuthSessionStore } from '@shared/stores/auth-session.store';
-import type { SystemCode, UserRole } from '@shared/types/auth-session.types';
+import type {
+  SystemCode,
+  SystemSession,
+  UserRole,
+} from '@shared/types/auth-session.types';
+import { isAccessTokenExpired } from '@shared/utils/access-token.util';
 
 interface SystemTokenGuardProps extends PropsWithChildren {
   system?: SystemCode;
@@ -15,27 +20,33 @@ export function SystemTokenGuard({
   children,
 }: SystemTokenGuardProps) {
   const location = useLocation();
-  const activeSystem = useAuthSessionStore((state) => state.activeSystem);
   const sessions = useAuthSessionStore((state) => state.sessions);
-  const setActiveSystem = useAuthSessionStore((state) => state.setActiveSystem);
-  const requiredSession = system
-    ? sessions[system]
-    : activeSystem
-      ? sessions[activeSystem]
-      : undefined;
 
-  useEffect(() => {
-    if (system && requiredSession && activeSystem !== system) {
-      setActiveSystem(system);
-    }
-  }, [activeSystem, requiredSession, setActiveSystem, system]);
+  const validSessions = Object.values(sessions).filter(
+    (session): session is SystemSession =>
+      Boolean(session && !isAccessTokenExpired(session.claims)),
+  );
 
-  if (!requiredSession) {
+  if (validSessions.length === 0) {
     const returnTo = encodeURIComponent(location.pathname + location.search);
     return <Navigate to={`/login?returnTo=${returnTo}`} replace />;
   }
 
-  if (roles && !roles.includes(requiredSession.claims.role)) {
+  if (system) {
+    const systemSession = sessions[system];
+    if (!systemSession || isAccessTokenExpired(systemSession.claims)) {
+      return <Navigate to="/forbidden" replace />;
+    }
+    if (roles && !roles.includes(systemSession.claims.role)) {
+      return <Navigate to="/forbidden" replace />;
+    }
+    return children;
+  }
+
+  if (
+    roles &&
+    !validSessions.some((session) => roles.includes(session.claims.role))
+  ) {
     return <Navigate to="/forbidden" replace />;
   }
 

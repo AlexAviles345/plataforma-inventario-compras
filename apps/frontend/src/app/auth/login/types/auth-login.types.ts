@@ -1,13 +1,14 @@
-import type { SystemCode } from '@shared/types/auth-session.types';
+import type {
+  IssuedTokenEntry,
+  SystemCode,
+} from '@shared/types/auth-session.types';
 
 export interface LoginRequest {
   email: string;
   password: string;
-  system: SystemCode;
+  system?: SystemCode;
 }
 
-export interface LoginResponse {
-  accessToken: string;
-  tokenType: 'Bearer';
-  expiresIn: number;
+export interface LoginResponse extends IssuedTokenEntry {
+  tokens?: IssuedTokenEntry[];
 }

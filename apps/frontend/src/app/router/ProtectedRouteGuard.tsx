@@ -3,49 +3,66 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 
 import { refreshSession } from '@shared/services/auth-session.service';
 import { useAuthSessionStore } from '@shared/stores/auth-session.store';
+import type {
+  SystemCode,
+  SystemSession,
+} from '@shared/types/auth-session.types';
 import { isAccessTokenExpired } from '@shared/utils/access-token.util';
 
 export function ProtectedRouteGuard() {
   const location = useLocation();
-  const activeSystem = useAuthSessionStore((state) => state.activeSystem);
-  const session = useAuthSessionStore((state) =>
-    state.activeSystem ? state.sessions[state.activeSystem] : undefined,
-  );
+  const sessions = useAuthSessionStore((state) => state.sessions);
   const removeSystemSession = useAuthSessionStore(
     (state) => state.removeSystemSession,
   );
   const renewableSystem = useAuthSessionStore((state) => state.renewableSystem);
-  const setRenewableAccessToken = useAuthSessionStore(
-    (state) => state.setRenewableAccessToken,
+  const setRenewableSessionBundle = useAuthSessionStore(
+    (state) => state.setRenewableSessionBundle,
   );
-  const valid = Boolean(session && !isAccessTokenExpired(session.claims));
+
+  const valid = Object.values(sessions).some(
+    (entry) => entry && !isAccessTokenExpired(entry.claims),
+  );
 
   useEffect(() => {
-    if (!activeSystem || !session) return;
+    const entries = (
+      Object.entries(sessions) as Array<[SystemCode, SystemSession | undefined]>
+    ).filter((entry): entry is [SystemCode, SystemSession] =>
+      Boolean(entry[1] && !isAccessTokenExpired(entry[1].claims)),
+    );
+    if (entries.length === 0) return;
 
-    const renewable = renewableSystem === activeSystem;
+    const [targetSystem, targetSession] = entries.reduce((earliest, current) =>
+      current[1].claims.exp < earliest[1].claims.exp ? current : earliest,
+    );
+
+    const renewable = Boolean(renewableSystem);
     const renewAt = renewable ? 30_000 : 0;
     const milliseconds = Math.max(
-      session.claims.exp * 1_000 - Date.now() - renewAt,
+      targetSession.claims.exp * 1_000 - Date.now() - renewAt,
       0,
     );
     const timeout = window.setTimeout(() => {
       if (!renewable) {
-        removeSystemSession(activeSystem);
+        removeSystemSession(targetSystem);
         return;
       }
 
       void refreshSession()
-        .then((response) => setRenewableAccessToken(response.accessToken))
-        .catch(() => removeSystemSession(activeSystem));
+        .then((response) =>
+          setRenewableSessionBundle(
+            response.accessToken,
+            response.tokens?.map((entry) => entry.accessToken),
+          ),
+        )
+        .catch(() => removeSystemSession(targetSystem));
     }, milliseconds);
     return () => window.clearTimeout(timeout);
   }, [
-    activeSystem,
     removeSystemSession,
     renewableSystem,
-    session,
-    setRenewableAccessToken,
+    sessions,
+    setRenewableSessionBundle,
   ]);
 
   if (!valid) {

@@ -24,6 +24,12 @@ export interface SystemSession {
   claims: AccessTokenClaims;
 }
 
+export interface IssuedTokenEntry {
+  accessToken: string;
+  tokenType: 'Bearer';
+  expiresIn: number;
+}
+
 export type SystemSessions = Partial<Record<SystemCode, SystemSession>>;
 
 export function isSystemCode(value: unknown): value is SystemCode {

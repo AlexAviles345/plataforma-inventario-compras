@@ -11,7 +11,6 @@ export const loginSchema = z.object({
     .string()
     .min(1, 'Ingresa tu contraseña')
     .max(200, 'La contraseña es demasiado larga'),
-  system: z.enum(['INVENTORY', 'PURCHASES']),
 });
 
 export type LoginFormValues = z.infer<typeof loginSchema>;

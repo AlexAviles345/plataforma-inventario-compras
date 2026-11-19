@@ -6,6 +6,7 @@ import axios, {
 
 import {
   getActiveSystemSession,
+  getValidSessions,
   getValidSystemSession,
   useAuthSessionStore,
 } from '@shared/stores/auth-session.store';
@@ -49,8 +50,9 @@ function resolveSession(config: InternalGatewayRequestConfig) {
   if (requiredSystem) return getValidSystemSession(requiredSystem);
 
   if (config.url?.startsWith('/api/auth/')) {
-    const active = getActiveSystemSession();
-    return active?.claims.role === 'ADMIN' ? active : undefined;
+    return getValidSessions().find(
+      (session) => session.claims.role === 'ADMIN',
+    );
   }
 
   return getActiveSystemSession();
