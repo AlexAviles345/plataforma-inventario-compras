@@ -50,9 +50,14 @@ import { formatMxn } from '@shared/utils/decimal-money.util';
 const PREVIEW_FILTERS = { page: 1, limit: 5 } as const;
 
 const ROLE_LABELS: Record<string, string> = {
-  ADMIN: 'Admin',
+  ADMIN: 'Administrador',
   INVENTORY_MANAGER: 'Gestor',
   PURCHASES_AGENT: 'Agente',
+};
+
+const SYSTEM_LABELS: Record<string, string> = {
+  INVENTORY: 'Inventario',
+  PURCHASES: 'Compras',
 };
 
 export function OperationalOverviewSection() {
@@ -117,12 +122,9 @@ export function OperationalOverviewSection() {
       <section className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold">
-              Estadísticas generales por servicio
-            </h2>
+            <h2 className="text-lg font-semibold">Estadísticas generales</h2>
             <p className="text-sm text-muted-foreground">
-              Métricas agregadas consultadas directamente de cada microservicio
-              habilitado para tu rol.
+              Indicadores principales de las áreas a las que tienes acceso.
             </p>
           </div>
           {hasPurchases && (
@@ -140,9 +142,6 @@ export function OperationalOverviewSection() {
             <Card className="flex flex-col">
               <CardHeader className="flex flex-row items-start justify-between pb-3">
                 <div className="space-y-1">
-                  <Badge variant="outline" className="w-fit text-[10px]">
-                    PURCHASES SERVICE
-                  </Badge>
                   <CardTitle className="text-base">Compras</CardTitle>
                   <CardDescription>
                     Órdenes e importes acumulados
@@ -159,9 +158,10 @@ export function OperationalOverviewSection() {
                     <Skeleton className="h-16 w-full" />
                   </div>
                 ) : ordersStatsQuery.isError || !ordersStatsQuery.data ? (
-                  <p className="text-sm text-muted-foreground">
-                    Estadísticas de compras no disponibles en este momento.
-                  </p>
+                  <div className="flex items-center gap-2 rounded-xl border border-dashed p-3.5 text-sm text-muted-foreground">
+                    <AlertCircle className="size-4 shrink-0" />
+                    Información no disponible por el momento.
+                  </div>
                 ) : (
                   <>
                     <div>
@@ -226,9 +226,6 @@ export function OperationalOverviewSection() {
             <Card className="flex flex-col">
               <CardHeader className="flex flex-row items-start justify-between pb-3">
                 <div className="space-y-1">
-                  <Badge variant="outline" className="w-fit text-[10px]">
-                    INVENTORY SERVICE
-                  </Badge>
                   <CardTitle className="text-base">Inventario</CardTitle>
                   <CardDescription>
                     Catálogo y existencias totales
@@ -245,15 +242,9 @@ export function OperationalOverviewSection() {
                     <Skeleton className="h-16 w-full" />
                   </div>
                 ) : productsStatsQuery.isError || !productsStatsQuery.data ? (
-                  <div className="space-y-2 rounded-xl border border-dashed p-3.5 text-xs text-muted-foreground">
-                    <p className="font-medium text-foreground">
-                      Servicio de inventario en espera
-                    </p>
-                    <p>
-                      Conectado a <code>GET /api/inventory/products/stats</code>
-                      . Se mostrará automáticamente al levantar el dominio en{' '}
-                      <code>inventory-service</code>.
-                    </p>
+                  <div className="flex items-center gap-2 rounded-xl border border-dashed p-3.5 text-sm text-muted-foreground">
+                    <AlertCircle className="size-4 shrink-0" />
+                    Información no disponible por el momento.
                   </div>
                 ) : (
                   <>
@@ -309,14 +300,9 @@ export function OperationalOverviewSection() {
             <Card className="flex flex-col">
               <CardHeader className="flex flex-row items-start justify-between pb-3">
                 <div className="space-y-1">
-                  <Badge variant="outline" className="w-fit text-[10px]">
-                    AUTH SERVICE
-                  </Badge>
-                  <CardTitle className="text-base">
-                    Identidades y RBAC
-                  </CardTitle>
+                  <CardTitle className="text-base">Usuarios</CardTitle>
                   <CardDescription>
-                    Usuarios activos y cobertura por sistema
+                    Cuentas registradas y acceso por área
                   </CardDescription>
                 </div>
                 <span className="flex size-9 items-center justify-center rounded-lg bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200">
@@ -330,9 +316,10 @@ export function OperationalOverviewSection() {
                     <Skeleton className="h-16 w-full" />
                   </div>
                 ) : usersStatsQuery.isError || !usersStatsQuery.data ? (
-                  <p className="text-sm text-muted-foreground">
-                    Estadísticas de usuarios no disponibles.
-                  </p>
+                  <div className="flex items-center gap-2 rounded-xl border border-dashed p-3.5 text-sm text-muted-foreground">
+                    <AlertCircle className="size-4 shrink-0" />
+                    Información no disponible por el momento.
+                  </div>
                 ) : (
                   <>
                     <div>
@@ -367,7 +354,7 @@ export function OperationalOverviewSection() {
                           {usersStatsQuery.data.adminUsers}
                         </p>
                         <p className="text-[11px] text-muted-foreground">
-                          Admins
+                          Administradores
                         </p>
                       </div>
                     </div>
@@ -399,9 +386,7 @@ export function OperationalOverviewSection() {
                   <FileSpreadsheet className="size-4 text-teal-600 dark:text-teal-400" />
                   Órdenes de compra recientes
                 </CardTitle>
-                <CardDescription>
-                  Últimos movimientos registrados en el dominio de compras.
-                </CardDescription>
+                <CardDescription>Últimas órdenes registradas.</CardDescription>
               </div>
               <Button asChild variant="outline" size="sm">
                 <Link to="/purchases/orders">
@@ -420,12 +405,12 @@ export function OperationalOverviewSection() {
               ) : ordersQuery.isError ? (
                 <div className="flex items-center gap-3 rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
                   <AlertCircle className="size-4 shrink-0" />
-                  No fue posible cargar las órdenes recientes en este momento.
+                  Información no disponible por el momento.
                 </div>
               ) : recentOrders.length === 0 ? (
                 <div className="flex flex-col items-start justify-between gap-3 rounded-xl border border-dashed p-5">
                   <p className="text-sm text-muted-foreground">
-                    Aún no hay órdenes de compra registradas para tu sesión.
+                    Aún no hay órdenes de compra registradas.
                   </p>
                   <Button asChild size="sm">
                     <Link to="/purchases/orders/new">
@@ -494,8 +479,7 @@ export function OperationalOverviewSection() {
               ) : productsQuery.isError ? (
                 <div className="flex items-center gap-3 rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
                   <AlertCircle className="size-4 shrink-0" />
-                  El microservicio de inventario no devolvió productos o se
-                  encuentra en espera de implementación de endpoints.
+                  Información no disponible por el momento.
                 </div>
               ) : recentProducts.length === 0 ? (
                 <div className="rounded-xl border border-dashed p-5 text-sm text-muted-foreground">
@@ -543,8 +527,7 @@ export function OperationalOverviewSection() {
                   Usuarios y permisos por sistema
                 </CardTitle>
                 <CardDescription>
-                  Vista rápida de las cuentas registradas en Auth y sus roles en
-                  cada microservicio.
+                  Cuentas registradas recientemente y sus permisos por área.
                 </CardDescription>
               </div>
               <Button asChild variant="outline" size="sm">
@@ -563,7 +546,7 @@ export function OperationalOverviewSection() {
               ) : usersQuery.isError ? (
                 <div className="flex items-center gap-3 rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
                   <AlertCircle className="size-4 shrink-0" />
-                  No fue posible consultar el listado reciente de usuarios.
+                  Información no disponible por el momento.
                 </div>
               ) : (
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -598,8 +581,9 @@ export function OperationalOverviewSection() {
                             variant="outline"
                             className="text-[11px]"
                           >
-                            {assignment.system}:{' '}
-                            {ROLE_LABELS[assignment.role] ?? assignment.role}
+                            {SYSTEM_LABELS[assignment.system] ??
+                              assignment.system}
+                            : {ROLE_LABELS[assignment.role] ?? assignment.role}
                           </Badge>
                         ))}
                       </div>

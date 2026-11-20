@@ -62,7 +62,7 @@ function UserEditForm({
       <div className="flex-1 space-y-5 overflow-y-auto px-4">
         <div className="grid gap-4 sm:grid-cols-[1fr_8rem]">
           <div className="space-y-2">
-            <Label htmlFor="editUserId">UUID del usuario</Label>
+            <Label htmlFor="editUserId">Identificador del usuario</Label>
             <Input
               id="editUserId"
               className="font-mono text-xs"
@@ -251,7 +251,7 @@ export function UserEditSheet({
           </div>
           <SheetTitle>Editar usuario</SheetTitle>
           <SheetDescription>
-            Envía el snapshot completo con control optimista por versión.
+            Actualiza los datos, permisos y estado de la cuenta.
           </SheetDescription>
         </SheetHeader>
         {open && (

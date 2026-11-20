@@ -59,7 +59,7 @@ export function OrderCancelDialog({
         <DialogHeader>
           <DialogTitle>Cancelar orden de compra</DialogTitle>
           <DialogDescription>
-            Esta transición es terminal. La orden conservará sus snapshots y su
+            Esta acción no se puede deshacer. La orden conservará sus datos y su
             historial para auditoría.
           </DialogDescription>
         </DialogHeader>

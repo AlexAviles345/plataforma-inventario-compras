@@ -40,7 +40,7 @@ export const userCreateSchema = z
 
 export const userEditSchema = z
   .object({
-    userId: z.uuid('Ingresa un UUID de usuario válido'),
+    userId: z.uuid('El identificador del usuario no es válido'),
     expectedVersion: z
       .number({ error: 'Ingresa la versión conocida' })
       .int('La versión debe ser un entero')

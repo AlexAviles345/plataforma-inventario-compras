@@ -52,7 +52,7 @@ export function OrderLinesFieldArray({
         <div>
           <h2 className="font-semibold">Líneas de la orden</h2>
           <p className="text-sm text-muted-foreground">
-            Captura entre 1 y 100 productos sin repetir UUID.
+            Captura entre 1 y 100 productos sin repetir.
           </p>
         </div>
         <Button
@@ -79,9 +79,7 @@ export function OrderLinesFieldArray({
               className="grid gap-4 rounded-xl border bg-muted/20 p-4 lg:grid-cols-[minmax(15rem,1.5fr)_9rem_12rem_10rem_auto] lg:items-start"
             >
               <div className="space-y-2">
-                <Label htmlFor={`lines.${index}.productId`}>
-                  Producto UUID
-                </Label>
+                <Label htmlFor={`lines.${index}.productId`}>Producto</Label>
                 <Controller
                   control={form.control}
                   name={`lines.${index}.productId`}

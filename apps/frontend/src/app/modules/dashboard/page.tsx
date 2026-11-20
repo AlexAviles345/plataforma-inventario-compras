@@ -1,4 +1,3 @@
-import { ActiveSystemSessionCard } from './components/ActiveSystemSessionCard';
 import { OperationalOverviewSection } from './components/OperationalOverviewSection';
 
 export function DashboardPage() {
@@ -10,12 +9,11 @@ export function DashboardPage() {
         </p>
         <h1 className="text-3xl font-semibold tracking-tight">Resumen</h1>
         <p className="max-w-2xl text-muted-foreground">
-          Estadísticas generales por microservicio, actividad reciente y estado
-          de tu sesión.
+          Consulta las estadísticas generales de operación y los movimientos
+          recientes.
         </p>
       </header>
       <OperationalOverviewSection />
-      <ActiveSystemSessionCard />
     </div>
   );
 }

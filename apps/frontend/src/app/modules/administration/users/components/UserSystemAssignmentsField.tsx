@@ -16,13 +16,13 @@ import type {
 } from '../schemas/user-form.schema';
 
 const INVENTORY_ROLE_HINTS: Record<InventoryAssignmentRole, string> = {
-  NONE: 'Sin token ni acceso al microservicio de inventario.',
+  NONE: 'No podrá consultar ni operar el inventario.',
   INVENTORY_MANAGER: 'Opera el catálogo de productos y ajustes de stock.',
   ADMIN: 'Control total en inventario y administración de usuarios.',
 };
 
 const PURCHASES_ROLE_HINTS: Record<PurchasesAssignmentRole, string> = {
-  NONE: 'Sin token ni acceso al microservicio de compras.',
+  NONE: 'No podrá consultar ni operar compras.',
   PURCHASES_AGENT: 'Crea y gestiona únicamente sus propias órdenes de compra.',
   ADMIN: 'Supervisa órdenes de todos los usuarios y administra cuentas.',
 };

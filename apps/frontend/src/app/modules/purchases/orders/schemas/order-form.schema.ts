@@ -9,7 +9,7 @@ const orderLineSchema = z.object({
   productId: z
     .string()
     .trim()
-    .regex(UUID_PATTERN, 'Ingresa un UUID de producto válido'),
+    .regex(UUID_PATTERN, 'Selecciona un producto válido'),
   quantity: z
     .number({ error: 'Ingresa una cantidad' })
     .int('La cantidad debe ser un entero')

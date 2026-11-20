@@ -42,8 +42,7 @@ export function UsersPage() {
           </div>
           <h1 className="text-3xl font-semibold tracking-tight">Usuarios</h1>
           <p className="mt-2 max-w-3xl text-muted-foreground">
-            Crea identidades, asigna permisos por sistema y administra su estado
-            mediante control optimista.
+            Crea cuentas, asigna permisos por área y administra su estado.
           </p>
         </div>
         <UserCreateDialog />

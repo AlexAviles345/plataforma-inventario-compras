@@ -67,7 +67,7 @@ export function OrdersFilterBar({
       </div>
       {showRequester ? (
         <div className="space-y-2">
-          <Label htmlFor="requesterId">UUID del solicitante</Label>
+          <Label htmlFor="requesterId">Identificador del solicitante</Label>
           <Input
             id="requesterId"
             value={requester}

@@ -109,8 +109,8 @@ function ProductEditForm({
         {!active && product.active && (
           <div className="flex gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100">
             <AlertTriangle className="size-5 shrink-0" />
-            La desactivación es lógica. Las órdenes existentes conservarán sus
-            snapshots históricos.
+            El producto no se elimina. Las órdenes existentes conservarán sus
+            datos tal como se registraron.
           </div>
         )}
         <div className="space-y-2">

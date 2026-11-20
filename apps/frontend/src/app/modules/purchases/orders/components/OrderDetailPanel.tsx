@@ -69,7 +69,7 @@ export function OrderDetailPanel({ order }: { order: PurchaseOrder }) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Líneas y snapshots históricos</CardTitle>
+          <CardTitle>Productos de la orden</CardTitle>
         </CardHeader>
         <CardContent className="px-0">
           <div className="overflow-x-auto">

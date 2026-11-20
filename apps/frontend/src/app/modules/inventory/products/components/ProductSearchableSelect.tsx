@@ -69,8 +69,8 @@ export function ProductSearchableSelect({
         />
         <p className="text-[11px] text-muted-foreground">
           {hasInventorySession
-            ? 'El catálogo no está disponible; captura el UUID manualmente.'
-            : 'Agrega una sesión de Inventario para buscar por SKU o nombre.'}
+            ? 'El catálogo no está disponible por el momento.'
+            : 'No tienes acceso al catálogo de inventario.'}
         </p>
       </div>
     );

@@ -40,7 +40,7 @@ export function AuthLayout({ children }: PropsWithChildren) {
             </div>
             <div className="rounded-xl border border-white/10 bg-white/5 p-4">
               <ShieldCheck className="mb-3 size-5 text-emerald-300" />
-              Acceso RBAC
+              Acceso por rol
             </div>
           </div>
         </div>
