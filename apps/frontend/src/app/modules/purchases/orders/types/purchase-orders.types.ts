@@ -92,3 +92,13 @@ export interface PaginatedPurchaseOrders {
   orders: PurchaseOrder[];
   meta: PaginationMeta;
 }
+
+export interface PurchaseOrdersStats {
+  totalOrders: number;
+  draftOrders: number;
+  submittedOrders: number;
+  cancelledOrders: number;
+  submittedAmount: string;
+  draftAmount: string;
+  currency: 'MXN';
+}

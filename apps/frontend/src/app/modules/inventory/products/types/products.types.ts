@@ -41,3 +41,11 @@ export interface UpdateProductInput {
   active: boolean;
   reason?: string;
 }
+
+export interface InventoryProductsStats {
+  totalProducts: number;
+  activeProducts: number;
+  inactiveProducts: number;
+  outOfStockProducts: number;
+  totalUnitsOnHand: number;
+}

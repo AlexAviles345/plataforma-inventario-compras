@@ -42,3 +42,12 @@ export interface UpdateAdminUserInput {
   assignments: UserSystemAssignment[];
   expectedVersion: number;
 }
+
+export interface AdminUsersStats {
+  totalUsers: number;
+  activeUsers: number;
+  inactiveUsers: number;
+  inventoryUsers: number;
+  purchasesUsers: number;
+  adminUsers: number;
+}

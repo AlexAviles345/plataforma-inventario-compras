@@ -7,17 +7,26 @@ import {
   FileSpreadsheet,
   PackageCheck,
   Plus,
+  ShieldCheck,
   ShoppingCart,
   Users,
-  Wallet,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-import { listAdminUsers } from '@modules/administration/users/services/users-admin.service';
+import {
+  getAdminUsersStats,
+  listAdminUsers,
+} from '@modules/administration/users/services/users-admin.service';
 import { userQueryKeys } from '@modules/administration/users/hooks/user-query-keys';
-import { listProducts } from '@modules/inventory/products/services/products.service';
+import {
+  getInventoryProductsStats,
+  listProducts,
+} from '@modules/inventory/products/services/products.service';
 import { productQueryKeys } from '@modules/inventory/products/hooks/product-query-keys';
-import { listPurchaseOrders } from '@modules/purchases/orders/services/purchase-orders.service';
+import {
+  getPurchaseOrdersStats,
+  listPurchaseOrders,
+} from '@modules/purchases/orders/services/purchase-orders.service';
 import { orderQueryKeys } from '@modules/purchases/orders/hooks/order-query-keys';
 import { StatusBadge } from '@shared/components/data-display/StatusBadge';
 import { Badge } from '@shared/components/ui/badge';
@@ -36,7 +45,7 @@ import {
 } from '@shared/stores/auth-session.store';
 import { isAccessTokenExpired } from '@shared/utils/access-token.util';
 import { formatUtcDateTime } from '@shared/utils/date-utc.util';
-import { formatMxn, sumMoney } from '@shared/utils/decimal-money.util';
+import { formatMxn } from '@shared/utils/decimal-money.util';
 
 const PREVIEW_FILTERS = { page: 1, limit: 5 } as const;
 
@@ -56,6 +65,27 @@ export function OperationalOverviewSection() {
   const hasPurchases = Boolean(
     sessions.PURCHASES && !isAccessTokenExpired(sessions.PURCHASES.claims),
   );
+
+  const ordersStatsQuery = useQuery({
+    queryKey: orderQueryKeys.stats(),
+    queryFn: getPurchaseOrdersStats,
+    enabled: hasPurchases,
+    retry: false,
+  });
+
+  const productsStatsQuery = useQuery({
+    queryKey: productQueryKeys.stats(),
+    queryFn: getInventoryProductsStats,
+    enabled: hasInventory,
+    retry: false,
+  });
+
+  const usersStatsQuery = useQuery({
+    queryKey: userQueryKeys.stats(),
+    queryFn: getAdminUsersStats,
+    enabled: isAdmin,
+    retry: false,
+  });
 
   const ordersQuery = useQuery({
     queryKey: orderQueryKeys.list(PREVIEW_FILTERS),
@@ -79,44 +109,20 @@ export function OperationalOverviewSection() {
   });
 
   const recentOrders = ordersQuery.data?.orders ?? [];
-  const totalOrders = ordersQuery.data?.meta.total ?? 0;
-  const draftOrdersCount = recentOrders.filter(
-    (order) => order.status === 'DRAFT',
-  ).length;
-  const submittedOrdersCount = recentOrders.filter(
-    (order) => order.status === 'SUBMITTED',
-  ).length;
-  const activeRecentOrdersAmount = formatMxn(
-    sumMoney(
-      recentOrders
-        .filter((order) => order.status !== 'CANCELLED')
-        .map((order) => order.totalAmount),
-    ),
-  );
-
   const recentProducts = productsQuery.data?.products ?? [];
-  const totalProducts = productsQuery.data?.meta.total ?? 0;
-  const totalUnitsInSample = recentProducts.reduce(
-    (acc, item) => acc + item.stockOnHand,
-    0,
-  );
-  const outOfStockCount = recentProducts.filter(
-    (item) => item.stockOnHand === 0,
-  ).length;
-
   const recentUsers = usersQuery.data?.users ?? [];
-  const totalUsers = usersQuery.data?.meta.total ?? 0;
-  const activeUsersInSample = recentUsers.filter((user) => user.active).length;
 
   return (
     <div className="space-y-8">
       <section className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold">Indicadores operativos</h2>
+            <h2 className="text-lg font-semibold">
+              Estadísticas generales por servicio
+            </h2>
             <p className="text-sm text-muted-foreground">
-              Métricas en tiempo real consultadas según los permisos de tu
-              sesión.
+              Métricas agregadas consultadas directamente de cada microservicio
+              habilitado para tu rol.
             </p>
           </div>
           {hasPurchases && (
@@ -129,91 +135,170 @@ export function OperationalOverviewSection() {
           )}
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 lg:grid-cols-3">
           {hasPurchases && (
-            <>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardDescription className="font-medium">
-                    Órdenes de compra
+            <Card className="flex flex-col">
+              <CardHeader className="flex flex-row items-start justify-between pb-3">
+                <div className="space-y-1">
+                  <Badge variant="outline" className="w-fit text-[10px]">
+                    PURCHASES SERVICE
+                  </Badge>
+                  <CardTitle className="text-base">Compras</CardTitle>
+                  <CardDescription>
+                    Órdenes e importes acumulados
                   </CardDescription>
-                  <ShoppingCart className="size-4 text-teal-600 dark:text-teal-400" />
-                </CardHeader>
-                <CardContent>
-                  {ordersQuery.isLoading ? (
-                    <Skeleton className="h-8 w-20" />
-                  ) : ordersQuery.isError ? (
-                    <p className="text-sm text-muted-foreground">
-                      Sin conexión a Compras
-                    </p>
-                  ) : (
-                    <>
-                      <p className="text-2xl font-bold">{totalOrders}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {submittedOrdersCount} enviadas · {draftOrdersCount} en
-                        borrador (recientes)
+                </div>
+                <span className="flex size-9 items-center justify-center rounded-lg bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-200">
+                  <ShoppingCart className="size-4.5" />
+                </span>
+              </CardHeader>
+              <CardContent className="flex-1 space-y-4">
+                {ordersStatsQuery.isLoading ? (
+                  <div className="space-y-3">
+                    <Skeleton className="h-8 w-24" />
+                    <Skeleton className="h-16 w-full" />
+                  </div>
+                ) : ordersStatsQuery.isError || !ordersStatsQuery.data ? (
+                  <p className="text-sm text-muted-foreground">
+                    Estadísticas de compras no disponibles en este momento.
+                  </p>
+                ) : (
+                  <>
+                    <div>
+                      <p className="text-3xl font-bold">
+                        {ordersStatsQuery.data.totalOrders}
                       </p>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardDescription className="font-medium">
-                    Importe reciente (activas)
-                  </CardDescription>
-                  <Wallet className="size-4 text-blue-600 dark:text-blue-400" />
-                </CardHeader>
-                <CardContent>
-                  {ordersQuery.isLoading ? (
-                    <Skeleton className="h-8 w-32" />
-                  ) : ordersQuery.isError ? (
-                    <p className="text-sm text-muted-foreground">
-                      No disponible
-                    </p>
-                  ) : (
-                    <>
-                      <p className="text-2xl font-bold">
-                        {activeRecentOrdersAmount}
+                      <p className="text-xs text-muted-foreground">
+                        Órdenes registradas
                       </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Suma de las últimas órdenes no canceladas
-                      </p>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-            </>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 rounded-xl bg-muted/50 p-3 text-center">
+                      <div>
+                        <p className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                          {ordersStatsQuery.data.submittedOrders}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          Enviadas
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
+                          {ordersStatsQuery.data.draftOrders}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          Borrador
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-500">
+                          {ordersStatsQuery.data.cancelledOrders}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          Canceladas
+                        </p>
+                      </div>
+                    </div>
+                    <div className="space-y-1 border-t pt-3 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">
+                          Importe enviado:
+                        </span>
+                        <span className="font-mono font-semibold">
+                          {formatMxn(ordersStatsQuery.data.submittedAmount)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">
+                          En borrador:
+                        </span>
+                        <span className="font-mono font-medium">
+                          {formatMxn(ordersStatsQuery.data.draftAmount)}
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
           )}
 
           {hasInventory && (
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardDescription className="font-medium">
-                  Catálogo de productos
-                </CardDescription>
-                <Boxes className="size-4 text-teal-600 dark:text-teal-400" />
+            <Card className="flex flex-col">
+              <CardHeader className="flex flex-row items-start justify-between pb-3">
+                <div className="space-y-1">
+                  <Badge variant="outline" className="w-fit text-[10px]">
+                    INVENTORY SERVICE
+                  </Badge>
+                  <CardTitle className="text-base">Inventario</CardTitle>
+                  <CardDescription>
+                    Catálogo y existencias totales
+                  </CardDescription>
+                </div>
+                <span className="flex size-9 items-center justify-center rounded-lg bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-200">
+                  <Boxes className="size-4.5" />
+                </span>
               </CardHeader>
-              <CardContent>
-                {productsQuery.isLoading ? (
-                  <Skeleton className="h-8 w-20" />
-                ) : productsQuery.isError ? (
-                  <>
-                    <p className="text-base font-semibold text-muted-foreground">
-                      Servicio en espera
+              <CardContent className="flex-1 space-y-4">
+                {productsStatsQuery.isLoading ? (
+                  <div className="space-y-3">
+                    <Skeleton className="h-8 w-24" />
+                    <Skeleton className="h-16 w-full" />
+                  </div>
+                ) : productsStatsQuery.isError || !productsStatsQuery.data ? (
+                  <div className="space-y-2 rounded-xl border border-dashed p-3.5 text-xs text-muted-foreground">
+                    <p className="font-medium text-foreground">
+                      Servicio de inventario en espera
                     </p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      El catálogo responderá al activar inventory-service
+                    <p>
+                      Conectado a <code>GET /api/inventory/products/stats</code>
+                      . Se mostrará automáticamente al levantar el dominio en{' '}
+                      <code>inventory-service</code>.
                     </p>
-                  </>
+                  </div>
                 ) : (
                   <>
-                    <p className="text-2xl font-bold">{totalProducts}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {totalUnitsInSample} uds. en muestra · {outOfStockCount}{' '}
-                      sin stock
-                    </p>
+                    <div>
+                      <p className="text-3xl font-bold">
+                        {productsStatsQuery.data.totalProducts}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Productos en catálogo
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 rounded-xl bg-muted/50 p-3 text-center">
+                      <div>
+                        <p className="text-sm font-semibold text-teal-600 dark:text-teal-400">
+                          {productsStatsQuery.data.activeProducts}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          Activos
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
+                          {productsStatsQuery.data.outOfStockProducts}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          Sin stock
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-500">
+                          {productsStatsQuery.data.inactiveProducts}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          Inactivos
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between border-t pt-3 text-xs">
+                      <span className="text-muted-foreground">
+                        Unidades totales en almacén:
+                      </span>
+                      <span className="font-mono font-semibold">
+                        {productsStatsQuery.data.totalUnitsOnHand} uds.
+                      </span>
+                    </div>
                   </>
                 )}
               </CardContent>
@@ -221,25 +306,82 @@ export function OperationalOverviewSection() {
           )}
 
           {isAdmin && (
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardDescription className="font-medium">
-                  Usuarios y accesos
-                </CardDescription>
-                <Users className="size-4 text-indigo-600 dark:text-indigo-400" />
+            <Card className="flex flex-col">
+              <CardHeader className="flex flex-row items-start justify-between pb-3">
+                <div className="space-y-1">
+                  <Badge variant="outline" className="w-fit text-[10px]">
+                    AUTH SERVICE
+                  </Badge>
+                  <CardTitle className="text-base">
+                    Identidades y RBAC
+                  </CardTitle>
+                  <CardDescription>
+                    Usuarios activos y cobertura por sistema
+                  </CardDescription>
+                </div>
+                <span className="flex size-9 items-center justify-center rounded-lg bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200">
+                  <ShieldCheck className="size-4.5" />
+                </span>
               </CardHeader>
-              <CardContent>
-                {usersQuery.isLoading ? (
-                  <Skeleton className="h-8 w-20" />
-                ) : usersQuery.isError ? (
-                  <p className="text-sm text-muted-foreground">No disponible</p>
+              <CardContent className="flex-1 space-y-4">
+                {usersStatsQuery.isLoading ? (
+                  <div className="space-y-3">
+                    <Skeleton className="h-8 w-24" />
+                    <Skeleton className="h-16 w-full" />
+                  </div>
+                ) : usersStatsQuery.isError || !usersStatsQuery.data ? (
+                  <p className="text-sm text-muted-foreground">
+                    Estadísticas de usuarios no disponibles.
+                  </p>
                 ) : (
                   <>
-                    <p className="text-2xl font-bold">{totalUsers}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {activeUsersInSample} de {recentUsers.length} activos en
-                      vista reciente
-                    </p>
+                    <div>
+                      <p className="text-3xl font-bold">
+                        {usersStatsQuery.data.totalUsers}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Cuentas registradas ({usersStatsQuery.data.activeUsers}{' '}
+                        activas · {usersStatsQuery.data.inactiveUsers}{' '}
+                        inactivas)
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 rounded-xl bg-muted/50 p-3 text-center">
+                      <div>
+                        <p className="text-sm font-semibold text-teal-600 dark:text-teal-400">
+                          {usersStatsQuery.data.inventoryUsers}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          Inventario
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                          {usersStatsQuery.data.purchasesUsers}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          Compras
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
+                          {usersStatsQuery.data.adminUsers}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          Admins
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between border-t pt-3 text-xs">
+                      <span className="text-muted-foreground">
+                        Administración de accesos:
+                      </span>
+                      <Link
+                        to="/administration/users"
+                        className="font-medium text-teal-700 hover:underline dark:text-teal-300"
+                      >
+                        Gestionar cuentas →
+                      </Link>
+                    </div>
                   </>
                 )}
               </CardContent>

@@ -1,6 +1,5 @@
 import { ActiveSystemSessionCard } from './components/ActiveSystemSessionCard';
 import { OperationalOverviewSection } from './components/OperationalOverviewSection';
-import { QuickModuleAccessGrid } from './components/QuickModuleAccessGrid';
 
 export function DashboardPage() {
   return (
@@ -11,15 +10,11 @@ export function DashboardPage() {
         </p>
         <h1 className="text-3xl font-semibold tracking-tight">Resumen</h1>
         <p className="max-w-2xl text-muted-foreground">
-          Monitorea la actividad reciente, indicadores clave y accesos
-          autorizados en tu sesión.
+          Estadísticas generales por microservicio, actividad reciente y estado
+          de tu sesión.
         </p>
       </header>
       <OperationalOverviewSection />
-      <section className="space-y-4">
-        <h2 className="text-lg font-semibold">Módulos disponibles</h2>
-        <QuickModuleAccessGrid />
-      </section>
       <ActiveSystemSessionCard />
     </div>
   );

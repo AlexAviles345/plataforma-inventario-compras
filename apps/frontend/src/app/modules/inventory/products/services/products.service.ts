@@ -3,12 +3,22 @@ import { apiRequest } from '@shared/services/http-client';
 import type {
   CreateProductInput,
   InventoryProduct,
+  InventoryProductsStats,
   PaginatedProducts,
   ProductsListFilters,
   UpdateProductInput,
 } from '../types/products.types';
 
 const PRODUCTS_PATH = '/api/inventory/products';
+
+export async function getInventoryProductsStats(): Promise<InventoryProductsStats> {
+  const result = await apiRequest<InventoryProductsStats>({
+    method: 'GET',
+    url: `${PRODUCTS_PATH}/stats`,
+    requiredSystem: 'INVENTORY',
+  });
+  return result.data;
+}
 
 export async function listProducts(
   filters: ProductsListFilters,

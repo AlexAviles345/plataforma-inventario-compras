@@ -7,10 +7,20 @@ import type {
   PaginatedPurchaseOrders,
   PurchaseOrder,
   PurchaseOrderHistoryEntry,
+  PurchaseOrdersStats,
   UpdatePurchaseOrderInput,
 } from '../types/purchase-orders.types';
 
 const ORDERS_PATH = '/api/purchases/orders';
+
+export async function getPurchaseOrdersStats(): Promise<PurchaseOrdersStats> {
+  const result = await apiRequest<PurchaseOrdersStats>({
+    method: 'GET',
+    url: `${ORDERS_PATH}/stats`,
+    requiredSystem: 'PURCHASES',
+  });
+  return result.data;
+}
 
 export async function listPurchaseOrders(
   filters: OrdersListFilters,

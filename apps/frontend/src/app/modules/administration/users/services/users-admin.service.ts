@@ -3,12 +3,21 @@ import { apiRequest } from '@shared/services/http-client';
 import type {
   AdminUser,
   AdminUsersListFilters,
+  AdminUsersStats,
   CreateAdminUserInput,
   PaginatedAdminUsers,
   UpdateAdminUserInput,
 } from '../types/users-admin.types';
 
 const USERS_PATH = '/api/auth/users';
+
+export async function getAdminUsersStats(): Promise<AdminUsersStats> {
+  const result = await apiRequest<AdminUsersStats>({
+    method: 'GET',
+    url: `${USERS_PATH}/stats`,
+  });
+  return result.data;
+}
 
 export async function listAdminUsers(
   filters: AdminUsersListFilters,
