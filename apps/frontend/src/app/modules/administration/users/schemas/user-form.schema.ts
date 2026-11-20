@@ -47,6 +47,13 @@ export const userEditSchema = z
       .positive('La versión debe ser positiva'),
     email: emailSchema,
     displayName: displayNameSchema,
+    password: z
+      .string()
+      .max(128, 'La contraseña no puede exceder 128 caracteres')
+      .refine(
+        (value) => value.length === 0 || value.length >= 12,
+        'La nueva contraseña debe tener al menos 12 caracteres',
+      ),
     active: z.boolean(),
     ...assignmentFields,
   })

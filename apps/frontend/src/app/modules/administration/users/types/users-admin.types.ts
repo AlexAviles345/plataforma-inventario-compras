@@ -37,6 +37,7 @@ export interface CreateAdminUserInput {
 export interface UpdateAdminUserInput {
   email: string;
   displayName: string;
+  password?: string;
   active: boolean;
   assignments: UserSystemAssignment[];
   expectedVersion: number;
