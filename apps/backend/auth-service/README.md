@@ -130,6 +130,7 @@ Rutas de negocio bajo `/api/auth`:
 | `POST /logout`            | Cookie + CSRF | Revoca y limpia cookies; idempotente                                        |
 | `POST /users`             | ADMIN   | 201 + `Location`; 409 `EMAIL_ALREADY_EXISTS`                                |
 | `GET /users?page=&limit=` | ADMIN   | Lista paginada ordenada por email (`limit` ≤ 100)                           |
+| `GET /users/stats`        | ADMIN   | Estadísticas agregadas de usuarios activos, inactivos y asignaciones        |
 | `GET /users/{id}`         | ADMIN   | 200; 404 si no existe                                                       |
 | `PUT /users/{id}`         | ADMIN   | Parcial con `expectedVersion`; 409 `VERSION_CONFLICT` o `LAST_ACTIVE_ADMIN` |
 

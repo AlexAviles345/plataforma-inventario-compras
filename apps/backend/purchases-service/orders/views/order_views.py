@@ -18,6 +18,7 @@ from orders.serializers import (
     PurchaseOrderEnvelopeDocSerializer,
     PurchaseOrderHistoryEnvelopeDocSerializer,
     PurchaseOrderListEnvelopeDocSerializer,
+    PurchaseOrderStatsEnvelopeDocSerializer,
     SubmitPurchaseOrderDocSerializer,
     UpdatePurchaseOrderDocSerializer,
 )
@@ -25,6 +26,7 @@ from orders.services import (
     cancel_purchase_order,
     create_purchase_order,
     get_purchase_order,
+    get_purchase_orders_stats,
     list_purchase_order_history,
     list_purchase_orders,
     submit_purchase_order,
@@ -127,6 +129,20 @@ class PurchaseOrderViewSet(viewsets.ViewSet):
             limit=result.limit,
             total=result.total,
             message="Órdenes de compra obtenidas exitosamente",
+        )
+
+    @extend_schema(
+        summary="Consultar estadísticas agregadas de órdenes de compra",
+        responses={200: PurchaseOrderStatsEnvelopeDocSerializer},
+    )
+    @action(detail=False, methods=["get"], url_path="stats")
+    def stats(self, request: Request) -> Response:
+        actor: AuthenticatedActor = request.user
+        data = get_purchase_orders_stats(actor=actor)
+        return success_response(
+            data=data,
+            message="Estadísticas de órdenes de compra obtenidas exitosamente",
+            status_code=status.HTTP_200_OK,
         )
 
     @extend_schema(

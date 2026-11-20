@@ -120,6 +120,7 @@ describe('Admin endpoints (HTTP)', () => {
   describe.each([
     ['POST', '/api/auth/users'],
     ['GET', '/api/auth/users'],
+    ['GET', '/api/auth/users/stats'],
     ['GET', `/api/auth/users/${randomUUID()}`],
     ['PUT', `/api/auth/users/${randomUUID()}`],
   ])('%s %s', (method, url) => {
@@ -290,6 +291,21 @@ describe('Admin endpoints (HTTP)', () => {
       const invalid = await as(adminToken).get('/api/auth/users?limit=101');
       expect(invalid.status).toBe(400);
       expect(fields(invalid)).toEqual(['limit:MAX']);
+    });
+  });
+
+  describe('GET /api/auth/users/stats', () => {
+    it('returns aggregated counts for users and system assignments', async () => {
+      const response = await as(adminToken).get('/api/auth/users/stats');
+      expect(response.status).toBe(200);
+      expect(body(response).data).toEqual({
+        totalUsers: 2,
+        activeUsers: 2,
+        inactiveUsers: 0,
+        inventoryUsers: 2,
+        purchasesUsers: 1,
+        adminUsers: 1,
+      });
     });
   });
 

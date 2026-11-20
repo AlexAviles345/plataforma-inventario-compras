@@ -84,6 +84,15 @@ export interface UserView {
   updatedAt: Date;
 }
 
+export interface UserStatsView {
+  totalUsers: number;
+  activeUsers: number;
+  inactiveUsers: number;
+  inventoryUsers: number;
+  purchasesUsers: number;
+  adminUsers: number;
+}
+
 type ChangedField =
   'email' | 'displayName' | 'password' | 'active' | 'assignments';
 
@@ -201,6 +210,52 @@ export class UsersService {
     const view = await this.loadView(this.dataSource.manager, id);
     if (!view) throw notFound();
     return view;
+  }
+
+  async getStats(): Promise<UserStatsView> {
+    const [row] = await this.dataSource.query<
+      {
+        total_users: number;
+        active_users: number;
+        inactive_users: number;
+        inventory_users: number;
+        purchases_users: number;
+        admin_users: number;
+      }[]
+    >(`
+      SELECT
+        COUNT(*)::int AS total_users,
+        COUNT(*) FILTER (WHERE u.active = true)::int AS active_users,
+        COUNT(*) FILTER (WHERE u.active = false)::int AS inactive_users,
+        COUNT(*) FILTER (
+          WHERE u.active = true AND EXISTS (
+            SELECT 1 FROM user_systems us
+            WHERE us.user_id = u.id AND us.system_code = 'INVENTORY'
+          )
+        )::int AS inventory_users,
+        COUNT(*) FILTER (
+          WHERE u.active = true AND EXISTS (
+            SELECT 1 FROM user_systems us
+            WHERE us.user_id = u.id AND us.system_code = 'PURCHASES'
+          )
+        )::int AS purchases_users,
+        COUNT(*) FILTER (
+          WHERE u.active = true AND EXISTS (
+            SELECT 1 FROM user_systems us
+            WHERE us.user_id = u.id AND us.role = 'ADMIN'
+          )
+        )::int AS admin_users
+      FROM users u
+    `);
+
+    return {
+      totalUsers: Number(row?.total_users ?? 0),
+      activeUsers: Number(row?.active_users ?? 0),
+      inactiveUsers: Number(row?.inactive_users ?? 0),
+      inventoryUsers: Number(row?.inventory_users ?? 0),
+      purchasesUsers: Number(row?.purchases_users ?? 0),
+      adminUsers: Number(row?.admin_users ?? 0),
+    };
   }
 
   /**
