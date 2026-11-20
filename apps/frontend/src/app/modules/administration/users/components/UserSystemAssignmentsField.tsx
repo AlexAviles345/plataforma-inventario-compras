@@ -1,5 +1,6 @@
-import { Boxes, ShoppingCart } from 'lucide-react';
+import { Boxes, Gauge, ShoppingCart, Users } from 'lucide-react';
 
+import { Badge } from '@shared/components/ui/badge';
 import { Label } from '@shared/components/ui/label';
 import {
   Select,
@@ -13,6 +14,18 @@ import type {
   InventoryAssignmentRole,
   PurchasesAssignmentRole,
 } from '../schemas/user-form.schema';
+
+const INVENTORY_ROLE_HINTS: Record<InventoryAssignmentRole, string> = {
+  NONE: 'Sin token ni acceso al microservicio de inventario.',
+  INVENTORY_MANAGER: 'Opera el catálogo de productos y ajustes de stock.',
+  ADMIN: 'Control total en inventario y administración de usuarios.',
+};
+
+const PURCHASES_ROLE_HINTS: Record<PurchasesAssignmentRole, string> = {
+  NONE: 'Sin token ni acceso al microservicio de compras.',
+  PURCHASES_AGENT: 'Crea y gestiona únicamente sus propias órdenes de compra.',
+  ADMIN: 'Supervisa órdenes de todos los usuarios y administra cuentas.',
+};
 
 export function UserSystemAssignmentsField({
   inventoryRole,
@@ -29,6 +42,18 @@ export function UserSystemAssignmentsField({
   error?: string;
   disabled?: boolean;
 }) {
+  const hasInventory = inventoryRole !== 'NONE';
+  const hasPurchases = purchasesRole !== 'NONE';
+  const isAdmin = inventoryRole === 'ADMIN' || purchasesRole === 'ADMIN';
+  const hasAnySystem = hasInventory || hasPurchases;
+
+  const sidebarPreview = [
+    hasAnySystem && { label: 'Resumen', icon: Gauge },
+    hasInventory && { label: 'Productos', icon: Boxes },
+    hasPurchases && { label: 'Órdenes de compra', icon: ShoppingCart },
+    isAdmin && { label: 'Usuarios', icon: Users },
+  ].filter(Boolean);
+
   return (
     <fieldset className="space-y-3">
       <div>
@@ -60,6 +85,9 @@ export function UserSystemAssignmentsField({
               <SelectItem value="ADMIN">Administrador</SelectItem>
             </SelectContent>
           </Select>
+          <p className="text-[11px] leading-4 text-muted-foreground">
+            {INVENTORY_ROLE_HINTS[inventoryRole]}
+          </p>
         </div>
         <div className="space-y-2 rounded-xl border p-4">
           <Label className="flex items-center gap-2">
@@ -81,8 +109,40 @@ export function UserSystemAssignmentsField({
               <SelectItem value="ADMIN">Administrador</SelectItem>
             </SelectContent>
           </Select>
+          <p className="text-[11px] leading-4 text-muted-foreground">
+            {PURCHASES_ROLE_HINTS[purchasesRole]}
+          </p>
         </div>
       </div>
+
+      <div className="rounded-xl border border-dashed bg-muted/30 px-3.5 py-2.5">
+        <p className="text-xs font-medium text-muted-foreground">
+          Secciones que verá en la barra lateral dinámica:
+        </p>
+        {sidebarPreview.length > 0 ? (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {sidebarPreview.map((section) => {
+              if (!section) return null;
+              const Icon = section.icon;
+              return (
+                <Badge
+                  key={section.label}
+                  variant="secondary"
+                  className="gap-1.5 px-2 py-0.5 text-xs font-medium"
+                >
+                  <Icon className="size-3" aria-hidden="true" />
+                  {section.label}
+                </Badge>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="mt-1 text-xs text-muted-foreground">
+            Ninguna — selecciona al menos un sistema para habilitar el acceso.
+          </p>
+        )}
+      </div>
+
       {error && <p className="text-sm text-destructive">{error}</p>}
     </fieldset>
   );
