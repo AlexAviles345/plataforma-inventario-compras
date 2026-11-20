@@ -15,7 +15,9 @@
     "dev:infra": "node tools/infra.mjs up",
     "dev:status": "node tools/infra.mjs status",
     "dev:logs": "node tools/infra.mjs logs",
-    "dev:down": "node tools/infra.mjs down"
+    "dev:down": "node tools/infra.mjs down",
+    "dev:edge": "docker compose -f docker-compose.edge.yml --profile frontend --profile edge up --build",
+    "dev:edge:down": "docker compose -f docker-compose.edge.yml --profile frontend --profile edge down"
   },
   "devDependencies": {
     "concurrently": "10.0.1"

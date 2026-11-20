@@ -29,7 +29,7 @@ npm run dev:down
 ```
 
 `npm run dev` inicia primero esta infraestructura y después todas las aplicaciones;
-`npm run dev:apps` omite Docker. Ninguno de los comandos elimina volúmenes.
+`npm run dev:apps` omite Docker y levanta las aplicaciones junto con los consumidores de proyecciones de Purchases. Kafka debe estar accesible para que `auth.users.events` e `inventory.products.events` se reflejen en su base local. Ninguno de los comandos elimina volúmenes.
 
 Luego, ejecuta el siguiente comando:
 
@@ -42,6 +42,7 @@ Comprueba los estados saludables y revisa `docker compose -f docker-compose.exam
 ## Servicios Incluidos
 
 ### 1. PostgreSQL (Auth Service)
+
 - **Host**: `localhost`
 - **Puerto**: `5432`
 - **Base de Datos**: `auth_db`
@@ -49,13 +50,15 @@ Comprueba los estados saludables y revisa `docker compose -f docker-compose.exam
 - **Contraseña**: `auth_password`
 
 ### 2. PostgreSQL (Purchases Service)
+
 - **Host**: `localhost`
-- **Puerto**: `5433` *(Nota: Mapeado al puerto 5433 localmente para evitar conflicto con Auth)*
+- **Puerto**: `5433` _(Nota: Mapeado al puerto 5433 localmente para evitar conflicto con Auth)_
 - **Base de Datos**: `purchases_db`
 - **Usuario**: `purchases_user`
 - **Contraseña**: `purchases_password`
 
 ### 3. MySQL (Inventory Service)
+
 - **Host**: `localhost`
 - **Puerto**: `3306`
 - **Base de Datos**: `inventory_db`
@@ -64,14 +67,15 @@ Comprueba los estados saludables y revisa `docker compose -f docker-compose.exam
 - **Root Password**: `root_password`
 
 ### 4. Apache Kafka (KRaft Mode)
-- **Host**: `localhost`
+
+- **Host**: `127.0.0.1`
 - **Puerto**: `9092`
 - **Cluster ID**: `MkU3OEVBNTcwNTJENDM2Qk`
 
 > [!NOTE]
 > Kafka está configurado usando el modo **KRaft**, por lo que no requiere un contenedor de Zookeeper, haciendo la configuración más ligera y moderna.
 
-Clientes en el host usan `localhost:9092`; dentro de Compose usan `kafka:29092`. El controller escucha en `kafka:29093` y no se publica al host. `KAFKA_LOG_DIRS=/var/lib/kafka/data` coincide con el volumen persistente `kafka_data`, incluidos los metadatos KRaft. El broker único con réplica 1 es exclusivamente para desarrollo.
+Clientes en el host usan `127.0.0.1:9092`; dentro de Compose usan `kafka:29092`. Se anuncia la dirección IPv4 explícita porque el puerto está publicado únicamente sobre `127.0.0.1` y `localhost` puede resolverse como IPv6 en Windows. El controller escucha en `kafka:29093` y no se publica al host. `KAFKA_LOG_DIRS=/var/lib/kafka/data` coincide con el volumen persistente `kafka_data`, incluidos los metadatos KRaft. El broker único con réplica 1 es exclusivamente para desarrollo.
 
 `kafka-init` crea `auth.users.events` e `inventory.products.events` con tres particiones y siete días de retención, y las tres DLQ con treinta días. No habilitar autocreación ni compartir grupos entre dominios. [Grupos, schemas y recuperación](../architecture/event-driven-communication.md).
 
@@ -103,4 +107,5 @@ docker compose -f docker-compose.example.yml down -v
 ```
 
 ## Siguientes Pasos
+
 Una vez que esta infraestructura base esté funcionando, puedes proceder a inicializar de manera independiente cada uno de los microservicios, configurando sus variables de entorno (`.env` o perfiles de Spring) con las credenciales arriba mencionadas.

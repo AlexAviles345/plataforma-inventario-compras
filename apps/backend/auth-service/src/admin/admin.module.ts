@@ -1,7 +1,5 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
-import { SystemsController } from '../systems/systems.controller';
-import { SystemsService } from '../systems/systems.service';
 import { UsersController } from '../users/users.controller';
 import { UsersModule } from '../users/users.module';
 
@@ -12,7 +10,6 @@ import { UsersModule } from '../users/users.module';
  */
 @Module({
   imports: [AuthModule, UsersModule],
-  controllers: [UsersController, SystemsController],
-  providers: [SystemsService],
+  controllers: [UsersController],
 })
 export class AdminModule {}

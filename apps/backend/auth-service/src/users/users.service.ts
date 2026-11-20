@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 import { DataSource, EntityManager, In, QueryFailedError } from 'typeorm';
+import type { SystemCode } from '../access/access-matrix';
 import { AuditAction, recordAudit } from '../audit/audit-log';
 import { AuthDomainError, ErrorCode, type ErrorDetail } from '../common/errors';
 import { currentRequestId } from '../common/request-context';
@@ -81,6 +82,15 @@ export interface UserView {
   assignments: Assignment[];
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface UserStatsView {
+  totalUsers: number;
+  activeUsers: number;
+  inactiveUsers: number;
+  inventoryUsers: number;
+  purchasesUsers: number;
+  adminUsers: number;
 }
 
 type ChangedField =
@@ -200,6 +210,52 @@ export class UsersService {
     const view = await this.loadView(this.dataSource.manager, id);
     if (!view) throw notFound();
     return view;
+  }
+
+  async getStats(): Promise<UserStatsView> {
+    const [row] = await this.dataSource.query<
+      {
+        total_users: number;
+        active_users: number;
+        inactive_users: number;
+        inventory_users: number;
+        purchases_users: number;
+        admin_users: number;
+      }[]
+    >(`
+      SELECT
+        COUNT(*)::int AS total_users,
+        COUNT(*) FILTER (WHERE u.active = true)::int AS active_users,
+        COUNT(*) FILTER (WHERE u.active = false)::int AS inactive_users,
+        COUNT(*) FILTER (
+          WHERE u.active = true AND EXISTS (
+            SELECT 1 FROM user_systems us
+            WHERE us.user_id = u.id AND us.system_code = 'INVENTORY'
+          )
+        )::int AS inventory_users,
+        COUNT(*) FILTER (
+          WHERE u.active = true AND EXISTS (
+            SELECT 1 FROM user_systems us
+            WHERE us.user_id = u.id AND us.system_code = 'PURCHASES'
+          )
+        )::int AS purchases_users,
+        COUNT(*) FILTER (
+          WHERE u.active = true AND EXISTS (
+            SELECT 1 FROM user_systems us
+            WHERE us.user_id = u.id AND us.role = 'ADMIN'
+          )
+        )::int AS admin_users
+      FROM users u
+    `);
+
+    return {
+      totalUsers: Number(row?.total_users ?? 0),
+      activeUsers: Number(row?.active_users ?? 0),
+      inactiveUsers: Number(row?.inactive_users ?? 0),
+      inventoryUsers: Number(row?.inventory_users ?? 0),
+      purchasesUsers: Number(row?.purchases_users ?? 0),
+      adminUsers: Number(row?.admin_users ?? 0),
+    };
   }
 
   /**
@@ -411,6 +467,30 @@ export class UsersService {
         if (changes.includes('assignments'))
           await this.replaceAssignments(manager, id, current, next.assignments);
 
+        if (changes.includes('password') || changes.includes('active')) {
+          await this.revokeRefreshSessions(manager, id);
+        } else if (changes.includes('assignments')) {
+          const currentBySystem = new Map(
+            current.map((assignment) => [assignment.system, assignment.role]),
+          );
+          const nextBySystem = new Map(
+            next.assignments.map((assignment) => [
+              assignment.system,
+              assignment.role,
+            ]),
+          );
+          const affectedSystems = [
+            ...new Set([
+              ...current.map((assignment) => assignment.system),
+              ...next.assignments.map((assignment) => assignment.system),
+            ]),
+          ].filter(
+            (system) =>
+              currentBySystem.get(system) !== nextBySystem.get(system),
+          );
+          await this.revokeRefreshSessions(manager, id, affectedSystems);
+        }
+
         const view = await this.loadView(manager, id);
         if (!view) throw notFound();
         const publicChange = changes.some((field) =>
@@ -508,6 +588,20 @@ export class UsersService {
           { role, updatedAt: () => 'now()' },
         );
     }
+  }
+
+  private async revokeRefreshSessions(
+    manager: EntityManager,
+    userId: string,
+    systems?: SystemCode[],
+  ): Promise<void> {
+    await manager.query(
+      `UPDATE refresh_sessions
+          SET revoked_at = COALESCE(revoked_at, now())
+        WHERE user_id = $1
+          AND ($2::varchar[] IS NULL OR system_code = ANY($2::varchar[]))`,
+      [userId, systems?.length ? systems : null],
+    );
   }
 
   private async recordChange(

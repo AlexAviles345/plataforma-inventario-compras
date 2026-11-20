@@ -1,9 +1,12 @@
 import uuid
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from decimal import Decimal
 from typing import Any
 
 from django.db import IntegrityError, transaction
+from django.db.models import Count, Q, Sum
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 from rest_framework import status
 
@@ -231,6 +234,37 @@ def list_purchase_orders(
         limit=limit,
         total=total,
     )
+
+
+def get_purchase_orders_stats(*, actor: AuthenticatedActor) -> dict[str, Any]:
+    queryset = PurchaseOrder.objects.all()
+    if actor.role != "ADMIN":
+        queryset = queryset.filter(requester_id=actor.user_id)
+
+    agg = queryset.aggregate(
+        total_orders=Count("id"),
+        draft_orders=Count("id", filter=Q(status=OrderStatus.DRAFT)),
+        submitted_orders=Count("id", filter=Q(status=OrderStatus.SUBMITTED)),
+        cancelled_orders=Count("id", filter=Q(status=OrderStatus.CANCELLED)),
+        submitted_amount=Coalesce(
+            Sum("total_amount", filter=Q(status=OrderStatus.SUBMITTED)),
+            Decimal("0.00"),
+        ),
+        draft_amount=Coalesce(
+            Sum("total_amount", filter=Q(status=OrderStatus.DRAFT)),
+            Decimal("0.00"),
+        ),
+    )
+
+    return {
+        "totalOrders": int(agg["total_orders"] or 0),
+        "draftOrders": int(agg["draft_orders"] or 0),
+        "submittedOrders": int(agg["submitted_orders"] or 0),
+        "cancelledOrders": int(agg["cancelled_orders"] or 0),
+        "submittedAmount": format_decimal_money(agg["submitted_amount"]),
+        "draftAmount": format_decimal_money(agg["draft_amount"]),
+        "currency": OrderCurrency.MXN,
+    }
 
 
 def get_purchase_order(

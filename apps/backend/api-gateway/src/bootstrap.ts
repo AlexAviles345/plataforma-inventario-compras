@@ -23,7 +23,7 @@ export async function createGateway(): Promise<NestExpressApplication> {
   app.use(requestContext);
   app.enableCors({
     origin: config.getOrThrow<string[]>('CORS_ORIGINS'),
-    credentials: false,
+    credentials: true,
   });
   app.useGlobalFilters(new GatewayExceptionFilter());
   app.use(
@@ -38,6 +38,20 @@ export async function createGateway(): Promise<NestExpressApplication> {
         request.originalUrl.split('?')[0] !== '/api/auth/login',
       handler: (_request, response) =>
         sendGatewayError(response, 429, 'Demasiados intentos de autenticación'),
+    }),
+  );
+  app.use(
+    '/api/auth/refresh',
+    rateLimit({
+      windowMs: 60000,
+      limit: 30,
+      standardHeaders: 'draft-8',
+      legacyHeaders: false,
+      skip: (request) =>
+        request.method !== 'POST' ||
+        request.originalUrl.split('?')[0] !== '/api/auth/refresh',
+      handler: (_request, response) =>
+        sendGatewayError(response, 429, 'Demasiados intentos de renovación'),
     }),
   );
   if (config.getOrThrow<boolean>('DOCS_ENABLED')) {

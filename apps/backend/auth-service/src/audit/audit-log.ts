@@ -11,6 +11,7 @@ export const AuditAction = {
   USER_CREATED: 'USER_CREATED',
   USER_UPDATED: 'USER_UPDATED',
   SYSTEM_UPDATED: 'SYSTEM_UPDATED',
+  REFRESH_TOKEN_REUSE: 'REFRESH_TOKEN_REUSE',
 } as const;
 export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction];
 

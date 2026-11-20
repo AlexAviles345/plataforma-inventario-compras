@@ -30,14 +30,6 @@ interface UserBody {
   updatedAt: string;
 }
 
-interface SystemBody {
-  code: string;
-  accessTokenTtlSeconds: number;
-  maxAccessTokenTtlSeconds: number;
-  version: number;
-  updatedAt: string;
-}
-
 const body = <T = unknown>(response: request.Response) =>
   response.body as Envelope<T>;
 
@@ -128,10 +120,9 @@ describe('Admin endpoints (HTTP)', () => {
   describe.each([
     ['POST', '/api/auth/users'],
     ['GET', '/api/auth/users'],
+    ['GET', '/api/auth/users/stats'],
     ['GET', `/api/auth/users/${randomUUID()}`],
     ['PUT', `/api/auth/users/${randomUUID()}`],
-    ['GET', '/api/auth/systems'],
-    ['PUT', '/api/auth/systems/INVENTORY'],
   ])('%s %s', (method, url) => {
     const call = () =>
       method === 'GET'
@@ -303,6 +294,21 @@ describe('Admin endpoints (HTTP)', () => {
     });
   });
 
+  describe('GET /api/auth/users/stats', () => {
+    it('returns aggregated counts for users and system assignments', async () => {
+      const response = await as(adminToken).get('/api/auth/users/stats');
+      expect(response.status).toBe(200);
+      expect(body(response).data).toEqual({
+        totalUsers: 2,
+        activeUsers: 2,
+        inactiveUsers: 0,
+        inventoryUsers: 2,
+        purchasesUsers: 1,
+        adminUsers: 1,
+      });
+    });
+  });
+
   describe('GET /api/auth/users/:id', () => {
     it('returns the user', async () => {
       const response = await as(adminToken).get(`/api/auth/users/${admin.id}`);
@@ -406,85 +412,6 @@ describe('Admin endpoints (HTTP)', () => {
     });
   });
 
-  describe('systems', () => {
-    it('lists both systems with their TTL and the configured maximum', async () => {
-      const response = await as(adminToken).get('/api/auth/systems');
-      expect(response.status).toBe(200);
-      expect(body<SystemBody[]>(response).data).toEqual([
-        expect.objectContaining({
-          code: 'INVENTORY',
-          accessTokenTtlSeconds: 900,
-          maxAccessTokenTtlSeconds: 900,
-          version: 1,
-        }),
-        expect.objectContaining({ code: 'PURCHASES', version: 1 }),
-      ]);
-    });
-
-    it('changes the TTL for future logins and audits it', async () => {
-      const response = await as(adminToken)
-        .put('/api/auth/systems/PURCHASES')
-        .send({ expectedVersion: 1, accessTokenTtlSeconds: 600 });
-      expect(response.status).toBe(200);
-      expect(body<SystemBody>(response).data).toMatchObject({
-        code: 'PURCHASES',
-        accessTokenTtlSeconds: 600,
-        version: 2,
-      });
-
-      const login = await request(server).post('/api/auth/login').send({
-        email: 'admin@techdistribution.com',
-        password: PASSWORD,
-        system: 'PURCHASES',
-      });
-      expect(body<{ expiresIn: number }>(login).data.expiresIn).toBe(600);
-
-      const [audit] = await dataSource.query<Record<string, unknown>[]>(
-        `SELECT actor_user_id, action, target_key, target_version, details
-           FROM auth_audit_log WHERE target_type = 'SYSTEM'`,
-      );
-      expect(audit).toEqual({
-        actor_user_id: admin.id,
-        action: 'SYSTEM_UPDATED',
-        target_key: 'PURCHASES',
-        target_version: '2',
-        details: {
-          previousAccessTokenTtlSeconds: 900,
-          accessTokenTtlSeconds: 600,
-        },
-      });
-    });
-
-    it.each([0, 901, 3600])(
-      'rejects a TTL of %p seconds outside 1..JWT_MAX_TTL_SECONDS',
-      async (ttl) => {
-        const response = await as(adminToken)
-          .put('/api/auth/systems/INVENTORY')
-          .send({ expectedVersion: 1, accessTokenTtlSeconds: ttl });
-        expect(response.status).toBe(400);
-        expect(fields(response)).toEqual([
-          'accessTokenTtlSeconds:OUT_OF_RANGE',
-        ]);
-      },
-    );
-
-    it('answers a stale version with 409 and an unknown code with 404', async () => {
-      await as(adminToken)
-        .put('/api/auth/systems/INVENTORY')
-        .send({ expectedVersion: 1, accessTokenTtlSeconds: 600 });
-      const stale = await as(adminToken)
-        .put('/api/auth/systems/INVENTORY')
-        .send({ expectedVersion: 1, accessTokenTtlSeconds: 300 });
-      expect(stale.status).toBe(409);
-      expect(body(stale).code).toBe('VERSION_CONFLICT');
-
-      const unknown = await as(adminToken)
-        .put('/api/auth/systems/BILLING')
-        .send({ expectedVersion: 1, accessTokenTtlSeconds: 300 });
-      expect(unknown.status).toBe(404);
-    });
-  });
-
   describe('OpenAPI', () => {
     it('documents every admin path with the envelope and error examples', async () => {
       const response = await request(server).get('/api/auth/openapi.json');
@@ -498,10 +425,10 @@ describe('Admin endpoints (HTTP)', () => {
           '/api/auth/login',
           '/api/auth/users',
           '/api/auth/users/{id}',
-          '/api/auth/systems',
-          '/api/auth/systems/{code}',
         ]),
       );
+      expect(document.paths['/api/auth/systems']).toBeUndefined();
+      expect(document.paths['/api/auth/systems/{code}']).toBeUndefined();
       const put = JSON.stringify(document.paths['/api/auth/users/{id}'].put);
       for (const code of [
         'VALIDATION_ERROR',

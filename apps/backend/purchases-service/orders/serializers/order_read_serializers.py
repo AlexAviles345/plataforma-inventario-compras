@@ -173,3 +173,20 @@ class PurchaseOrderHistoryEnvelopeDocSerializer(serializers.Serializer):
     statusCode = serializers.IntegerField(default=200)
     message = serializers.CharField()
     data = PurchaseOrderHistoryReadDocSerializer(many=True)
+
+
+class PurchaseOrderStatsReadDocSerializer(serializers.Serializer):
+    totalOrders = serializers.IntegerField()
+    draftOrders = serializers.IntegerField()
+    submittedOrders = serializers.IntegerField()
+    cancelledOrders = serializers.IntegerField()
+    submittedAmount = serializers.CharField()
+    draftAmount = serializers.CharField()
+    currency = serializers.CharField()
+
+
+class PurchaseOrderStatsEnvelopeDocSerializer(serializers.Serializer):
+    error = serializers.BooleanField(default=False)
+    statusCode = serializers.IntegerField(default=200)
+    message = serializers.CharField()
+    data = PurchaseOrderStatsReadDocSerializer()

@@ -1,5 +1,11 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsIn, IsNotEmpty, IsString, MaxLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsIn,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 import { SYSTEM_CODES, type SystemCode } from '../access/access-matrix';
 import { EMAIL_MAX_LENGTH, PASSWORD_MAX_LENGTH } from '../users/user-rules';
 
@@ -20,12 +26,13 @@ export class LoginDto {
   @MaxLength(PASSWORD_MAX_LENGTH)
   password!: string;
 
-  @ApiProperty({ enum: SYSTEM_CODES, example: 'INVENTORY' })
+  @ApiPropertyOptional({ enum: SYSTEM_CODES, example: 'INVENTORY' })
+  @IsOptional()
   @IsIn(SYSTEM_CODES)
-  system!: SystemCode;
+  system?: SystemCode;
 }
 
-export class IssuedTokenDto {
+export class IssuedSystemTokenDto {
   @ApiProperty({ example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' })
   accessToken!: string;
 
@@ -34,4 +41,13 @@ export class IssuedTokenDto {
 
   @ApiProperty({ example: 900, description: 'Segundos; igual a exp - iat' })
   expiresIn!: number;
+}
+
+export class IssuedTokenDto extends IssuedSystemTokenDto {
+  @ApiPropertyOptional({
+    type: [IssuedSystemTokenDto],
+    description:
+      'Todos los access tokens emitidos para los sistemas asignados al usuario.',
+  })
+  tokens?: IssuedSystemTokenDto[];
 }

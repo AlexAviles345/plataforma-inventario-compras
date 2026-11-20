@@ -1,6 +1,7 @@
 import type { PostgresDataSourceOptions } from 'typeorm/driver/postgres/PostgresDataSourceOptions';
 import { AuthAuditLogEntity } from './entities/auth-audit-log.entity';
 import { OutboxEventEntity } from './entities/outbox-event.entity';
+import { RefreshSessionEntity } from './entities/refresh-session.entity';
 import { SystemEntity } from './entities/system.entity';
 import { UserSystemEntity } from './entities/user-system.entity';
 import { UserEntity } from './entities/user.entity';
@@ -9,6 +10,7 @@ import { CreateSystems1794614400002 } from './migrations/1794614400002-CreateSys
 import { CreateUserSystems1794614400003 } from './migrations/1794614400003-CreateUserSystems';
 import { CreateAuthAuditLog1794614400004 } from './migrations/1794614400004-CreateAuthAuditLog';
 import { CreateOutboxEvents1794614400005 } from './migrations/1794614400005-CreateOutboxEvents';
+import { CreateRefreshSessions1794614400006 } from './migrations/1794614400006-CreateRefreshSessions';
 
 /** Listas explícitas: no dependen de globs ni de si se ejecuta .ts o .js. */
 export const ENTITIES = [
@@ -17,6 +19,7 @@ export const ENTITIES = [
   UserSystemEntity,
   AuthAuditLogEntity,
   OutboxEventEntity,
+  RefreshSessionEntity,
 ];
 
 export const MIGRATIONS = [
@@ -25,6 +28,7 @@ export const MIGRATIONS = [
   CreateUserSystems1794614400003,
   CreateAuthAuditLog1794614400004,
   CreateOutboxEvents1794614400005,
+  CreateRefreshSessions1794614400006,
 ];
 
 export interface DatabaseSettings {

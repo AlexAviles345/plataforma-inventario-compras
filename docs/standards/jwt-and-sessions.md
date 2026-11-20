@@ -1,9 +1,8 @@
 # Estándar de access tokens, refresh tokens y sesiones
 
-Este documento define las credenciales de autenticación de TechDistribution. El
-access token es el contrato vigente del MVP. El refresh token queda especificado
-para una ampliación posterior, pero todavía no está implementado ni habilitado en
-el Gateway.
+Este documento define las credenciales de autenticación de TechDistribution.
+Access token, refresh token y cierre de sesión están implementados conjuntamente
+en Auth, Gateway y frontend web.
 
 ## Separación de responsabilidades
 
@@ -104,13 +103,10 @@ del cliente. Después de validar, agrega `x-user-id`, `x-user-roles` y
 
 ### Estado de adopción
 
-Refresh no forma parte del MVP actual. Hasta habilitar esta ampliación, al vencer
-el access token el usuario vuelve a ejecutar login. Definir el contrato aquí no
-autoriza todavía `/api/auth/refresh` ni `/api/auth/logout` en el Gateway.
-
-Antes de activarlo deben implementarse en Auth el modelo de sesiones, migraciones,
-rotación transaccional, cookies, CSRF, revocación y pruebas; el Gateway debe agregar
-las rutas explícitas, rate limiting, CORS con credenciales y pruebas end-to-end.
+La sesión renovable está activa para el frontend web. Auth implementa persistencia,
+rotación y revocación; el Gateway expone únicamente las rutas exactas, limita
+refresh y conserva cookies; el frontend mantiene el access token en memoria y
+restaura la sesión mediante refresh al recargar.
 
 ### Formato y almacenamiento
 
@@ -163,6 +159,10 @@ La protección CSRF usa double-submit con una segunda cookie `td_csrf`, segura y
 legible por el frontend. El cliente copia su valor al header `X-CSRF-Token`; Auth
 verifica en tiempo constante cookie, header y `csrfHash` de la sesión.
 
+`td_csrf` usa `Secure; SameSite=Strict; Path=/` para que la SPA pueda leerla desde
+sus rutas. No usa `HttpOnly` porque su único propósito es aportar la prueba CSRF;
+no concede una sesión sin la cookie `td_refresh`, que sí es `HttpOnly`.
+
 - `td_refresh` siempre es `HttpOnly` y nunca aparece en el JSON.
 - Ambas cookies usan `Secure` fuera de localhost.
 - No se configura `Domain`; permanecen host-only.
@@ -177,9 +177,9 @@ Clientes nativos o integraciones no basadas en navegador requieren un perfil de
 transporte separado antes de habilitarse; no se reutiliza silenciosamente el
 contrato de cookies.
 
-### Endpoints reservados
+### Endpoints habilitados
 
-Estos endpoints se habilitan juntos cuando la ampliación esté implementada:
+Los siguientes endpoints se habilitan y despliegan juntos:
 
 | Endpoint | Credencial | Comportamiento |
 | --- | --- | --- |
@@ -260,7 +260,7 @@ estado de sesión ni causa de validación. Rate limiting usa 429 `RATE_LIMITED` 
 4. Headers de identidad falsificados son eliminados.
 5. Ningún log, evento o respuesta expone secretos.
 
-### Refresh cuando se habilite
+### Refresh
 
 1. Auth persiste hashes, nunca tokens originales.
 2. Cada uso rota token y CSRF de forma atómica.

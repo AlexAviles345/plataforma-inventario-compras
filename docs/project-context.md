@@ -21,13 +21,14 @@ Aunque cada dominio funcionará como un sistema autónomo con su propia base de 
 
 | Microservicio | Tecnología | Base de datos | Tablas propias del MVP | Proyecciones locales | Entrega de eventos |
 | --- | --- | --- | --- | --- | --- |
-| **Auth** | NestJS | PostgreSQL | `users`, `systems`, `user_systems`, `auth_audit_log` | Ninguna | `outbox_events` |
+| **Auth** | NestJS | PostgreSQL | `users`, `systems`, `user_systems`, `auth_audit_log`, `refresh_sessions` | Ninguna | `outbox_events` |
 | **Inventory** | Spring Boot | MySQL | `products`, `stock_adjustments` | `user_projections` | `inbox_events`, `outbox_events` |
 | **Purchases** | Django REST | PostgreSQL | `purchase_orders`, `purchase_order_lines`, `idempotency_keys`, `purchase_order_history` | `user_projections`, `product_projections` | `inbox_events` |
 
 Los atributos, claves, índices, tablas inbox/outbox y la procedencia exacta de cada
 proyección están definidos en el [modelo de datos planificado](architecture/data-model.md).
-`refresh_sessions` pertenece a una ampliación posterior y no se crea en el MVP.
+`refresh_sessions` implementa las familias de sesión renovable y sólo conserva
+hashes de refresh/CSRF, nunca los secretos originales.
 
 ---
 

@@ -4,6 +4,7 @@ import { UsersModule } from '../users/users.module';
 import { AdminGuard } from './admin.guard';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { RefreshSessionService } from './refresh-session.service';
 import { TokenService } from './token.service';
 
 /**
@@ -13,7 +14,7 @@ import { TokenService } from './token.service';
 @Module({
   imports: [JwtModule.register({}), UsersModule],
   controllers: [AuthController],
-  providers: [AuthService, TokenService, AdminGuard],
+  providers: [AuthService, TokenService, RefreshSessionService, AdminGuard],
   exports: [TokenService, AdminGuard],
 })
 export class AuthModule {}

@@ -33,7 +33,12 @@ import {
   ApiSuccess,
   type ErrorExample,
 } from '../common/openapi';
-import { CreateUserDto, UpdateUserDto, UserResponseDto } from './users.dto';
+import {
+  CreateUserDto,
+  UpdateUserDto,
+  UserResponseDto,
+  UserStatsResponseDto,
+} from './users.dto';
 import { UsersService } from './users.service';
 
 const VALIDATION: ErrorExample = [
@@ -115,6 +120,22 @@ export class UsersController {
       query.limit,
     );
     return new PaginatedResult(items, query.page, query.limit, total);
+  }
+
+  @Get('stats')
+  @ResponseMessage('Estadísticas de usuarios obtenidas exitosamente')
+  @ApiOperation({
+    summary: 'Consulta estadísticas generales de usuarios y asignaciones',
+    description: 'Solo ADMIN.',
+  })
+  @ApiSuccess({
+    status: 200,
+    message: 'Estadísticas de usuarios obtenidas exitosamente',
+    model: UserStatsResponseDto,
+  })
+  @ApiErrors(...ADMIN_AUTH_ERRORS)
+  stats() {
+    return this.users.getStats();
   }
 
   @Get(':id')

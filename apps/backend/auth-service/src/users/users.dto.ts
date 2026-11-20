@@ -141,3 +141,12 @@ export class UserResponseDto {
   @ApiProperty({ format: 'date-time' }) createdAt!: string;
   @ApiProperty({ format: 'date-time' }) updatedAt!: string;
 }
+
+export class UserStatsResponseDto {
+  @ApiProperty({ example: 12 }) totalUsers!: number;
+  @ApiProperty({ example: 10 }) activeUsers!: number;
+  @ApiProperty({ example: 2 }) inactiveUsers!: number;
+  @ApiProperty({ example: 8 }) inventoryUsers!: number;
+  @ApiProperty({ example: 7 }) purchasesUsers!: number;
+  @ApiProperty({ example: 2 }) adminUsers!: number;
+}

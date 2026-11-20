@@ -16,16 +16,19 @@ Este documento detalla la arquitectura modular mejorada, las decisiones tecnoló
 ## 1. Decisiones Tecnológicas (Los 6 Pilares del Frontend)
 
 ### 1.1 Core y Bundler (SPA Modular con React + TypeScript + Vite)
+
 - **React 19 + TypeScript 5 (modo `strict: true`) + Vite 6** sobre **Node 24**.
 - Sin servidor SSR intermedio: en desarrollo Vite enruta `/api` hacia `http://localhost:3000` (API Gateway) y en producción genera artefactos estáticos inmutables (`dist/`) servidos directamente por Nginx en `/`.
-- **Enrutamiento declarativo:** **React Router v7** (o TanStack Router) con carga diferida (`React.lazy` + `Suspense`) por módulo y *guards* de seguridad por `system` (`INVENTORY`, `PURCHASES`) y `role` (`ADMIN`, `INVENTORY_MANAGER`, `PURCHASES_AGENT`).
+- **Enrutamiento declarativo:** **React Router v7** (o TanStack Router) con carga diferida (`React.lazy` + `Suspense`) por módulo y _guards_ de seguridad por `system` (`INVENTORY`, `PURCHASES`) y `role` (`ADMIN`, `INVENTORY_MANAGER`, `PURCHASES_AGENT`).
 
 ### 1.2 Sistema de Diseño e Interfaz (`shadcn/ui` + Tailwind CSS)
-- **Tailwind CSS v4** con variables CSS semánticas (soporte nativo para tema claro/oscuro y paleta empresarial sobria estilo *Linear / Vercel*).
-- **`shadcn/ui` (basado en Radix UI + Lucide Icons):** componentes accesibles alojados en `src/app/(shared)/components/ui/` (`Button`, `Input`, `Dialog`, `Sheet`, `Table`, `Badge`, `Command`, `Popover`, `Select`, `Tabs`, `Tooltip`, `DropdownMenu`, `Skeleton`).
+
+- **Tailwind CSS v4** con variables CSS semánticas (soporte nativo para tema claro/oscuro y paleta empresarial sobria estilo _Linear / Vercel_).
+- **`shadcn/ui` (basado en Radix UI + Lucide Icons):** componentes accesibles alojados en `src/app/shared/components/ui/` (`Button`, `Input`, `Dialog`, `Sheet`, `Table`, `Badge`, `Command`, `Popover`, `Select`, `Tabs`, `Tooltip`, `DropdownMenu`, `Skeleton`).
 - **Notificaciones (`Sonner`):** toasts estructurados que muestran mensajes de negocio, el código de error (`code`), detalles por campo (`details[]`) y el `X-Request-Id` copiable para auditoría.
 
 ### 1.3 Estado de Servidor, Caché y Comunicación con el API Gateway
+
 - **TanStack Query v5 (React Query):** gestión de caché, estados de carga, paginación sincronizada con URL (`page`, `limit`), invalidación selectiva tras mutaciones y política automática de reintentos ante `409 PROJECTION_NOT_READY` respetando el header `Retry-After` (`2s`).
 - **Cliente HTTP (`Axios` o `ky` tipado) con Interceptores:**
   1. **Interceptor de Autenticación:** inyecta `Authorization: Bearer <accessToken>` seleccionando el token del sistema requerido por el módulo (`INVENTORY` o `PURCHASES`).
@@ -34,20 +37,24 @@ Este documento detalla la arquitectura modular mejorada, las decisiones tecnoló
 - **Estado de Sesión en Memoria (`Zustand`):** store ligero (`useAuthSessionStore`) que mantiene los tokens por sistema (`INVENTORY` y `PURCHASES`), los claims decodificados (`sub`, `email`, `role`, `system`, `exp`) y el sistema activo en la interfaz.
 
 ### 1.4 Formularios Dinámicos, Dinero Exacto y Tablas de Datos
+
 - **React Hook Form + Zod:** validación declarativa en cliente antes de enviar al Gateway y mapeo automático de errores `400 VALIDATION_ERROR` (`details[].field`, como `lines[0].unitPrice`) hacia el input exacto.
 - **`decimal.js` para Dinero Exacto (`MXN`):** cálculo sin pérdida de precisión de `lineTotal = quantity * unitPrice` y `totalAmount` en el formulario maestro-detalle de órdenes (hasta 100 líneas), serializando `unitPrice` siempre como `string` con dos decimales (`"1250.50"`).
 - **TanStack Table v8:** tablas empresariales reutilizables (`DataTable.tsx`) conectadas al objeto `meta: { page, limit, total, totalPages }` del estándar HTTP.
 
-### 1.5 Arquitectura Modular por Grupos de Dominio (Inspirada en Next App Router, Optimizada para Vite SPA)
-Tomando como base la estructura de referencia (`src/app/(auth)`, `src/app/(modules)`, `src/app/(shared)` y submódulos con `components/`, `config/`, `hooks/`, `services/`, `types/`, `index.ts`, `page.tsx`), se aplican las siguientes **mejoras arquitectónicas**:
-1. **Unificación de la capa compartida en `src/app/(shared)/`:** se elimina la duplicación de carpetas `components/`, `services/` y `types/` en la raíz de `src/`. Todo código transversal vive en `src/app/(shared)/` y se importa mediante el alias `@shared/*`.
+### 1.5 Arquitectura Modular por Grupos de Dominio para Vite SPA
+
+La estructura usa carpetas ordinarias de React/Vite (`src/app/auth`, `src/app/modules` y `src/app/shared`), sin los grupos de rutas entre paréntesis propios de Next App Router. Los submódulos conservan `components/`, `config/`, `hooks/`, `services/`, `types/`, `index.ts` y `page.tsx` como organización interna sin semántica especial del framework:
+
+1. **Unificación de la capa compartida en `src/app/shared/`:** se elimina la duplicación de carpetas `components/`, `services/` y `types/` en la raíz de `src/`. Todo código transversal vive en `src/app/shared/` y se importa mediante el alias `@shared/*`.
 2. **Aislamiento estricto entre módulos (`@modules/*`):** cada módulo de dominio (`administration`, `inventory`, `purchases`, `dashboard`) contiene sus propios `components/`, `config/`, `hooks/`, `schemas/`, `services/`, `types/`, `index.ts` y `page.tsx`. Un módulo nunca importa archivos internos de otro módulo; solo consume `@shared/*`.
 3. **Almacenamiento temporal de borradores (`draftStorage`):** al igual que el patrón `registrationDraftStorage.ts`, el formulario de creación de órdenes incluye persistencia local opcional de borrador en sesión junto con su `Idempotency-Key` activa hasta que el servidor confirma el `201 Created`.
 
 ### 1.6 Calidad, Pruebas y Despliegue (CI/CD y Nginx Edge)
+
 - **ESLint 9 + Prettier + TypeScript typecheck (`tsc --noEmit`)**.
 - **Vitest + React Testing Library + MSW (Mock Service Worker)** para pruebas unitarias y de integración de módulos sin depender de backends encendidos.
-- **Playwright** para pruebas E2E del flujo completo en el Hito 6 (*Login → Usuario → Producto → Proyección → Orden*).
+- **Playwright** para pruebas E2E del flujo completo en el Hito 6 (_Login → Usuario → Producto → Proyección → Orden_).
 - **Dockerfile multi-stage** (Node 24 build → runtime sin privilegios) listo para integrarse detrás de Nginx.
 
 ---
@@ -60,17 +67,15 @@ apps/frontend/
 │   └── favicon.svg
 ├── src/
 │   ├── app/
-│   │   ├── (auth)/                                     # Grupo de rutas públicas de autenticación
+│   │   ├── auth/                                       # Rutas públicas de autenticación
 │   │   │   ├── login/
 │   │   │   │   ├── components/
-│   │   │   │   │   ├── LoginFormCard.tsx               # Formulario con selector de sistema (INVENTORY / PURCHASES)
-│   │   │   │   │   └── SystemBadgeSelector.tsx
-│   │   │   │   ├── config/
-│   │   │   │   │   └── login-systems.config.ts
+│   │   │   │   │   ├── DevelopmentTokenAccess.tsx    # Entrada manual opcional en desarrollo
+│   │   │   │   │   └── LoginFormCard.tsx               # Formulario unificado { email, password }
 │   │   │   │   ├── hooks/
 │   │   │   │   │   └── useLoginForm.ts
 │   │   │   │   ├── schemas/
-│   │   │   │   │   └── login.schema.ts                 # Validación Zod de { email, password, system }
+│   │   │   │   │   └── login.schema.ts                 # Validación Zod de { email, password }
 │   │   │   │   ├── services/
 │   │   │   │   │   └── auth-login.service.ts           # POST /api/auth/login
 │   │   │   │   ├── types/
@@ -79,7 +84,7 @@ apps/frontend/
 │   │   │   │   └── page.tsx
 │   │   │   └── layout.tsx                              # Layout limpio centrado para pantallas de acceso
 │   │   │
-│   │   ├── (modules)/                                  # Grupo de rutas protegidas del ERP / Backoffice
+│   │   ├── modules/                                    # Rutas protegidas del ERP / Backoffice
 │   │   │   ├── dashboard/                              # Resumen operativo y estado de tokens por sistema
 │   │   │   │   ├── components/
 │   │   │   │   │   ├── ActiveSystemSessionCard.tsx
@@ -176,7 +181,7 @@ apps/frontend/
 │   │   │   │
 │   │   │   └── layout.tsx                              # Shell autenticado con DynamicSidebar, Header y Breadcrumb
 │   │   │
-│   │   ├── (shared)/                                   # Capa transversal única (@shared/*)
+│   │   ├── shared/                                     # Capa transversal única (@shared/*)
 │   │   │   ├── components/
 │   │   │   │   ├── cards/
 │   │   │   │   │   └── SummaryStatCard.tsx
@@ -190,12 +195,11 @@ apps/frontend/
 │   │   │   │   │   ├── DecimalMoneyInput.tsx           # Input controlado para montos exactos (18,2)
 │   │   │   │   │   └── SearchableSelect.tsx
 │   │   │   │   ├── layout/
+│   │   │   │   │   ├── AccessDeniedPage.tsx
 │   │   │   │   │   ├── BreadcrumbNav.tsx
-│   │   │   │   │   ├── DynamicSidebar.tsx              # Menú filtrado por rol y sistema activo
-│   │   │   │   │   ├── ErrorPage404.tsx
-│   │   │   │   │   ├── GlobalLoader.tsx
-│   │   │   │   │   ├── Header.tsx                      # Incluye SystemSwitcher y estado del JWT
-│   │   │   │   │   └── SystemSwitcher.tsx
+│   │   │   │   │   ├── DynamicSidebar.tsx              # Menú filtrado dinámicamente por permisos y roles en sesión
+│   │   │   │   │   ├── Header.tsx                      # Barra superior con breadcrumb y cambio de tema
+│   │   │   │   │   └── SignOutConfirmationDialog.tsx
 │   │   │   │   ├── ui/                                 # Primitivas oficiales de shadcn/ui
 │   │   │   │   └── index.ts
 │   │   │   ├── config/
@@ -246,38 +250,64 @@ apps/frontend/
 
 ## 3. Planificación Detallada por Fases
 
-### Fase 1: Scaffold Vite + TypeScript, Tailwind CSS v4, `shadcn/ui` y Arquitectura Base (`(shared)`)
+### Fase 1: Scaffold Vite + TypeScript, Tailwind CSS v4, `shadcn/ui` y Arquitectura Base (`shared`) — COMPLETADA
+
+**Estado:** completada el 17 de noviembre de 2026. La implementación está disponible en `apps/frontend` y fue validada mediante formato, lint, comprobación de tipos y build de producción.
+
 **Objetivo:** Inicializar `apps/frontend` como paquete compatible con el supervisor de la raíz (`npm run dev`), configurar los alias de importación (`@shared/*`, `@modules/*`, `@auth/*`), instalar Tailwind CSS v4 + primitivas base de `shadcn/ui` y construir los tipos y utilidades transversales.
 
 - **Entregables:**
   1. `package.json`, `tsconfig.json`, `vite.config.ts` (con proxy `/api` $\rightarrow$ `http://localhost:3000` en desarrollo y puerto local `5173`), `.env.example` y configuración de ESLint/Prettier.
-  2. Inicialización de `shadcn/ui` en `src/app/(shared)/components/ui/` (`button`, `input`, `label`, `card`, `badge`, `dialog`, `sheet`, `table`, `select`, `command`, `popover`, `sonner`, `skeleton`, `separator`, `dropdown-menu`, `tooltip`).
-  3. Utilidades transversales en `src/app/(shared)/utils/`:
+  2. Inicialización de `shadcn/ui` en `src/app/shared/components/ui/` (`button`, `input`, `label`, `card`, `badge`, `dialog`, `sheet`, `table`, `select`, `command`, `popover`, `sonner`, `skeleton`, `separator`, `dropdown-menu`, `tooltip`).
+  3. Utilidades transversales en `src/app/shared/utils/`:
      - `decimal-money.util.ts` con `decimal.js` para cálculo exacto de importes `(18, 2)`, validación de escala máxima de 2 decimales y formateo en `MXN`.
      - `date-utc.util.ts` para formatear timestamps ISO 8601 UTC provenientes de los tres microservicios.
-  4. Contratos TypeScript en `src/app/(shared)/types/` para el sobre estándar (`ApiSuccessResponse<T>`, `ApiErrorResponse`, `FieldErrorDetail`, `PaginationMeta`) y catálogo completo de códigos de error (`VALIDATION_ERROR`, `VERSION_CONFLICT`, `IDEMPOTENCY_CONFLICT`, `PROJECTION_NOT_READY`, `PRODUCT_INACTIVE`, `ORDER_STATE_CONFLICT`).
+  4. Contratos TypeScript en `src/app/shared/types/` para el sobre estándar (`ApiSuccessResponse<T>`, `ApiErrorResponse`, `FieldErrorDetail`, `PaginationMeta`) y catálogo completo de códigos de error (`VALIDATION_ERROR`, `VERSION_CONFLICT`, `IDEMPOTENCY_CONFLICT`, `PROJECTION_NOT_READY`, `PRODUCT_INACTIVE`, `ORDER_STATE_CONFLICT`).
+
+- **Evidencia de cierre:**
+  - Scaffold de React/Vite con puerto fijo `5173`, alias de TypeScript/Vite y proxy `/api` configurable mediante `API_PROXY_TARGET`.
+  - Dieciséis primitivas `shadcn/ui`, tema claro/oscuro y tokens semánticos compartidos.
+  - Contratos de éxito/error/paginación y catálogo transversal de códigos de error.
+  - Utilidades de dinero exacto con `decimal.js`, validación `numeric(18,2)` y fechas ISO 8601 UTC.
+  - Scripts reproducibles `dev`, `build`, `typecheck`, `lint`, `format` y `format:check`.
 
 ---
 
-### Fase 2: Cliente HTTP, Interceptores, Store de Sesión Multi-Sistema y Shell de Navegación (`(auth)` + Layouts)
+### Fase 2: Cliente HTTP, Interceptores, Store de Sesión Multi-Sistema y Shell de Navegación (`auth` + Layouts) — COMPLETADA
+
+**Estado:** completada el 17 de noviembre de 2026 y ampliada el 18 de noviembre de 2026 con sesión renovable. El access token permanece exclusivamente en memoria, valida sus claims estructurales y deja la validación criptográfica al Gateway y al servicio destino. El refresh token opaco sólo viaja en cookie `HttpOnly`.
+
 **Objetivo:** Implementar la capa de red conectada al API Gateway, el manejo de tokens JWT por sistema (`INVENTORY` y `PURCHASES`), la política global de reintentos ante proyecciones en vuelo y el flujo de Login + Layout protegido.
 
 - **Entregables:**
-  1. `src/app/(shared)/stores/auth-session.store.ts` (Zustand):
+  1. `src/app/shared/stores/auth-session.store.ts` (Zustand):
      - Almacena en memoria los access tokens emitidos para `INVENTORY` y `PURCHASES`, decodifica sus claims (`sub`, `email`, `role`, `system`, `iat`, `exp`), detecta expiración y expone selectores de permisos (`isAdmin`, `canAccessInventory`, `canAccessPurchases`).
-  2. `src/app/(shared)/services/http-client.ts` y `query-client.config.ts`:
+  2. `src/app/shared/services/http-client.ts` y `query-client.config.ts`:
      - Adjunta el `Bearer` token del sistema requerido por cada prefijo (`/api/inventory/*` usa el token `INVENTORY`; `/api/purchases/*` usa el token `PURCHASES`; `/api/auth/*` usa el token administrativo activo).
      - Desempaqueta automáticamente la respuesta exitosa y adjunta `requestId` (`X-Request-Id`).
      - Configura en **TanStack Query** el reintento automático cuando una consulta o mutación segura recibe `409 PROJECTION_NOT_READY`, esperando el número de segundos indicado en el header `Retry-After` (por defecto `2s`, hasta 4 intentos) y activando el componente `ProjectionSyncBanner.tsx`.
-  3. Módulo `(auth)/login/`:
-     - Pantalla de inicio de sesión con selección de sistema destino (`INVENTORY` o `PURCHASES`), conectada a `POST /api/auth/login`.
-     - Modo de asistencia para desarrollo local (solo en `import.meta.env.DEV`): permite pegar un token generado con `python manage.py generate_dev_token` para probar módulos individuales aunque `auth-service` esté apagado.
-  4. Shell principal `(modules)/layout.tsx`:
-     - `DynamicSidebar.tsx`, `Header.tsx`, `SystemSwitcher.tsx` (permite cambiar entre `INVENTORY` y `PURCHASES` o solicitar credenciales del segundo sistema sin perder la sesión del primero), `BreadcrumbNav.tsx` y `ProtectedRouteGuard.tsx`.
+     - Envía cookies con credenciales y usa `auth-session.service.ts` para refresh/logout con double-submit CSRF, sin exponer el refresh token al JavaScript.
+  3. Módulo `auth/login/`:
+     - Pantalla unificada de inicio de sesión (`{ email, password }`), conectada a `POST /api/auth/login`, que recibe e instala automáticamente todos los access tokens asignados al usuario en `tokens`.
+     - Modo de asistencia para desarrollo local (solo con `import.meta.env.DEV` y `VITE_ENABLE_DEV_TOKEN_ACCESS=true`): permite pegar un token generado con `python manage.py generate_dev_token` para diagnosticar módulos individuales aunque `auth-service` esté apagado. Permanece oculto por defecto y nunca aparece en producción.
+  4. Shell principal `modules/layout.tsx`:
+     - `DynamicSidebar.tsx` (filtra dinámicamente las secciones de Inventario, Compras y Administración según los permisos presentes en sesión), `Header.tsx`, `BreadcrumbNav.tsx` y `ProtectedRouteGuard.tsx`.
+     - El cierre de sesión solicita confirmación con lenguaje orientado al usuario antes de abandonar la sesión y volver al login.
+     - `SessionBootstrap.tsx` restaura los tokens vigentes al recargar y `ProtectedRouteGuard.tsx` rota el access token antes de expirar; ambos conservan los JWT sólo en Zustand.
+
+- **Evidencia de cierre:**
+  - Cliente Axios tipado con envoltura validada, `X-Request-Id`, `Authorization`, `Idempotency-Key`, timeout y errores `GatewayApiError`.
+  - TanStack Query con reintentos limitados para `409 PROJECTION_NOT_READY`, soporte de `Retry-After` y banner de sincronización.
+  - Store Zustand para tokens independientes de `INVENTORY` y `PURCHASES`, bloqueo de mezcla entre usuarios, expiración automática y selectores RBAC.
+  - Login unificado con validación Zod, conexión a `POST /api/auth/login` con emisión automática por permisos y entrada manual de JWT limitada a desarrollo.
+  - React Router con carga diferida, guards por sesión/sistema/rol (`403` vía `/forbidden` si falta permiso de sistema), dashboard multi-permiso, barra lateral dinámica y cambio de tema.
 
 ---
 
-### Fase 3: Módulo de Compras (`(modules)/purchases/orders`) — Órdenes, Líneas, Snapshots, Concurrencia e Idempotencia
+### Fase 3: Módulo de Compras (`modules/purchases/orders`) — Órdenes, Líneas, Snapshots, Concurrencia e Idempotencia — COMPLETADA
+
+**Estado:** completada el 17 de noviembre de 2026 contra los serializers, rutas y reglas vigentes de `purchases-service`.
+
 **Objetivo:** Construir el módulo completo de órdenes de compra aprovechando que `purchases-service` ya tiene sus 5 fases implementadas en el backend.
 
 - **Entregables:**
@@ -296,9 +326,22 @@ apps/frontend/
   4. **Historial Auditable (`OrderHistorySheet.tsx`, `useOrderHistory.ts`):**
      - Panel deslizable (`Sheet`) que consulta `GET /api/purchases/orders/{id}/history` y representa en una línea de tiempo cada versión confirmada (`CREATED`, `UPDATED`, `SUBMITTED`, `CANCELLED`), actor, `requestId` y resumen de cambios.
 
+- **Evidencia de cierre:**
+  - Listado TanStack Table paginado con filtros sincronizados en URL, filtro administrativo por solicitante y tarjetas de resumen.
+  - Alta y edición maestro-detalle de 1 a 100 líneas con Zod, UUID únicos, cantidades enteras y cálculo monetario exacto con `decimal.js`.
+  - Borrador recuperable en `sessionStorage`, clave idempotente conservada ante resultados inciertos y rotación ante conflicto.
+  - Detalle que preserva snapshots históricos y compara separadamente nombre, SKU, unidad, estado y stock del catálogo actual.
+  - Transiciones `submit` y `cancel` con `expectedVersion`, `Idempotency-Key`, motivo opcional y resolución explícita de conflictos concurrentes.
+  - Historial auditable con versión, transición, actor, `requestId`, fecha y resumen estructurado de cambios.
+
+La captura manual por UUID fue sustituida en la Fase 4 por un selector buscable cuando existe una sesión de Inventario. La captura manual se conserva como degradación segura cuando el usuario no cuenta con ese token o el catálogo no está disponible.
+
 ---
 
-### Fase 4: Módulo de Inventario (`(modules)/inventory/products`) — Catálogo, Stock y Control Optimista
+### Fase 4: Módulo de Inventario (`modules/inventory/products`) — Catálogo, Stock y Control Optimista — COMPLETADA EN FRONTEND
+
+**Estado:** completada en el frontend el 17 de noviembre de 2026 contra el contrato planificado de `inventory-service`. El backend de Inventory todavía no implementa estas rutas, por lo que la validación extremo a extremo queda pendiente hasta completar su dominio y controladores.
+
 **Objetivo:** Implementar la interfaz de gestión del catálogo de productos y correcciones explícitas de existencias conectada a `/api/inventory/products`.
 
 - **Entregables:**
@@ -311,9 +354,21 @@ apps/frontend/
   4. **Integración con el Selector de Productos de Compras:**
      - Provee un selector buscable de productos activos para facilitar la captura de líneas en órdenes cuando el usuario cuenta con acceso al catálogo o caché local.
 
+- **Evidencia de cierre:**
+  - Catálogo TanStack Table paginado con búsqueda, filtro de estado, tarjetas de resumen y parámetros sincronizados en URL.
+  - Alta validada con React Hook Form + Zod, normalización de SKU y mapeo de errores de campo emitidos por el Gateway.
+  - Edición con `expectedVersion`, conflicto concurrente explícito, motivo obligatorio para ajustes de stock y advertencia de desactivación lógica.
+  - Consumo encapsulado en `products.service.ts` de las rutas `GET`, `POST` y `PUT` del catálogo usando exclusivamente el token `INVENTORY` y el Gateway.
+  - Selector buscable de productos activos exportado por la API pública del módulo de Inventario e integrado en las líneas de Compras; cae a UUID manual sin sesión de Inventario o ante indisponibilidad del catálogo.
+
+La implementación frontend está completa, pero no se considera evidencia de funcionamiento extremo a extremo mientras `inventory-service` mantenga solamente su scaffold y no exponga los endpoints documentados.
+
 ---
 
-### Fase 5: Módulo de Administración (`(modules)/administration`) — Usuarios, Asignaciones y Sistemas
+### Fase 5: Módulo de Administración (`modules/administration`) — Usuarios, Asignaciones y Sistemas — COMPLETADA EN FRONTEND
+
+**Estado:** completada en el frontend el 18 de noviembre de 2026. `auth-service` y el frontend implementan las operaciones de usuarios y sistemas, incluida la consulta paginada `GET /api/auth/users`.
+
 **Objetivo:** Implementar las pantallas exclusivas para el rol `ADMIN` conectadas a `/api/auth/users` y `/api/auth/systems`.
 
 - **Entregables:**
@@ -323,9 +378,21 @@ apps/frontend/
   2. **Configuración de Sistemas y Vigencia JWT (`systems/page.tsx`, `SystemsCatalogCards.tsx`, `SystemTtlEditDialog.tsx`):**
      - Consulta `GET /api/auth/systems` y permite actualizar la duración de futuros access tokens (`PUT /api/auth/systems/{code}` con `expectedVersion`, respetando el límite `<= JWT_MAX_TTL_SECONDS`).
 
+- **Evidencia de cierre:**
+  - Rutas `/administration/users` y `/administration/systems` protegidas por rol `ADMIN` y cargadas de forma diferida.
+  - Formularios React Hook Form + Zod para creación y actualización de usuarios, normalización de correo, contraseña inicial no persistida y matriz válida de un rol por sistema.
+  - Actualización de usuario con `expectedVersion`, desactivación lógica, aviso de protección del último administrador y manejo normalizado de errores del Gateway.
+  - Catálogo de sistemas con lectura de TTL, equivalencia visual en minutos y actualización concurrente mediante `expectedVersion`.
+  - Catálogo paginado de usuarios con metadatos del servidor, parámetros de página en URL y refresco automático tras crear o actualizar.
+
+Las operaciones de catálogo, alta, actualización y sistemas pueden validarse extremo a extremo contra Auth.
+
 ---
 
-### Fase 6: Pruebas Automatizadas (Vitest + MSW + Playwright), Dockerización e Integración con Nginx Edge
+### Fase 6: Pruebas Automatizadas (Vitest + MSW + Playwright), Dockerización e Integración con Nginx Edge — COMPLETADA
+
+**Estado:** completada el 17 de noviembre de 2026. Las pruebas de contratos usan MSW y rutas Playwright simuladas para aislar el frontend. Auth ya está implementado e Inventory permanece pendiente; estos dobles no sustituyen la integración con servicios reales.
+
 **Objetivo:** Asegurar la calidad del frontend en CI/CD, empaquetarlo en Docker y validar el recorrido completo a través de Nginx y el API Gateway.
 
 - **Entregables:**
@@ -339,3 +406,12 @@ apps/frontend/
      - `apps/frontend/Dockerfile` multi-stage y job `frontend` en `.github/workflows/ci.yml` (`npm ci`, `npm run format:check`, `npm run lint`, `npm run build`, `npm test`).
      - Integración con el perfil `frontend` y `edge` (Nginx) descrito en [`docs/infrastructure/nginx-edge.md`](../../infrastructure/nginx-edge.md).
 
+- **Evidencia de cierre:**
+  - 14 pruebas Vitest en cinco archivos para dinero exacto, esquemas de órdenes, reintentos de proyección, headers/idempotencia HTTP y guards RBAC.
+  - Tres pruebas Playwright en Chromium: navegación administrativa, denegación por rol y recorrido producto → orden → envío → cambio de catálogo → snapshot histórico → cancelación.
+  - Build Vite de producción integrado en `npm run test:e2e` y refresco obligatorio del detalle de orden al reabrirlo para consultar el catálogo actual.
+  - Imagen frontend multi-stage con runtime `nginx-unprivileged`, fallback SPA, caché inmutable de assets, headers de seguridad y health check.
+  - Imagen Nginx Edge parametrizable, Compose local en `docker-compose.edge.yml` y comandos raíz `dev:edge`/`dev:edge:down`.
+  - Job `frontend` en GitHub Actions con formato, lint, tipos, Vitest, Playwright y construcción de las imágenes frontend/edge.
+
+La configuración Compose fue validada localmente. La construcción Docker queda validada por CI; en la sesión de cierre local Docker Desktop no tenía el daemon iniciado.

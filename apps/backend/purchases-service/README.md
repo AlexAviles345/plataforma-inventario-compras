@@ -61,7 +61,7 @@ presentes en el sistema); `.env.example` documenta las variables disponibles.
 - `JWT_ISSUER`: emisor esperado (`techdistribution-auth` por defecto).
 - `JWT_AUDIENCE`: audiencia esperada (`techdistribution-api` por defecto).
 - `JWT_MAX_TTL_SECONDS`: vigencia máxima permitida del access token (`900` por defecto, hasta `3600`).
-- `KAFKA_BOOTSTRAP_SERVERS`: brokers de Apache Kafka (`localhost:9092` por defecto).
+- `KAFKA_BOOTSTRAP_SERVERS`: brokers de Apache Kafka (`127.0.0.1:9092` por defecto).
 
 ## Consumidores Kafka y Bootstrap de Proyecciones
 
@@ -71,6 +71,8 @@ Para ejecutar los consumidores de proyecciones con commit manual de offsets y DL
 python manage.py consume_projections --domain user
 python manage.py consume_projections --domain product
 ```
+
+El supervisor raíz (`npm run dev` o `npm run dev:apps`) inicia ambos consumidores junto con el servidor Django. Los comandos manuales son útiles cuando se ejecuta Purchases de forma aislada.
 
 Para importar un snapshot JSON consistente con watermarks por partición:
 

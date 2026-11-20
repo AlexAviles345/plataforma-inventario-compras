@@ -17,7 +17,7 @@ import {
  *   2. doctor: verifica herramientas, Docker, configuración y puertos;
  *   3. infraestructura (con --with-infra): bases de datos y Kafka en Docker;
  *   4. migraciones de Auth y Purchases;
- *   5. Gateway, Auth, Inventory, Purchases y frontends en paralelo.
+ *   5. Gateway, Auth, Inventory, Purchases, consumidores y frontends en paralelo.
  * `npm run dev:check` ejecuta solo el diagnóstico (tools/doctor.mjs).
  */
 
@@ -51,6 +51,18 @@ function commands(frontends) {
       name: 'purchases',
       cwd: servicePaths.purchases,
       prefixColor: 'green',
+    },
+    {
+      command: `${python} manage.py consume_projections --domain user`,
+      name: 'purchases:users',
+      cwd: servicePaths.purchases,
+      prefixColor: 'greenBright',
+    },
+    {
+      command: `${python} manage.py consume_projections --domain product`,
+      name: 'purchases:products',
+      cwd: servicePaths.purchases,
+      prefixColor: 'greenBright',
     },
     ...frontends.map((frontend) => ({
       command: `npm run ${frontend.script}`,

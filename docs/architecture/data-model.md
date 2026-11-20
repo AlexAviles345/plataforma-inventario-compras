@@ -172,9 +172,10 @@ outbox.
 
 Índices: `(target_type, target_key, created_at)` y `(actor_user_id, created_at)`.
 
-### `refresh_sessions` — ampliación posterior, fuera del MVP
+### `refresh_sessions`
 
-No se crea ni se usa hasta habilitar conjuntamente refresh/logout.
+Implementada por Auth para rotación de un solo uso, expiración absoluta y
+revocación de familias de sesión. Sólo guarda hashes SHA-256.
 
 | Columna | Tipo lógico | Nulo | Regla o propósito |
 | --- | --- | --- | --- |
@@ -188,11 +189,10 @@ No se crea ni se usa hasta habilitar conjuntamente refresh/logout.
 | `expires_at` | timestamp UTC | No | Expiración absoluta heredada de la familia |
 | `last_used_at` | timestamp UTC | Sí | Consumo exitoso de esta rotación |
 | `revoked_at` | timestamp UTC | Sí | Revocación de la fila/familia |
-| `revocation_reason` | varchar(64) | Sí | Logout, cambio de usuario o reutilización |
 | `replaced_by_id` | UUID | Sí | FK diferida a la siguiente `refresh_sessions.id` |
 
-Índices: `UNIQUE (token_hash)`, `(family_id, created_at)` y
-`(user_id, system_code, revoked_at)`. Nunca se almacena el refresh token original.
+Índices: `UNIQUE (token_hash)`, `(family_id)` y
+`(user_id, revoked_at, expires_at)`. Nunca se almacena el refresh token original.
 
 ## Inventory (MySQL)
 

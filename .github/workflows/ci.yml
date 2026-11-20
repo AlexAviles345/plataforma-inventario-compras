@@ -1,6 +1,31 @@
-name: Backend foundations and infrastructure
+name: Platform validation
 on: [push, pull_request]
 jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: apps/frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: apps/frontend/package-lock.json
+      - run: npm ci --ignore-scripts
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - run: docker build -t techdistribution-frontend .
+      - name: Validate edge image and Compose profile
+        working-directory: .
+        run: |
+          docker build -t techdistribution-nginx-edge infrastructure/nginx
+          docker compose -f docker-compose.edge.yml --profile frontend --profile edge config --quiet
   purchases:
     runs-on: ubuntu-latest
     defaults:
@@ -31,7 +56,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: "21"
           cache: maven
           cache-dependency-path: apps/backend/inventory-service/pom.xml
       - run: chmod +x mvnw

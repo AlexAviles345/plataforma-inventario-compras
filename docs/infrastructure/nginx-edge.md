@@ -1,9 +1,11 @@
 # Nginx como capa edge
 
-Estado: arquitectura futura, todavía no implementada. Nginx será el único punto
-HTTP(S) publicado en un despliegue accesible y permanecerá delante del frontend y
-del API Gateway. No sustituye al Gateway ni se comunica directamente con Auth,
-Inventory o Purchases.
+Estado: implementación base disponible en `infrastructure/nginx`,
+`apps/frontend/nginx.frontend.conf` y `docker-compose.edge.yml`. El perfil local
+publica HTTP en loopback; TLS, dominio público y confianza restringida del proxy
+siguen siendo requisitos previos al despliegue accesible. Nginx permanece delante
+del frontend y del API Gateway, sin sustituir al Gateway ni comunicarse directamente
+con Auth, Inventory o Purchases.
 
 ```text
 Cliente
@@ -90,24 +92,27 @@ Los límites del borde se coordinan con el Gateway:
 
 ## Desarrollo y Compose
 
-Se mantendrán dos recorridos:
+Se mantienen dos recorridos:
 
 1. `npm run dev`: infraestructura en contenedores y aplicaciones locales con hot
    reload; Nginx opcional para el ciclo rápido.
-2. `npm run dev:edge`: entorno completo con Nginx para comprobar rutas, cookies,
-   headers y comportamiento equivalente al despliegue.
+2. `npm run dev:edge`: construye el frontend y Nginx, publica el edge en
+   `http://localhost:8088` y reenvía el API al Gateway local en `localhost:3000`.
 
-El futuro `docker-compose.dev.yml` podrá usar perfiles:
+El archivo `docker-compose.edge.yml` implementa los perfiles `frontend` y `edge`.
+Los perfiles de aplicaciones backend y herramientas continúan reservados para una
+ampliación posterior:
 
 - `apps`: Gateway y microservicios.
 - `frontend`: aplicación web.
 - `edge`: Nginx; depende de Gateway y frontend.
 - `tools`: utilidades administrativas opcionales.
 
-Ejemplo del comando previsto, todavía no disponible:
+Comandos disponibles:
 
 ```bash
-docker compose -f docker-compose.dev.yml --profile apps --profile frontend --profile edge up --build --watch
+npm run dev:edge
+npm run dev:edge:down
 ```
 
 Los servicios de datos esenciales no deben quedar detrás de perfiles opcionales.

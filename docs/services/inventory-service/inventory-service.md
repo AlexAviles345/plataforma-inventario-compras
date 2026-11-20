@@ -17,9 +17,27 @@ outbox y la copia local de usuarios están en el
 | Endpoint | Acceso | Resultado |
 | --- | --- | --- |
 | `GET /api/inventory/products` | INVENTORY_MANAGER/ADMIN, token INVENTORY | Catálogo paginado; autor desde proyección local |
+| `GET /api/inventory/products/stats` | INVENTORY_MANAGER/ADMIN, token INVENTORY | Estadísticas agregadas del catálogo (`totalProducts`, `activeProducts`, `inactiveProducts`, `outOfStockProducts`, `totalUnitsOnHand`) |
 | `POST /api/inventory/products` | Igual | 201, SKU único, creador del JWT |
 | `PUT /api/inventory/products/{id}` | Igual | expectedVersion obligatorio; 409 ante conflicto; desactivación lógica |
 | `GET /api/inventory/openapi.json` | Desarrollo | Springdoc en esta ruta; paths `/api/inventory/...`, server `/` |
+
+### Contrato de respuesta para `GET /api/inventory/products/stats`
+
+```json
+{
+  "error": false,
+  "statusCode": 200,
+  "message": "Estadísticas de inventario obtenidas exitosamente",
+  "data": {
+    "totalProducts": 48,
+    "activeProducts": 45,
+    "inactiveProducts": 3,
+    "outOfStockProducts": 4,
+    "totalUnitsOnHand": 1280
+  }
+}
+```
 
 Verificar JWT y RBAC localmente, sin confiar exclusivamente en x-user headers. Cada cambio confirma entidad + outbox y publica `ProductCreated`/`ProductUpdated` con snapshot completo según [schema](../../../contracts/events/product-event.schema.json). No borrar físicamente productos referenciados por compras: emitir active:false.
 

@@ -157,7 +157,7 @@ if not JWT_AUDIENCE:
 
 JWT_MAX_TTL_SECONDS = env_int("JWT_MAX_TTL_SECONDS", 900, minimum=1, maximum=3600)
 
-KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092").strip()
+KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "127.0.0.1:9092").strip()
 if not KAFKA_BOOTSTRAP_SERVERS:
     raise ImproperlyConfigured("KAFKA_BOOTSTRAP_SERVERS no puede estar vacío")
 

@@ -25,12 +25,14 @@ En producción define NODE_ENV=production y DOCS_ENABLED=false; un ingress termi
 ## Rutas y límites
 
 - `POST /api/auth/login`: anónimo; 10 intentos/minuto/IP en esta instancia.
-- `/api/auth/*`: JWT; Auth autoriza operaciones.
+- `POST /api/auth/refresh`: cookie + CSRF; 30 intentos/minuto/IP.
+- `POST /api/auth/logout`: cookie + CSRF; idempotente.
+- `/api/auth/*` restante: JWT; Auth autoriza operaciones.
 - `/api/inventory/*`, `/api/purchases/*`: JWT del sistema correspondiente; los destinos verifican JWT y permisos también.
 - `GET /health/live`, `GET /health/ready`: salud del propio Gateway.
 - Desarrollo: [Swagger](http://localhost:3000/docs), con esquemas `GET /api/{auth,inventory,purchases}/openapi.json`, públicos solo cuando DOCS_ENABLED=true.
 
-Se conserva el cuerpo en streaming y se limita a MAX_BODY_BYTES (1 MiB por defecto), incluido chunked. PROXY_TIMEOUT_MS limita la operación completa (10 s). Errores propios en JSON: 401 token, 403 sistema, 413 tamaño, 429 login, 502 upstream inaccesible y 504 plazo agotado. Respuestas de dominio mantienen status/cuerpo. No hay reintentos de escrituras. Cada petición tiene X-Request-Id y log de acceso sin query ni Authorization.
+El Gateway conserva `Cookie`, `X-CSRF-Token` y `Set-Cookie` sin interpretar el refresh token. CORS admite credenciales exclusivamente para `CORS_ORIGINS`; nunca combina cookies con un origen comodín. Se conserva el cuerpo en streaming y se limita a MAX_BODY_BYTES (1 MiB por defecto), incluido chunked. PROXY_TIMEOUT_MS limita la operación completa (10 s). Errores propios en JSON: 401 token, 403 sistema, 413 tamaño, 429 rate limit, 502 upstream inaccesible y 504 plazo agotado.
 
 No se confía en cabeceras de identidad ni IP enviadas por clientes. El limitador usa memoria; antes de múltiples instancias hace falta store compartido y una política revisada de proxies confiables.
 
