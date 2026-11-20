@@ -90,9 +90,6 @@ describe('DynamicSidebar', () => {
       screen.getByRole('link', { name: 'Órdenes de compra' }),
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Usuarios' })).toBeInTheDocument();
-    expect(
-      screen.getByRole('link', { name: 'Configuración' }),
-    ).toBeInTheDocument();
     expect(screen.getByText('Inventario')).toBeInTheDocument();
     expect(screen.getByText('Compras')).toBeInTheDocument();
   });
@@ -119,9 +116,6 @@ describe('DynamicSidebar', () => {
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('link', { name: 'Usuarios' }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole('link', { name: 'Configuración' }),
     ).not.toBeInTheDocument();
 
     unmount();

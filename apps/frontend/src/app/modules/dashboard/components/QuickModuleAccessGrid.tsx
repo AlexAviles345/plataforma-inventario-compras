@@ -34,7 +34,7 @@ export function QuickModuleAccessGrid() {
     },
     isAdmin && {
       title: 'Administración',
-      description: 'Usuarios, asignaciones y sistemas.',
+      description: 'Usuarios y asignaciones de acceso.',
       path: '/administration/users',
       icon: Settings2,
       badge: 'ADMIN',

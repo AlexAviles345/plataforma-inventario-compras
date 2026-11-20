@@ -1,7 +1,6 @@
 import {
   Boxes,
   Gauge,
-  Settings2,
   ShoppingCart,
   Users,
   type LucideIcon,
@@ -35,12 +34,6 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     label: 'Usuarios',
     path: '/administration/users',
     icon: Users,
-    roles: ['ADMIN'],
-  },
-  {
-    label: 'Configuración',
-    path: '/administration/systems',
-    icon: Settings2,
     roles: ['ADMIN'],
   },
 ];

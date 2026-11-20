@@ -77,50 +77,17 @@ async function login(page: Page) {
   await expect(page.getByRole('heading', { name: 'Resumen' })).toBeVisible();
 }
 
-test('un administrador inicia sesión una vez, ve todas sus secciones y consulta sistemas', async ({
+test('un administrador inicia sesión una vez y ve todas sus secciones autorizadas', async ({
   page,
 }) => {
   await mockLogin(page, 'ADMIN');
-  await page.route('**/api/auth/systems', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        error: false,
-        statusCode: 200,
-        message: 'Sistemas consultados',
-        data: [
-          {
-            code: 'INVENTORY',
-            accessTokenTtlSeconds: 900,
-            version: 1,
-            createdAt: '2026-11-17T00:00:00.000Z',
-            updatedAt: '2026-11-17T00:00:00.000Z',
-          },
-          {
-            code: 'PURCHASES',
-            accessTokenTtlSeconds: 600,
-            version: 2,
-            createdAt: '2026-11-17T00:00:00.000Z',
-            updatedAt: '2026-11-17T00:00:00.000Z',
-          },
-        ],
-      }),
-    });
-  });
 
   await login(page);
   await expect(page.getByRole('link', { name: 'Productos' })).toBeVisible();
   await expect(
     page.getByRole('link', { name: 'Órdenes de compra' }),
   ).toBeVisible();
-  await page.getByRole('link', { name: 'Configuración' }).click();
-
-  await expect(
-    page.getByRole('heading', { name: 'Configuración de sistemas' }),
-  ).toBeVisible();
-  await expect(page.getByText('15 minutos')).toBeVisible();
-  await expect(page.getByText('10 minutos')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Usuarios' })).toBeVisible();
 });
 
 test('un gestor de inventario no ve compras ni administración y recibe acceso denegado', async ({

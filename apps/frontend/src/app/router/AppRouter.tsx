@@ -40,11 +40,6 @@ const ProductsPage = lazy(() =>
     default: module.ProductsPage,
   })),
 );
-const SystemsPage = lazy(() =>
-  import('@modules/administration/systems/page').then((module) => ({
-    default: module.SystemsPage,
-  })),
-);
 const UsersPage = lazy(() =>
   import('@modules/administration/users/page').then((module) => ({
     default: module.UsersPage,
@@ -121,14 +116,6 @@ export function AppRouter() {
                 element={
                   <SystemTokenGuard roles={['ADMIN']}>
                     <UsersPage />
-                  </SystemTokenGuard>
-                }
-              />
-              <Route
-                path="/administration/systems"
-                element={
-                  <SystemTokenGuard roles={['ADMIN']}>
-                    <SystemsPage />
                   </SystemTokenGuard>
                 }
               />

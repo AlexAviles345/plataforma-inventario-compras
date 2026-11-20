@@ -132,8 +132,6 @@ Rutas de negocio bajo `/api/auth`:
 | `GET /users?page=&limit=` | ADMIN   | Lista paginada ordenada por email (`limit` ≤ 100)                           |
 | `GET /users/{id}`         | ADMIN   | 200; 404 si no existe                                                       |
 | `PUT /users/{id}`         | ADMIN   | Parcial con `expectedVersion`; 409 `VERSION_CONFLICT` o `LAST_ACTIVE_ADMIN` |
-| `GET /systems`            | ADMIN   | Sistemas con `accessTokenTtlSeconds` y `maxAccessTokenTtlSeconds`           |
-| `PUT /systems/{code}`     | ADMIN   | `{expectedVersion, accessTokenTtlSeconds}` entre 1 y `JWT_MAX_TTL_SECONDS`  |
 
 Las rutas ADMIN aceptan un token ADMIN de cualquiera de los dos sistemas. Swagger documenta la envoltura completa y un ejemplo por cada código de error; se rechaza en producción cuando `NODE_ENV=production`.
 

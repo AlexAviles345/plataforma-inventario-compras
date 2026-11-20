@@ -12,7 +12,6 @@ const segmentLabels: Record<string, string> = {
   edit: 'Editar',
   administration: 'Administración',
   users: 'Usuarios',
-  systems: 'Sistemas',
 };
 
 export function BreadcrumbNav() {

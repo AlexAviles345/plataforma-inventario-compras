@@ -27,8 +27,6 @@ Login recibe `{email,password}` (y `system` opcional para clientes que requieran
 | `GET /api/auth/users` | ADMIN | Listado paginado de usuarios con sus asignaciones, sin hash de contraseña |
 | `GET /api/auth/users/{id}` | ADMIN | Consultar un usuario; inexistente 404 |
 | `PUT /api/auth/users/{id}` | ADMIN | Actualizar con expectedVersion; conflicto 409; desactivar con active:false |
-| `GET /api/auth/systems` | ADMIN | Consultar sistemas y TTL |
-| `PUT /api/auth/systems/{code}` | ADMIN | Cambiar TTL (1 a `JWT_MAX_TTL_SECONDS`) con expectedVersion para futuras emisiones |
 | `GET /api/auth/openapi.json` | Desarrollo | Schema con paths completos y servidor `/` |
 
 Códigos propios de Auth, además del [catálogo común](../../standards/api-responses.md): `401 INVALID_CREDENTIALS`, `401 INVALID_REFRESH_TOKEN`, `403 CSRF_VALIDATION_FAILED`, `409 EMAIL_ALREADY_EXISTS` y `409 LAST_ACTIVE_ADMIN`. Login y refresh no revelan la causa específica del rechazo. Las rutas ADMIN aceptan un token ADMIN de cualquiera de los dos sistemas y además comprueban en la base que el usuario siga activo y conserve ese rol. `PUT /api/auth/users/{id}` es parcial: conserva los campos omitidos y `assignments` reemplaza la lista completa.
