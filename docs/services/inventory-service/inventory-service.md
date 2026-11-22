@@ -4,7 +4,7 @@ Las respuestas JSON de negocio siguen el [estándar común](../../standards/api-
 
 Inventory valida íntegramente el [access token común](../../standards/jwt-and-sessions.md) y exige `system: "INVENTORY"`. Nunca interpreta ni acepta refresh tokens.
 
-Estado: base Spring Boot ejecutable con configuración, salud, Actuator, OpenAPI, Docker y pruebas. El dominio, MySQL, consumidor de usuarios y productor de productos siguen planificados. No consulta por HTTP a Auth/Compras.
+Estado: implementados MySQL con Flyway, validación JWT/RBAC local, los endpoints de productos y estadísticas, el historial de ajustes de stock y el productor de `ProductCreated`/`ProductUpdated` mediante outbox, con pruebas sobre MySQL y Kafka reales (ver el [README del servicio](../../../apps/backend/inventory-service/README.md)). Siguen pendientes el consumidor de usuarios hacia `UsersProjection`, su DLQ, `409 PROJECTION_NOT_READY` y las pruebas de recuperación desde snapshot. No consulta por HTTP a Auth/Compras.
 
 `Products`: UUID, sku único, name, unit `UNIT`, stockOnHand entero >=0, active, version, createdBy/updatedBy UUID y timestamps UTC. Stock inicial/correcciones explícitas las administra INVENTORY_MANAGER o ADMIN con versión esperada, motivo saneado de 1–500 caracteres y auditoría. El MVP no contabiliza automáticamente recepciones de compras. No permitir escrituras de stock basadas en el dato atrasado de una proyección ajena.
 
