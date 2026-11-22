@@ -5,18 +5,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.techdistribution.inventory.support.IntegrationTest;
+import com.techdistribution.inventory.support.Tokens;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.test.web.servlet.MockMvc;
 
-@SpringBootTest(properties = "debug=false")
-@AutoConfigureMockMvc
-class InventoryServiceApplicationTests {
-
-    @Autowired
-    private MockMvc mockMvc;
+class InventoryServiceApplicationTests extends IntegrationTest {
 
     @Test
     void contextLoads() {
@@ -38,8 +31,13 @@ class InventoryServiceApplicationTests {
     void exposesOpenApiAndSwaggerInDevelopment() throws Exception {
         mockMvc.perform(get("/api/inventory/openapi.json"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.info.title")
-                        .value("TechDistribution Inventory Service"));
+                .andExpect(jsonPath("$.info.title").value("TechDistribution Inventory Service"))
+                .andExpect(jsonPath("$.paths['/api/inventory/products'].get").exists())
+                .andExpect(jsonPath("$.paths['/api/inventory/products'].post").exists())
+                .andExpect(jsonPath("$.paths['/api/inventory/products/stats'].get").exists())
+                .andExpect(jsonPath("$.paths['/api/inventory/products/{id}'].put").exists())
+                .andExpect(jsonPath("$.paths['/api/inventory/products'].get.parameters[?(@.name == 'actor')]")
+                        .isEmpty());
 
         mockMvc.perform(get("/docs"))
                 .andExpect(status().is3xxRedirection())
@@ -47,10 +45,12 @@ class InventoryServiceApplicationTests {
     }
 
     @Test
-    void doesNotExposePlaceholderRoutes() throws Exception {
+    void unknownRoutesReturnTheErrorContract() throws Exception {
         mockMvc.perform(get("/"))
                 .andExpect(status().isNotFound());
-        mockMvc.perform(get("/api/inventory"))
-                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/inventory").header("Authorization", Tokens.bearer(Tokens.manager())))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("RESOURCE_NOT_FOUND"))
+                .andExpect(jsonPath("$.source").value("inventory"));
     }
 }
