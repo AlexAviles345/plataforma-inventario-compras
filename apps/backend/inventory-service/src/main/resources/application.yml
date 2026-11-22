@@ -42,6 +42,12 @@ spring:
         max.block.ms: 10000
         request.timeout.ms: 15000
         delivery.timeout.ms: 30000
+    consumer:
+      # Solo aplica a un grupo nuevo (bootstrap); después se continúa desde el offset confirmado.
+      auto-offset-reset: ${USERS_CONSUMER_AUTO_OFFSET_RESET:earliest}
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
 
 inventory:
   jwt:
@@ -57,6 +63,15 @@ inventory:
     lease-seconds: 60
     send-timeout-seconds: 35
     retention-days: 30
+  users-consumer:
+    enabled: ${USERS_CONSUMER_ENABLED:true}
+    topic: auth.users.events
+    group-id: inventory.auth-users.v1
+    dlq-topic: inventory.auth-users.dlq
+    # Reintentos de fallos transitorios: 1, 2, 4, 8 y 16 s más jitter; después, DLQ.
+    retry-delays-ms: 1000,2000,4000,8000,16000
+    max-jitter-ms: 1000
+    dlq-send-timeout-seconds: 10
 
 management:
   endpoints:

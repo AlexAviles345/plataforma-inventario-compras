@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.techdistribution.inventory.support.IntegrationTest;
+import com.techdistribution.inventory.support.KafkaTestcontainer;
 import com.techdistribution.inventory.support.Tokens;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -18,31 +19,15 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.testcontainers.kafka.ConfluentKafkaContainer;
 import tools.jackson.databind.JsonNode;
 
 /** Publicación real contra Kafka: orden por producto, key = aggregateId y estado PUBLISHED. */
-@Import(OutboxPublisherKafkaTests.KafkaTestcontainer.class)
+@Import(KafkaTestcontainer.class)
 class OutboxPublisherKafkaTests extends IntegrationTest {
 
     private static final String TOPIC = "inventory.products.events";
-
-    @TestConfiguration(proxyBeanMethods = false)
-    static class KafkaTestcontainer {
-
-        static final ConfluentKafkaContainer KAFKA = new ConfluentKafkaContainer("confluentinc/cp-kafka:7.4.0");
-
-        @Bean
-        @ServiceConnection
-        ConfluentKafkaContainer kafkaContainer() {
-            return KAFKA;
-        }
-    }
 
     @Autowired
     private OutboxPublisher publisher;

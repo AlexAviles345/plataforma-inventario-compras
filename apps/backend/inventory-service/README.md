@@ -1,8 +1,8 @@
 # Inventory Service
 
 Servicio de catálogo y existencias de TechDistribution. Spring Boot 4.1.2, Java 21,
-MySQL 8 con migraciones Flyway y publicación de eventos de producto hacia Kafka
-mediante outbox transaccional. Contrato: [`docs/services/inventory-service/inventory-service.md`](../../../docs/services/inventory-service/inventory-service.md).
+MySQL 8 con migraciones Flyway, publicación de eventos de producto hacia Kafka
+mediante outbox transaccional y proyección local de usuarios consumida desde Auth. Contrato: [`docs/services/inventory-service/inventory-service.md`](../../../docs/services/inventory-service/inventory-service.md).
 
 ## Requisitos
 
@@ -35,6 +35,8 @@ falta, es el valor de ejemplo o mide menos de 32 bytes.
 | `KAFKA_BOOTSTRAP_SERVERS` | 127.0.0.1:9092 | Broker de Kafka |
 | `OUTBOX_PUBLISHER_ENABLED` | true | Con `false` los eventos esperan en `outbox_events` |
 | `OUTBOX_POLL_INTERVAL_MS` | 1000 | Frecuencia del publicador |
+| `USERS_CONSUMER_ENABLED` | true | Consumidor de usuarios de Auth |
+| `USERS_CONSUMER_AUTO_OFFSET_RESET` | earliest | Solo para un grupo nuevo (bootstrap) |
 
 ## Migraciones
 
@@ -48,13 +50,18 @@ archivo `V<n>__descripcion.sql` nuevo. Hibernate no genera ni valida el esquema
 | V1 | `products` (SKU único, stock >= 0, versión) |
 | V2 | `stock_adjustments` (historial append-only de stock inicial y correcciones) |
 | V3 | `outbox_events` (eventos pendientes de publicar) |
-| V4 | `inbox_events`, `user_projections` (para el futuro consumidor de usuarios de Auth) |
+| V4 | `inbox_events`, `user_projections` (consumidor de usuarios de Auth) |
 
 ## Endpoints
 
 Todos exigen un access token del sistema `INVENTORY` con rol `ADMIN` o
 `INVENTORY_MANAGER`. El servicio vuelve a validar el JWT aunque el Gateway ya lo
-haya hecho y no confía en los headers `x-user-*`.
+haya hecho y no confía en los headers `x-user-*`. Además, igual que Purchases, el
+usuario debe existir en la proyección local, estar activo y tener una asignación
+INVENTORY: si aún no llegó su evento responde `409 PROJECTION_NOT_READY` con
+`Retry-After: 2`; si está inactivo o sin asignación, `403 FORBIDDEN`. Una
+desactivación en Auth corta el acceso al llegar el evento, sin esperar a que venza
+el token.
 
 | Método | Ruta | Resultado |
 | --- | --- | --- |
@@ -87,9 +94,27 @@ con key = `aggregateId`, productor idempotente y `acks=all`:
   jitter y `last_error` saneado; la API sigue funcionando;
 - las filas publicadas se purgan a los 30 días.
 
-Pendiente: consumidor de `auth.users.events` hacia `user_projections`, DLQ
-`inventory.auth-users.dlq`, `409 PROJECTION_NOT_READY` y pruebas de recuperación
-desde snapshot.
+## Proyección de usuarios
+
+El consumidor del grupo `inventory.auth-users.v1` corre dentro del propio servicio
+(no requiere otro proceso en `npm run dev`) y lee `auth.users.events`:
+
+- valida cada mensaje contra `contracts/events/user-event.schema.json` (campos
+  desconocidos incluidos) y que la key y `data.userId` coincidan con `aggregateId`;
+- en una transacción inserta el evento en `inbox_events` y actualiza
+  `user_projections` solo si la versión es mayor; los duplicados no cambian nada y
+  las versiones antiguas quedan registradas como `IGNORED_STALE`;
+- el offset se confirma por mensaje y solo después del commit en MySQL;
+- un fallo transitorio se reintenta bloqueando la partición (1, 2, 4, 8 y 16 s más
+  jitter); agotados los reintentos, o ante un error de schema, el mensaje original va
+  a `inventory.auth-users.dlq` con posición, error saneado, intentos y fecha;
+- si la DLQ no responde, el offset no se confirma y el mensaje se reprocesa.
+
+La primera vez que el grupo se conecta lee desde el inicio del tópico (retención de
+7 días), así recibe los usuarios ya creados.
+
+Pendiente: importador de snapshot de usuarios, exportador de snapshot de productos
+y pruebas de reconstrucción desde snapshot.
 
 ## Pruebas
 
@@ -100,5 +125,6 @@ desde snapshot.
 Requiere Docker: Testcontainers levanta `mysql:8.0` y `confluentinc/cp-kafka:7.4.0`.
 Cubren el contrato de respuestas y errores, validación JWT/RBAC, validaciones de
 entrada, control de versiones y concurrencia, auditoría de stock, paginación,
-estadísticas, el formato del evento contra `contracts/events` y el publicador con
-Kafka real y con Kafka caído.
+estadísticas, el formato del evento contra `contracts/events`, el publicador con
+Kafka real y con Kafka caído, y el consumidor de usuarios: schema, duplicados,
+versiones desordenadas, reintentos, DLQ, DLQ caída y acceso según la proyección.

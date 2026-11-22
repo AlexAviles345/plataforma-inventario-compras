@@ -2,6 +2,7 @@ package com.techdistribution.inventory.security;
 
 import com.techdistribution.inventory.common.api.ApiException;
 import com.techdistribution.inventory.common.web.ErrorResponseWriter;
+import com.techdistribution.inventory.projection.UserAccessVerifier;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,7 +23,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 /**
  * Protege todo {@code /api/inventory/**} salvo el schema OpenAPI. Vuelve a validar
  * el JWT aunque el Gateway ya lo haya hecho y nunca confía en headers x-user-*.
- * Solo ADMIN e INVENTORY_MANAGER con un token del sistema INVENTORY pasan.
+ * Solo ADMIN e INVENTORY_MANAGER con un token del sistema INVENTORY pasan, y el
+ * usuario debe estar activo en la proyección local (ver {@link UserAccessVerifier}).
  */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE + 10)
@@ -36,10 +38,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
     private final AccessTokenVerifier verifier;
+    private final UserAccessVerifier userAccess;
     private final ErrorResponseWriter errorWriter;
 
-    public JwtAuthenticationFilter(AccessTokenVerifier verifier, ErrorResponseWriter errorWriter) {
+    public JwtAuthenticationFilter(
+            AccessTokenVerifier verifier, UserAccessVerifier userAccess, ErrorResponseWriter errorWriter) {
         this.verifier = verifier;
+        this.userAccess = userAccess;
         this.errorWriter = errorWriter;
     }
 
@@ -83,6 +88,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (!ALLOWED_ROLES.contains(actor.role())) {
             throw new ApiException(HttpStatus.FORBIDDEN, "FORBIDDEN", "No tienes permiso para esta operación");
         }
+        userAccess.verify(actor);
         return actor;
     }
 
