@@ -101,6 +101,55 @@ public class UserEventValidator {
                 displayName, active.booleanValue(), assignments(data.get("assignments")));
     }
 
+    private static final Set<String> SNAPSHOT_REQUIRED = Set.of(
+            "userId", "email", "displayName", "active", "assignments", "entityVersion");
+    private static final Set<String> SNAPSHOT_OPTIONAL = Set.of("sourceEventId", "sourceEventAt");
+
+    /**
+     * Valida un elemento de snapshot de usuarios (mismo formato que acepta el
+     * importador de Purchases) y lo convierte en un evento equivalente.
+     */
+    public UserEvent validateSnapshotItem(JsonNode item) {
+        if (item == null || !item.isObject()) {
+            throw new PermanentEventException("Cada elemento del snapshot debe ser un objeto");
+        }
+        Set<String> present = new HashSet<>();
+        for (Map.Entry<String, JsonNode> property : item.properties()) {
+            present.add(property.getKey());
+        }
+        if (!present.containsAll(SNAPSHOT_REQUIRED)) {
+            throw new PermanentEventException("Faltan campos obligatorios: " + SNAPSHOT_REQUIRED);
+        }
+        for (String field : present) {
+            if (!SNAPSHOT_REQUIRED.contains(field) && !SNAPSHOT_OPTIONAL.contains(field)) {
+                throw new PermanentEventException("Campo no permitido en el snapshot: " + field);
+            }
+        }
+        UUID userId = uuid(item, "userId");
+        long entityVersion = integer(item, "entityVersion");
+        if (entityVersion < 1) {
+            throw new PermanentEventException("entityVersion debe ser mayor o igual a 1");
+        }
+        String email = text(item, "email").strip().toLowerCase(java.util.Locale.ROOT);
+        if (!EMAIL.matcher(email).matches()) {
+            throw new PermanentEventException("email no es válido");
+        }
+        String displayName = text(item, "displayName").strip();
+        int length = displayName.codePointCount(0, displayName.length());
+        if (length < 1 || length > 200) {
+            throw new PermanentEventException("displayName debe tener entre 1 y 200 caracteres");
+        }
+        JsonNode active = item.get("active");
+        if (!active.isBoolean()) {
+            throw new PermanentEventException("active debe ser booleano");
+        }
+        UUID sourceEventId = item.hasNonNull("sourceEventId") ? uuid(item, "sourceEventId") : UUID.randomUUID();
+        Instant sourceEventAt = item.hasNonNull("sourceEventAt") ? timestamp(item, "sourceEventAt")
+                : UtcTimestamps.now();
+        return new UserEvent(sourceEventId, "UserUpdated", userId, entityVersion, sourceEventAt,
+                UUID.randomUUID(), email, displayName, active.booleanValue(), assignments(item.get("assignments")));
+    }
+
     private static List<UserEvent.Assignment> assignments(JsonNode node) {
         if (!node.isArray() || node.size() > 2) {
             throw new PermanentEventException("data.assignments debe ser un arreglo de máximo 2 elementos");
@@ -161,7 +210,11 @@ public class UserEventValidator {
     }
 
     private static Instant timestamp(JsonNode node) {
-        String value = text(node, "timestamp");
+        return timestamp(node, "timestamp");
+    }
+
+    private static Instant timestamp(JsonNode node, String field) {
+        String value = text(node, field);
         if (!UTC_TIMESTAMP.matcher(value).matches()) {
             throw new PermanentEventException("timestamp debe ser una fecha UTC terminada en Z");
         }

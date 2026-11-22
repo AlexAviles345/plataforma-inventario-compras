@@ -113,8 +113,40 @@ El consumidor del grupo `inventory.auth-users.v1` corre dentro del propio servic
 La primera vez que el grupo se conecta lee desde el inicio del tópico (retención de
 7 días), así recibe los usuarios ya creados.
 
-Pendiente: importador de snapshot de usuarios, exportador de snapshot de productos
-y pruebas de reconstrucción desde snapshot.
+## Snapshots y recuperación
+
+Kafka retiene los eventos 7 días. Pasado ese plazo, reconstruir una proyección
+requiere un snapshot con watermarks (último offset incluido por partición). Ambos
+comandos se ejecutan **con Inventory detenido**; arrancan el servicio sin web, sin
+consumidor ni publicador automático, hacen la tarea y terminan.
+
+```bash
+# Local (Windows: mvnw.cmd). En Docker: java -jar app.jar <comando> --file=...
+./mvnw -q spring-boot:run -Dspring-boot.run.arguments="export-product-snapshot --file=productos.json"
+./mvnw -q spring-boot:run -Dspring-boot.run.arguments="import-user-snapshot --file=usuarios.json"
+```
+
+**`export-product-snapshot`** (Inventory es el dueño de los productos): publica
+primero todo lo pendiente del outbox (si Kafka no confirma, falla sin escribir el
+archivo), lee el catálogo en una sola transacción y captura el último offset de cada
+partición de `inventory.products.events`. Genera el formato que acepta Purchases:
+
+```bash
+python manage.py import_projection_snapshot --domain product --file productos.json
+```
+
+Después, el grupo `purchases.inventory-products.v1` debe continuar desde
+`watermark + 1` en cada partición.
+
+**`import-user-snapshot`**: carga un snapshot de usuarios de Auth con el mismo
+formato que Purchases (`{"items": [...], "watermarks": {"0": 41}}` o un arreglo).
+Valida el archivo completo antes de escribir (si un elemento es inválido no importa
+nada), aplica todo en una transacción y solo reemplaza versiones menores, así que
+repetirlo no cambia nada. Con watermarks deja el grupo `inventory.auth-users.v1` en
+`watermark + 1` para que, al arrancar, reproduzca solo los eventos posteriores; usa
+`--skip-offsets` para no moverlo. Auth todavía no tiene un exportador de usuarios.
+
+Códigos de salida: 0 correcto, 1 error (con mensaje), 2 uso incorrecto.
 
 ## Pruebas
 
@@ -128,3 +160,5 @@ entrada, control de versiones y concurrencia, auditoría de stock, paginación,
 estadísticas, el formato del evento contra `contracts/events`, el publicador con
 Kafka real y con Kafka caído, y el consumidor de usuarios: schema, duplicados,
 versiones desordenadas, reintentos, DLQ, DLQ caída y acceso según la proyección.
+Las de snapshots comprueban que snapshot + eventos posteriores al watermark
+reproducen exactamente el estado actual, tanto de productos como de usuarios.

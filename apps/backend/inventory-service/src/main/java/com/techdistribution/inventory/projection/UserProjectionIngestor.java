@@ -52,24 +52,35 @@ public class UserProjectionIngestor {
         }
 
         LocalDateTime now = toDb(UtcTimestamps.truncate(clock.instant()));
+        Outcome outcome = applySnapshot(event, now);
+        insertInbox(event, rawPayload, position, outcome, now);
+        return outcome;
+    }
+
+    /**
+     * Inserta o actualiza la proyección solo si la versión es mayor que la guardada.
+     * Lo usan el consumidor y el importador de snapshots; requiere transacción.
+     */
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY)
+    public Outcome applySnapshot(UserEvent event, LocalDateTime now) {
         Optional<Long> current = jdbc.sql(
                         "SELECT entity_version FROM user_projections WHERE user_id = UUID_TO_BIN(:id) FOR UPDATE")
                 .param("id", event.userId().toString())
                 .query(Long.class)
                 .optional();
-
-        Outcome outcome;
         if (current.isEmpty()) {
             insertProjection(event, now);
-            outcome = Outcome.APPLIED;
-        } else if (event.entityVersion() > current.get()) {
-            updateProjection(event, now);
-            outcome = Outcome.APPLIED;
-        } else {
-            outcome = Outcome.IGNORED_STALE;
+            return Outcome.APPLIED;
         }
-        insertInbox(event, rawPayload, position, outcome, now);
-        return outcome;
+        if (event.entityVersion() > current.get()) {
+            updateProjection(event, now);
+            return Outcome.APPLIED;
+        }
+        return Outcome.IGNORED_STALE;
+    }
+
+    public LocalDateTime now() {
+        return toDb(UtcTimestamps.truncate(clock.instant()));
     }
 
     private void insertProjection(UserEvent event, LocalDateTime now) {
