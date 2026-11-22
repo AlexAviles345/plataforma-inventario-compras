@@ -16,7 +16,7 @@ import {
  *   1. setup: instala dependencias y crea los .env que falten;
  *   2. doctor: verifica herramientas, Docker, configuración y puertos;
  *   3. infraestructura (con --with-infra): bases de datos y Kafka en Docker;
- *   4. migraciones de Auth y Purchases;
+ *   4. migraciones de Auth y Purchases (Inventory aplica las suyas con Flyway al arrancar);
  *   5. Gateway, Auth, Inventory, Purchases, consumidores y frontends en paralelo.
  * `npm run dev:check` ejecuta solo el diagnóstico (tools/doctor.mjs).
  */

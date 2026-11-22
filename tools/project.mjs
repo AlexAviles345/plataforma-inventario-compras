@@ -34,10 +34,11 @@ export const infrastructureServices = [
   { service: 'kafka', container: 'kafka-broker', port: 9092, label: 'Kafka' },
 ];
 
-/** Servicios Node cuyo `.env` comparte JWT_SECRET, issuer y audience. */
+/** Servicios cuyo `.env` comparte JWT_SECRET, issuer y audience. */
 export const jwtEnvironmentFiles = [
   { label: 'Gateway', directory: servicePaths.gateway },
   { label: 'Auth', directory: servicePaths.auth },
+  { label: 'Inventory', directory: servicePaths.inventory },
   { label: 'Purchases', directory: servicePaths.purchases },
 ];
 

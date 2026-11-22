@@ -7,8 +7,56 @@ debug: false
 spring:
   application:
     name: inventory-service
+  config:
+    # En desarrollo local las variables viven en .env (generado por npm run setup).
+    # Las variables de entorno reales siempre tienen prioridad sobre este archivo.
+    import: optional:file:.env[.properties]
   lifecycle:
     timeout-per-shutdown-phase: 20s
+  datasource:
+    url: jdbc:mysql://${DB_HOST:127.0.0.1}:${DB_PORT:3306}/${DB_NAME:inventory_db}?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&allowPublicKeyRetrieval=true&useSSL=false
+    username: ${DB_USER:inventory_user}
+    password: ${DB_PASSWORD:inventory_password}
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX:10}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:127.0.0.1:9092}
+    producer:
+      acks: all
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+        max.block.ms: 10000
+        request.timeout.ms: 15000
+        delivery.timeout.ms: 30000
+
+inventory:
+  jwt:
+    secret: ${JWT_SECRET:}
+    issuer: ${JWT_ISSUER:techdistribution-auth}
+    audience: ${JWT_AUDIENCE:techdistribution-api}
+    max-ttl-seconds: ${JWT_MAX_TTL_SECONDS:900}
+  outbox:
+    publisher-enabled: ${OUTBOX_PUBLISHER_ENABLED:true}
+    poll-interval-ms: ${OUTBOX_POLL_INTERVAL_MS:1000}
+    topic: inventory.products.events
+    batch-size: 100
+    lease-seconds: 60
+    send-timeout-seconds: 35
+    retention-days: 30
 
 management:
   endpoints:

@@ -3,3 +3,4 @@ target
 .idea
 .vscode
 application-local.yml
+.env

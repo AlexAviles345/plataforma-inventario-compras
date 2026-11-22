@@ -177,9 +177,9 @@ function configurationChecks() {
     }
     const secret = values.JWT_SECRET;
     if (isPlaceholder(secret)) {
-      checks.push(fail(`.env de ${label}`, 'JWT_SECRET es el valor de ejemplo', 'genera uno y cópialo igual en los tres .env'));
+      checks.push(fail(`.env de ${label}`, 'JWT_SECRET es el valor de ejemplo', 'genera uno y cópialo igual en todos los .env'));
     } else if (Buffer.byteLength(secret, 'utf8') < 32) {
-      checks.push(fail(`.env de ${label}`, 'JWT_SECRET tiene menos de 32 bytes', 'usa un secreto más largo en los tres .env'));
+      checks.push(fail(`.env de ${label}`, 'JWT_SECRET tiene menos de 32 bytes', 'usa un secreto más largo en todos los .env'));
     } else {
       checks.push(ok(`.env de ${label}`));
     }
