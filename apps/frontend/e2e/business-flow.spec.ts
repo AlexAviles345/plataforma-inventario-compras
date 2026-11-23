@@ -50,7 +50,9 @@ async function authenticate(page: Page) {
   await page
     .getByLabel('Correo electrónico')
     .fill('admin@techdistribution.test');
-  await page.getByLabel('Contraseña').fill('contract-test-password');
+  await page
+    .getByLabel('Contraseña', { exact: true })
+    .fill('contract-test-password');
   await page.getByRole('button', { name: 'Continuar' }).click();
 }
 

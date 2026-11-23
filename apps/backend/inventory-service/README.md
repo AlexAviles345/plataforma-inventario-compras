@@ -117,8 +117,10 @@ La primera vez que el grupo se conecta lee desde el inicio del tópico (retenci�
 
 Kafka retiene los eventos 7 días. Pasado ese plazo, reconstruir una proyección
 requiere un snapshot con watermarks (último offset incluido por partición). Ambos
-comandos se ejecutan **con Inventory detenido**; arrancan el servicio sin web, sin
-consumidor ni publicador automático, hacen la tarea y terminan.
+comandos se ejecutan **con todas las instancias de Inventory detenidas y el tráfico
+de escritura bloqueado**; arrancan el servicio sin web, sin consumidor ni publicador
+automático, hacen la tarea y terminan. La comprobación de leases evita competir con
+una publicación activa, pero no sustituye esta ventana de mantenimiento.
 
 ```bash
 # Local (Windows: mvnw.cmd). En Docker: java -jar app.jar <comando> --file=...

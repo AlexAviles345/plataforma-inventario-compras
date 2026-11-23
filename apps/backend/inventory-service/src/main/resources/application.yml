@@ -14,7 +14,8 @@ spring:
   lifecycle:
     timeout-per-shutdown-phase: 20s
   datasource:
-    url: jdbc:mysql://${DB_HOST:127.0.0.1}:${DB_PORT:3306}/${DB_NAME:inventory_db}?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&allowPublicKeyRetrieval=true&useSSL=false
+    # DB_URL permite exigir TLS o usar un proveedor administrado en producción.
+    url: ${DB_URL:jdbc:mysql://${DB_HOST:127.0.0.1}:${DB_PORT:3306}/${DB_NAME:inventory_db}?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&allowPublicKeyRetrieval=true&useSSL=false}
     username: ${DB_USER:inventory_user}
     password: ${DB_PASSWORD:inventory_password}
     hikari:

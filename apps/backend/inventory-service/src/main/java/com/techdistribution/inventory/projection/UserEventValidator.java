@@ -72,11 +72,12 @@ public class UserEventValidator {
         Instant occurredAt = timestamp(root);
         UUID correlationId = uuid(root, "correlationId");
 
-        if (partitionKey != null) {
-            if (!UUID_TEXT.matcher(partitionKey).matches()
-                    || !UUID.fromString(partitionKey).equals(aggregateId)) {
-                throw new PermanentEventException("La key de Kafka no coincide con aggregateId");
-            }
+        if (partitionKey == null || partitionKey.isBlank()) {
+            throw new PermanentEventException("La key de Kafka es obligatoria");
+        }
+        if (!UUID_TEXT.matcher(partitionKey).matches()
+                || !UUID.fromString(partitionKey).equals(aggregateId)) {
+            throw new PermanentEventException("La key de Kafka no coincide con aggregateId");
         }
 
         JsonNode data = root.get("data");

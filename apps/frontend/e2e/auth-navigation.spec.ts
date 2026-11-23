@@ -72,7 +72,9 @@ async function login(page: Page) {
   await page
     .getByLabel('Correo electrónico')
     .fill('admin@techdistribution.test');
-  await page.getByLabel('Contraseña').fill('contract-test-password');
+  await page
+    .getByLabel('Contraseña', { exact: true })
+    .fill('contract-test-password');
   await page.getByRole('button', { name: 'Continuar' }).click();
   await expect(page.getByRole('heading', { name: 'Resumen' })).toBeVisible();
 }
@@ -87,7 +89,9 @@ test('un administrador inicia sesión una vez y ve todas sus secciones autorizad
   await expect(
     page.getByRole('link', { name: 'Órdenes de compra' }),
   ).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Usuarios' })).toBeVisible();
+  await expect(
+    page.getByRole('link', { name: 'Usuarios', exact: true }),
+  ).toBeVisible();
 });
 
 test('un gestor de inventario no ve compras ni administración y recibe acceso denegado', async ({

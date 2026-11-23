@@ -35,7 +35,7 @@ Al reparar, reproducir con el `eventId` original usando un grupo/herramienta de 
 
 Durante los primeros siete días puede reconstruirse desde earliest si se verifica que todavía existe el historial completo. Tras vencer la retención no basta con resetear offsets.
 
-Para un bootstrap posterior, el propietario exporta un snapshot consistente con versiones y un watermark de offsets por partición, obtenido mediante un procedimiento que detiene brevemente escrituras y drena outbox antes de capturar ambos. Conservar el snapshot cifrado y con acceso limitado fuera de los contenedores. Un importador autorizado carga tablas nuevas, parte del watermark y reproduce eventos posteriores antes de intercambiar las proyecciones. La exportación/importación es administrativa; no introduce consultas HTTP entre dominios. Probar copia, recuperación e intercambio antes de considerar completo cada consumidor.
+Para un bootstrap posterior, el propietario exporta un snapshot consistente con versiones y un watermark de offsets por partición, obtenido dentro de una ventana de mantenimiento que bloquea el tráfico de escritura, detiene todas las instancias del propietario y drena el outbox antes de capturar ambos. Una comprobación de leases activos es una defensa adicional, no reemplaza el bloqueo de escritores. Conservar el snapshot cifrado y con acceso limitado fuera de los contenedores. Un importador autorizado carga tablas nuevas, parte del watermark y reproduce eventos posteriores antes de intercambiar las proyecciones. La exportación/importación es administrativa; no introduce consultas HTTP entre dominios. Probar copia, recuperación e intercambio antes de considerar completo cada consumidor.
 
 Las proyecciones solo permiten consultas locales, no conocimiento instantáneo de otros dominios. UUID inexistente o aún no replicado devuelve `409 PROJECTION_NOT_READY` y `Retry-After: 2`, sin afirmar 404 definitivo. El cliente reintenta con backoff hasta 30 segundos y luego solicita revisión; no reintenta indefinidamente. UUID mal formado: 400. Una entidad conocida inactiva produce el error de negocio específico, sin reintentar. Las operaciones idempotentes conservan su key durante esos reintentos.
 
@@ -48,4 +48,4 @@ Las proyecciones solo permiten consultas locales, no conocimiento instantáneo d
 - Producto/usuario recién creado puede estar pendiente; el API distingue ese caso de inactividad.
 - Reconstrucción posterior a retención desde snapshot + offsets produce el mismo estado final.
 
-Estas son obligaciones de los futuros servicios; actualmente el repositorio contiene el Gateway y el entorno local, no productores/consumidores implementados.
+Auth e Inventory implementan publicadores outbox; Inventory y Purchases implementan consumidores con inbox, control de versión, reintentos y DLQ. Los criterios anteriores son obligatorios para cualquier productor o consumidor nuevo y deben conservarse al evolucionar los existentes.

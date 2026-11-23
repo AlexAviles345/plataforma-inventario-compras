@@ -36,9 +36,21 @@ class UserEventValidatorTests {
     }
 
     @Test
-    void acceptsMissingKeyAndEmptyAssignments() {
+    void acceptsEmptyAssignmentsWithAValidKey() {
         Map<String, Object> event = UserEvents.event(userId, 1, false, List.of());
-        assertThat(validator.validate(JSON.writeValueAsString(event), null).assignments()).isEmpty();
+        assertThat(validator.validate(JSON.writeValueAsString(event), userId.toString()).assignments()).isEmpty();
+    }
+
+    @Test
+    void rejectsMissingOrBlankKey() {
+        String valid = JSON.writeValueAsString(UserEvents.event(userId, 1, true, List.of()));
+
+        assertThatThrownBy(() -> validator.validate(valid, null))
+                .isInstanceOf(PermanentEventException.class)
+                .hasMessageContaining("obligatoria");
+        assertThatThrownBy(() -> validator.validate(valid, " "))
+                .isInstanceOf(PermanentEventException.class)
+                .hasMessageContaining("obligatoria");
     }
 
     @Test
@@ -57,7 +69,8 @@ class UserEventValidatorTests {
         Map<String, Object> event = UserEvents.event(userId, 2, true, UserEvents.INVENTORY_MANAGER);
         mutation.accept(event);
         String raw = JSON.writeValueAsString(event);
-        assertThatThrownBy(() -> validator.validate(raw, null)).isInstanceOf(PermanentEventException.class);
+        assertThatThrownBy(() -> validator.validate(raw, userId.toString()))
+                .isInstanceOf(PermanentEventException.class);
     }
 
     static Stream<Arguments> invalidEvents() {
