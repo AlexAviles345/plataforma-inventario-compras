@@ -247,7 +247,7 @@ describe('Admin endpoints (HTTP)', () => {
   });
 
   describe('GET /api/auth/users', () => {
-    it('paginates by email and never exposes the hash', async () => {
+    it('paginates by email, excludes the authenticated admin and never exposes the hash', async () => {
       for (const name of ['carla', 'beto', 'diana'])
         await users.createUser(
           {
@@ -264,20 +264,17 @@ describe('Admin endpoints (HTTP)', () => {
       expect(body(first).meta).toEqual({
         page: 1,
         limit: 2,
-        total: 5,
-        totalPages: 3,
+        total: 4,
+        totalPages: 2,
       });
       expect(body<UserBody[]>(first).data.map((u) => u.email)).toEqual([
-        'admin@techdistribution.com',
         'beto@techdistribution.com',
-      ]);
-      expect(body<UserBody[]>(first).data[0].assignments).toEqual([
-        { system: 'INVENTORY', role: 'ADMIN' },
-        { system: 'PURCHASES', role: 'ADMIN' },
+        'carla@techdistribution.com',
       ]);
 
-      const last = await as(adminToken).get('/api/auth/users?page=3&limit=2');
+      const last = await as(adminToken).get('/api/auth/users?page=2&limit=2');
       expect(body<UserBody[]>(last).data.map((u) => u.email)).toEqual([
+        'diana@techdistribution.com',
         'gestor@techdistribution.com',
       ]);
       expect(JSON.stringify([first.body, last.body])).not.toMatch(

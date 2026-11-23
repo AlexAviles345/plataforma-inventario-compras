@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
-import { DataSource, EntityManager, In, QueryFailedError } from 'typeorm';
+import { DataSource, EntityManager, In, Not, QueryFailedError } from 'typeorm';
 import type { SystemCode } from '../access/access-matrix';
 import { AuditAction, recordAudit } from '../audit/audit-log';
 import { AuthDomainError, ErrorCode, type ErrorDetail } from '../common/errors';
@@ -176,13 +176,15 @@ export class UsersService {
     private readonly hasher: PasswordHasher,
   ) {}
 
-  /** Página ordenada por email; las asignaciones se cargan en una consulta. */
+  /** Página ordenada por email; excluye al administrador en sesión si se indica. */
   async listUsers(
     page: number,
     limit: number,
+    excludeUserId?: string,
   ): Promise<{ items: UserView[]; total: number }> {
     const manager = this.dataSource.manager;
     const [users, total] = await manager.findAndCount(UserEntity, {
+      where: excludeUserId ? { id: Not(excludeUserId) } : undefined,
       order: { email: 'ASC' },
       skip: (page - 1) * limit,
       take: limit,
@@ -451,6 +453,13 @@ export class UsersService {
         const staysActiveAdmin = next.active && hasAdminRole(next.assignments);
         if (wasActiveAdmin && !staysActiveAdmin)
           await this.ensureAnotherActiveAdmin(manager, id);
+
+        if (actor.actorUserId !== null && actor.actorUserId === id)
+          throw new AuthDomainError(
+            403,
+            ErrorCode.FORBIDDEN,
+            'No puedes modificar tu propia cuenta desde la administración de usuarios',
+          );
 
         await manager.update(
           UserEntity,

@@ -417,6 +417,42 @@ describe('UsersService (PostgreSQL)', () => {
         'password',
       ]);
     });
+
+    it('forbids an admin from modifying their own user account', async () => {
+      const selfAdmin = await users.createUser(
+        input({
+          email: 'self-admin@techdistribution.com',
+          assignments: [
+            { system: 'INVENTORY', role: 'ADMIN' },
+            { system: 'PURCHASES', role: 'ADMIN' },
+          ],
+        }),
+        ACTOR,
+      );
+
+      await expectDomainError(
+        users.updateUser(
+          selfAdmin.id,
+          {
+            expectedVersion: 1,
+            assignments: [{ system: 'INVENTORY', role: 'ADMIN' }],
+          },
+          { actorUserId: selfAdmin.id },
+        ),
+        403,
+        'FORBIDDEN',
+      );
+
+      await expectDomainError(
+        users.updateUser(
+          selfAdmin.id,
+          { expectedVersion: 1, displayName: 'Intento propio' },
+          { actorUserId: selfAdmin.id },
+        ),
+        403,
+        'FORBIDDEN',
+      );
+    });
   });
 
   describe('last active ADMIN protection', () => {

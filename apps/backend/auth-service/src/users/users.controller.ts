@@ -114,10 +114,14 @@ export class UsersController {
     [400, 'VALIDATION_ERROR', 'La solicitud contiene datos inválidos'],
     ...ADMIN_AUTH_ERRORS,
   )
-  async list(@Query() query: PaginationQueryDto) {
+  async list(
+    @Query() query: PaginationQueryDto,
+    @CurrentPrincipal() principal: Principal,
+  ) {
     const { items, total } = await this.users.listUsers(
       query.page,
       query.limit,
+      principal.userId,
     );
     return new PaginatedResult(items, query.page, query.limit, total);
   }

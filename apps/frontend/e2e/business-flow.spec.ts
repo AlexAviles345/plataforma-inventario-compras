@@ -316,7 +316,7 @@ test('producto → orden → snapshot histórico → cancelación', async ({
   await page.getByRole('link', { name: 'Productos' }).click();
   await page.getByRole('button', { name: 'Editar' }).click();
   await page.getByLabel('Nombre').fill('Laptop Business Pro');
-  await page.getByRole('button', { name: 'Guardar versión' }).click();
+  await page.getByRole('button', { name: 'Guardar cambios' }).click();
   await expect(page.getByText('Laptop Business Pro')).toBeVisible();
 
   await page.getByRole('link', { name: 'Órdenes de compra' }).click();
