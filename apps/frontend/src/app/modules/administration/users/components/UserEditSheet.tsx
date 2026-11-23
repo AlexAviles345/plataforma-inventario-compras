@@ -60,42 +60,11 @@ function UserEditForm({
   return (
     <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col" noValidate>
       <div className="flex-1 space-y-5 overflow-y-auto px-4">
-        <div className="grid gap-4 sm:grid-cols-[1fr_8rem]">
-          <div className="space-y-2">
-            <Label htmlFor="editUserId">Identificador del usuario</Label>
-            <Input
-              id="editUserId"
-              className="font-mono text-xs"
-              readOnly={Boolean(user)}
-              disabled={disabled}
-              aria-invalid={Boolean(form.formState.errors.userId)}
-              {...form.register('userId')}
-            />
-            {form.formState.errors.userId && (
-              <p className="text-sm text-destructive">
-                {form.formState.errors.userId.message}
-              </p>
-            )}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="editUserVersion">Versión</Label>
-            <Input
-              id="editUserVersion"
-              type="number"
-              min={1}
-              step={1}
-              readOnly={Boolean(user)}
-              disabled={disabled}
-              aria-invalid={Boolean(form.formState.errors.expectedVersion)}
-              {...form.register('expectedVersion', { valueAsNumber: true })}
-            />
-            {form.formState.errors.expectedVersion && (
-              <p className="text-sm text-destructive">
-                {form.formState.errors.expectedVersion.message}
-              </p>
-            )}
-          </div>
-        </div>
+        <input type="hidden" {...form.register('userId')} />
+        <input
+          type="hidden"
+          {...form.register('expectedVersion', { valueAsNumber: true })}
+        />
 
         <div className="space-y-2">
           <Label htmlFor="editUserEmail">Correo</Label>
@@ -192,7 +161,7 @@ function UserEditForm({
           <span>
             <span className="block text-sm font-medium">Usuario activo</span>
             <span className="block text-xs text-muted-foreground">
-              Un usuario inactivo no puede volver a autenticarse.
+              Un usuario inactivo no podrá iniciar sesión.
             </span>
           </span>
           <input
@@ -206,14 +175,13 @@ function UserEditForm({
         {!active && hasAdminRole && (
           <div className="flex gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100">
             <AlertTriangle className="size-5 shrink-0" />
-            Auth rechazará la operación si este usuario es el último
-            administrador activo.
+            No es posible desactivar al último administrador activo.
           </div>
         )}
         {versionConflict && (
           <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100">
-            El usuario cambió en otra sesión. Vuelve a cargar sus datos y su
-            versión antes de reintentar.
+            El usuario fue modificado en otra sesión. Cierra este panel y vuelve
+            a abrirlo para cargar sus datos más recientes.
           </div>
         )}
         {mutation.error && <ApiErrorAlert error={mutation.error} />}

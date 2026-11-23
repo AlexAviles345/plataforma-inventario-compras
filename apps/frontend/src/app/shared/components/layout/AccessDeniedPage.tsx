@@ -11,7 +11,7 @@ export function AccessDeniedPage() {
       </span>
       <h1 className="mt-6 text-3xl font-semibold">Acceso no autorizado</h1>
       <p className="mt-3 text-muted-foreground">
-        Tu sesión es válida, pero el rol activo no permite abrir esta sección.
+        No cuentas con permisos para acceder a esta sección.
       </p>
       <Button asChild className="mt-6">
         <Link to="/dashboard">Volver al resumen</Link>

@@ -57,15 +57,15 @@ export function UserSystemAssignmentsField({
   return (
     <fieldset className="space-y-3">
       <div>
-        <legend className="font-medium">Asignaciones por sistema</legend>
+        <legend className="font-medium">Permisos por área</legend>
         <p className="text-xs text-muted-foreground">
-          Cada usuario puede tener como máximo un rol por sistema.
+          Selecciona el nivel de acceso del usuario en cada área operativa.
         </p>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-2 rounded-xl border p-4">
           <Label className="flex items-center gap-2">
-            <Boxes className="size-4 text-teal-600" /> INVENTORY
+            <Boxes className="size-4 text-teal-600" /> Inventario
           </Label>
           <Select
             value={inventoryRole}
@@ -91,7 +91,7 @@ export function UserSystemAssignmentsField({
         </div>
         <div className="space-y-2 rounded-xl border p-4">
           <Label className="flex items-center gap-2">
-            <ShoppingCart className="size-4 text-blue-600" /> PURCHASES
+            <ShoppingCart className="size-4 text-blue-600" /> Compras
           </Label>
           <Select
             value={purchasesRole}
@@ -117,7 +117,7 @@ export function UserSystemAssignmentsField({
 
       <div className="rounded-xl border border-dashed bg-muted/30 px-3.5 py-2.5">
         <p className="text-xs font-medium text-muted-foreground">
-          Secciones que verá en la barra lateral dinámica:
+          Módulos habilitados para este usuario:
         </p>
         {sidebarPreview.length > 0 ? (
           <div className="mt-2 flex flex-wrap gap-1.5">
@@ -138,7 +138,7 @@ export function UserSystemAssignmentsField({
           </div>
         ) : (
           <p className="mt-1 text-xs text-muted-foreground">
-            Ninguna — selecciona al menos un sistema para habilitar el acceso.
+            Ninguno — asigna acceso en al menos un área.
           </p>
         )}
       </div>

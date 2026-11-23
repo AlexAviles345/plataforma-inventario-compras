@@ -51,10 +51,10 @@ export function OrderSubmitConfirmDialog({
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Enviar y congelar orden</DialogTitle>
+          <DialogTitle>Enviar orden de compra</DialogTitle>
           <DialogDescription>
-            La orden cambiará a SUBMITTED y sus líneas ya no podrán editarse. Se
-            enviará la versión {order.version}.
+            Una vez enviada, la orden quedará confirmada y sus líneas ya no
+            podrán modificarse.
           </DialogDescription>
         </DialogHeader>
         <VersionConflictAlert error={mutation.error} onReload={onReload} />

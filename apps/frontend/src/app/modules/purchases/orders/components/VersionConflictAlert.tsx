@@ -30,7 +30,7 @@ export function VersionConflictAlert({
         className="mt-3"
         onClick={onReload}
       >
-        <RefreshCw /> Recargar versión actual
+        <RefreshCw /> Actualizar datos
       </Button>
     </div>
   );

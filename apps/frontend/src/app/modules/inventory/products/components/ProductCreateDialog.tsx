@@ -36,7 +36,7 @@ export function ProductCreateDialog() {
           </div>
           <DialogTitle>Registrar producto</DialogTitle>
           <DialogDescription>
-            El producto se creará activo y su unidad será UNIT.
+            Ingresa los datos del producto para darlo de alta en el catálogo.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4" noValidate>

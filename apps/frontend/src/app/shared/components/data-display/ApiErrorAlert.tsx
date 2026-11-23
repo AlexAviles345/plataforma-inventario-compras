@@ -1,7 +1,5 @@
 import { AlertTriangle } from 'lucide-react';
 
-import { GatewayApiError } from '@shared/services/gateway-api-error';
-
 interface ApiErrorAlertProps {
   error: unknown;
   title?: string;
@@ -12,8 +10,6 @@ export function ApiErrorAlert({
   title = 'No fue posible completar la operación',
 }: ApiErrorAlertProps) {
   const message = error instanceof Error ? error.message : 'Error inesperado';
-  const requestId =
-    error instanceof GatewayApiError ? error.requestId : undefined;
 
   return (
     <div
@@ -25,11 +21,6 @@ export function ApiErrorAlert({
         <div>
           <p className="font-semibold text-destructive">{title}</p>
           <p className="mt-1 text-muted-foreground">{message}</p>
-          {requestId && (
-            <p className="mt-2 font-mono text-xs text-muted-foreground">
-              Solicitud: {requestId}
-            </p>
-          )}
         </div>
       </div>
     </div>

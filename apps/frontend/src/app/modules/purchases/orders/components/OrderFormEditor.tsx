@@ -46,7 +46,7 @@ export function OrderFormEditor({ order }: OrderFormEditorProps) {
           </h1>
           <p className="mt-2 text-muted-foreground">
             {order
-              ? `Editando la versión ${order.version} mientras permanezca en borrador.`
+              ? 'Modifica los datos del proveedor o los productos mientras la orden permanezca en borrador.'
               : 'La orden se guardará inicialmente en estado borrador.'}
           </p>
         </div>
@@ -58,8 +58,7 @@ export function OrderFormEditor({ order }: OrderFormEditorProps) {
 
       {restoredDraft && (
         <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-100">
-          Recuperamos el borrador guardado en esta pestaña y su clave de
-          idempotencia.
+          Se recuperó el borrador de la orden en la que estabas trabajando.
         </div>
       )}
 
@@ -69,7 +68,7 @@ export function OrderFormEditor({ order }: OrderFormEditorProps) {
         <CardHeader>
           <CardTitle>Datos generales</CardTitle>
           <CardDescription>
-            El solicitante se obtiene del JWT y no puede modificarse.
+            La orden quedará registrada a nombre de tu cuenta.
           </CardDescription>
         </CardHeader>
         <CardContent>

@@ -23,6 +23,12 @@ const SYSTEM_LABELS: Record<SystemCode, string> = {
   PURCHASES: 'Compras',
 };
 
+const ROLE_LABELS: Record<string, string> = {
+  ADMIN: 'Administrador',
+  INVENTORY_MANAGER: 'Gestor de inventario',
+  PURCHASES_AGENT: 'Agente de compras',
+};
+
 interface DynamicSidebarProps {
   onNavigate?: () => void;
 }
@@ -68,7 +74,11 @@ export function DynamicSidebar({ onNavigate }: DynamicSidebarProps) {
 
   const displaySession = activeSession ?? validSessions[0];
   const displayRoles = Array.from(
-    new Set(validSessions.map((session) => session.claims.role)),
+    new Set(
+      validSessions.map(
+        (session) => ROLE_LABELS[session.claims.role] ?? session.claims.role,
+      ),
+    ),
   ).join(' · ');
 
   const confirmSignOut = async () => {
@@ -131,7 +141,11 @@ export function DynamicSidebar({ onNavigate }: DynamicSidebarProps) {
             {displaySession?.claims.email}
           </p>
           <p className="text-[11px] text-slate-400">
-            {displayRoles || displaySession?.claims.role}
+            {displayRoles ||
+              (displaySession
+                ? (ROLE_LABELS[displaySession.claims.role] ??
+                  displaySession.claims.role)
+                : '')}
           </p>
           {validSessions.length > 0 && (
             <div className="flex flex-wrap gap-1 pt-0.5">

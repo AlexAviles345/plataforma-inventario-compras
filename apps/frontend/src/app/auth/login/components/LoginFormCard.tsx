@@ -8,7 +8,6 @@ import {
   Mail,
 } from 'lucide-react';
 
-import { GatewayApiError } from '@shared/services/gateway-api-error';
 import { Button } from '@shared/components/ui/button';
 import {
   Card,
@@ -32,8 +31,6 @@ function LoginError({ error }: { error: unknown }) {
     error instanceof Error
       ? error.message
       : 'No fue posible iniciar sesión. Intenta nuevamente.';
-  const requestId =
-    error instanceof GatewayApiError ? error.requestId : undefined;
 
   return (
     <div
@@ -41,11 +38,6 @@ function LoginError({ error }: { error: unknown }) {
       className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
     >
       <p className="font-medium">{message}</p>
-      {requestId && (
-        <p className="mt-1 font-mono text-xs opacity-80">
-          Solicitud: {requestId}
-        </p>
-      )}
     </div>
   );
 }
@@ -63,8 +55,7 @@ export function LoginFormCard({ onAuthenticated }: LoginFormCardProps) {
         </div>
         <CardTitle className="text-2xl">Inicia sesión</CardTitle>
         <CardDescription>
-          Ingresa tus credenciales para acceder a los módulos autorizados para
-          tu rol.
+          Ingresa tu correo y contraseña para continuar.
         </CardDescription>
       </CardHeader>
       <CardContent>

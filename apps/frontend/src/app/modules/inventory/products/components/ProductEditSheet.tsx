@@ -141,8 +141,8 @@ function ProductEditForm({
             <div>
               <p className="font-medium">El producto cambió en otra sesión.</p>
               <p className="mt-1">
-                Cierra esta edición y vuelve a abrir el producto para trabajar
-                con la versión más reciente.
+                Cierra este panel y vuelve a abrir el producto para trabajar con
+                los datos más recientes.
               </p>
             </div>
           </div>
@@ -160,7 +160,7 @@ function ProductEditForm({
         </Button>
         <Button type="submit" disabled={disabled}>
           {disabled ? <LoaderCircle className="animate-spin" /> : <Save />}
-          {disabled ? 'Guardando…' : 'Guardar versión'}
+          {disabled ? 'Guardando…' : 'Guardar cambios'}
         </Button>
       </SheetFooter>
     </form>
@@ -178,7 +178,7 @@ export function ProductEditSheet({
         <SheetHeader>
           <SheetTitle>Editar producto</SheetTitle>
           <SheetDescription>
-            {product ? `${product.sku} · versión ${product.version}` : ''}
+            {product ? `${product.sku} · ${product.name}` : ''}
           </SheetDescription>
         </SheetHeader>
         {product && (

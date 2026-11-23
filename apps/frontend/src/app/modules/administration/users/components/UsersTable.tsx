@@ -20,6 +20,11 @@ const ROLE_LABELS = {
   PURCHASES_AGENT: 'Agente de compras',
 } as const;
 
+const SYSTEM_LABELS = {
+  INVENTORY: 'Inventario',
+  PURCHASES: 'Compras',
+} as const;
+
 export function UsersTable({
   users,
   onEdit,
@@ -34,9 +39,8 @@ export function UsersTable({
           <TableHeader>
             <TableRow>
               <TableHead>Usuario</TableHead>
-              <TableHead>Asignaciones</TableHead>
+              <TableHead>Permisos</TableHead>
               <TableHead>Estado</TableHead>
-              <TableHead>Versión</TableHead>
               <TableHead>Actualizado</TableHead>
               <TableHead />
             </TableRow>
@@ -47,15 +51,13 @@ export function UsersTable({
                 <TableCell>
                   <p className="font-medium">{user.displayName}</p>
                   <p className="text-xs text-muted-foreground">{user.email}</p>
-                  <p className="mt-1 font-mono text-[10px] text-muted-foreground">
-                    {user.id}
-                  </p>
                 </TableCell>
                 <TableCell>
                   <div className="flex min-w-52 flex-wrap gap-1.5">
                     {user.assignments.map((assignment) => (
                       <Badge key={assignment.system} variant="secondary">
-                        {assignment.system} · {ROLE_LABELS[assignment.role]}
+                        {SYSTEM_LABELS[assignment.system] ?? assignment.system}{' '}
+                        · {ROLE_LABELS[assignment.role]}
                       </Badge>
                     ))}
                   </div>
@@ -71,7 +73,6 @@ export function UsersTable({
                     </Badge>
                   )}
                 </TableCell>
-                <TableCell>{user.version}</TableCell>
                 <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
                   {formatUtcDateTime(user.updatedAt)}
                 </TableCell>

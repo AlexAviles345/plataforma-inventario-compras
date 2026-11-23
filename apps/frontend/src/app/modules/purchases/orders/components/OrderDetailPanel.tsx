@@ -61,8 +61,8 @@ export function OrderDetailPanel({ order }: { order: PurchaseOrder }) {
         </Card>
         <Card className="py-4">
           <CardContent className="px-4">
-            <p className="text-xs text-muted-foreground">Versión</p>
-            <p className="mt-1 font-semibold">{order.version}</p>
+            <p className="text-xs text-muted-foreground">Productos incluidos</p>
+            <p className="mt-1 font-semibold">{order.lines.length} línea(s)</p>
           </CardContent>
         </Card>
       </div>
@@ -76,7 +76,7 @@ export function OrderDetailPanel({ order }: { order: PurchaseOrder }) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Producto histórico</TableHead>
+                  <TableHead>Producto registrado</TableHead>
                   <TableHead className="text-right">Cantidad</TableHead>
                   <TableHead className="text-right">Precio</TableHead>
                   <TableHead className="text-right">Importe</TableHead>
@@ -91,10 +91,7 @@ export function OrderDetailPanel({ order }: { order: PurchaseOrder }) {
                       <TableCell>
                         <p className="font-medium">{line.nameSnapshot}</p>
                         <p className="text-xs text-muted-foreground">
-                          {line.skuSnapshot} · {line.unit}
-                        </p>
-                        <p className="mt-1 font-mono text-[11px] text-muted-foreground">
-                          {line.productId}
+                          SKU: {line.skuSnapshot}
                         </p>
                       </TableCell>
                       <TableCell className="text-right">
@@ -160,7 +157,7 @@ export function OrderDetailPanel({ order }: { order: PurchaseOrder }) {
           <p className="mt-1">{formatUtcDateTime(order.updatedAt)}</p>
         </div>
         <div>
-          <p className="text-xs text-muted-foreground">Último actor</p>
+          <p className="text-xs text-muted-foreground">Modificado por</p>
           <p className="mt-1 break-all font-mono text-xs">
             {order.lastModifiedBy}
           </p>

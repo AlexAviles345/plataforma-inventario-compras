@@ -30,9 +30,9 @@ export function OrderHistorySheet({ orderId }: { orderId: string }) {
       </SheetTrigger>
       <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
         <SheetHeader>
-          <SheetTitle>Historial auditable</SheetTitle>
+          <SheetTitle>Historial de la orden</SheetTitle>
           <SheetDescription>
-            Versiones confirmadas, actor y requestId de cada cambio.
+            Registro cronológico de movimientos y actualizaciones.
           </SheetDescription>
         </SheetHeader>
         <div className="space-y-4 px-4 pb-6">
@@ -49,9 +49,6 @@ export function OrderHistorySheet({ orderId }: { orderId: string }) {
                 <div>
                   <div className="flex items-center gap-2">
                     <StatusBadge status={entry.action} />
-                    <span className="text-xs text-muted-foreground">
-                      Versión {entry.orderVersion}
-                    </span>
                   </div>
                   <p className="mt-3 flex items-center gap-2 text-sm">
                     <Clock3 className="size-4 text-muted-foreground" />
@@ -64,22 +61,10 @@ export function OrderHistorySheet({ orderId }: { orderId: string }) {
               </div>
               <dl className="mt-4 space-y-2 text-xs">
                 <div>
-                  <dt className="text-muted-foreground">Actor</dt>
+                  <dt className="text-muted-foreground">Realizado por</dt>
                   <dd className="break-all font-mono">{entry.actorUserId}</dd>
                 </div>
-                <div>
-                  <dt className="text-muted-foreground">Request ID</dt>
-                  <dd className="break-all font-mono">{entry.requestId}</dd>
-                </div>
               </dl>
-              <details className="mt-4 rounded-lg bg-muted/60 p-3 text-xs">
-                <summary className="cursor-pointer font-medium">
-                  Resumen de cambios
-                </summary>
-                <pre className="mt-2 overflow-x-auto whitespace-pre-wrap text-[11px] text-muted-foreground">
-                  {JSON.stringify(entry.changes, null, 2)}
-                </pre>
-              </details>
             </article>
           ))}
         </div>

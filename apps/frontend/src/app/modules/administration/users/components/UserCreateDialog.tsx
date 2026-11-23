@@ -35,8 +35,7 @@ export function UserCreateDialog() {
         <DialogHeader>
           <DialogTitle>Crear usuario</DialogTitle>
           <DialogDescription>
-            Registra la identidad, contraseña inicial y acceso explícito a cada
-            sistema.
+            Completa los datos de la cuenta y asigna los permisos por área.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4" noValidate>
@@ -109,8 +108,7 @@ export function UserCreateDialog() {
               </p>
             ) : (
               <p className="text-xs text-muted-foreground">
-                Usa al menos 12 caracteres. La contraseña nunca se conserva en
-                el navegador después de enviar el formulario.
+                Debe contener al menos 12 caracteres.
               </p>
             )}
           </div>

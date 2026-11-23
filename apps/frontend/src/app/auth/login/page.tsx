@@ -28,10 +28,6 @@ export function LoginPage() {
         {developmentTokenAccessEnabled && (
           <DevelopmentTokenAccess onAuthenticated={onAuthenticated} />
         )}
-        <p className="text-center text-xs leading-5 text-muted-foreground">
-          Por seguridad, deberás iniciar sesión nuevamente cuando tu sesión
-          expire.
-        </p>
       </div>
     </AuthLayout>
   );

@@ -40,13 +40,8 @@ export function ProductsTable({
       }),
       columnHelper.accessor('name', {
         header: 'Producto',
-        cell: ({ getValue, row }) => (
-          <div>
-            <p className="max-w-72 truncate font-medium">{getValue()}</p>
-            <p className="font-mono text-[11px] text-muted-foreground">
-              {row.original.id}
-            </p>
-          </div>
+        cell: ({ getValue }) => (
+          <p className="max-w-72 truncate font-medium">{getValue()}</p>
         ),
       }),
       columnHelper.accessor('stockOnHand', {
@@ -67,10 +62,6 @@ export function ProductsTable({
           ) : (
             <Badge variant="secondary">Inactivo</Badge>
           ),
-      }),
-      columnHelper.accessor('version', {
-        header: 'Versión',
-        cell: ({ getValue }) => getValue(),
       }),
       columnHelper.accessor('updatedAt', {
         header: 'Actualizado',
