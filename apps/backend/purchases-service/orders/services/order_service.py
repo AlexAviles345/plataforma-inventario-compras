@@ -256,6 +256,24 @@ def get_purchase_orders_stats(*, actor: AuthenticatedActor) -> dict[str, Any]:
         ),
     )
 
+    supplier_rows = list(
+        queryset.exclude(status=OrderStatus.CANCELLED)
+        .values("supplier_name")
+        .annotate(
+            order_count=Count("id"),
+            total_amount=Coalesce(Sum("total_amount"), Decimal("0.00")),
+        )
+        .order_by("-total_amount", "-order_count", "supplier_name")[:5]
+    )
+    top_suppliers = [
+        {
+            "supplierName": row["supplier_name"],
+            "orderCount": int(row["order_count"] or 0),
+            "totalAmount": format_decimal_money(row["total_amount"]),
+        }
+        for row in supplier_rows
+    ]
+
     return {
         "totalOrders": int(agg["total_orders"] or 0),
         "draftOrders": int(agg["draft_orders"] or 0),
@@ -264,6 +282,7 @@ def get_purchase_orders_stats(*, actor: AuthenticatedActor) -> dict[str, Any]:
         "submittedAmount": format_decimal_money(agg["submitted_amount"]),
         "draftAmount": format_decimal_money(agg["draft_amount"]),
         "currency": OrderCurrency.MXN,
+        "topSuppliers": top_suppliers,
     }
 
 

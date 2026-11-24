@@ -42,10 +42,19 @@ export interface UpdateProductInput {
   reason?: string;
 }
 
+export interface ProductStockStatItem {
+  id: string;
+  sku: string;
+  name: string;
+  stockOnHand: number;
+}
+
 export interface InventoryProductsStats {
   totalProducts: number;
   activeProducts: number;
   inactiveProducts: number;
   outOfStockProducts: number;
   totalUnitsOnHand: number;
+  lowStockProducts?: ProductStockStatItem[];
+  topStockProducts?: ProductStockStatItem[];
 }

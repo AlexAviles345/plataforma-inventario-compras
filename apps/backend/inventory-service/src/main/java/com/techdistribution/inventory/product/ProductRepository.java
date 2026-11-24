@@ -1,8 +1,10 @@
 package com.techdistribution.inventory.product;
 
 import jakarta.persistence.LockModeType;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Lock;
@@ -21,7 +23,7 @@ public interface ProductRepository extends JpaRepository<Product, UUID>, JpaSpec
     Optional<Product> findByIdForUpdate(@Param("id") UUID id);
 
     @Query("""
-            select new com.techdistribution.inventory.product.ProductStats(
+            select new com.techdistribution.inventory.product.ProductStats$Totals(
                 count(p),
                 coalesce(sum(case when p.active = true then 1 else 0 end), 0),
                 coalesce(sum(case when p.active = false then 1 else 0 end), 0),
@@ -29,5 +31,7 @@ public interface ProductRepository extends JpaRepository<Product, UUID>, JpaSpec
                 coalesce(sum(p.stockOnHand), 0))
             from Product p
             """)
-    ProductStats computeStats();
+    ProductStats.Totals computeTotals();
+
+    List<Product> findByActiveTrue(Pageable pageable);
 }

@@ -61,7 +61,27 @@ public class ProductService {
 
     @Transactional(readOnly = true)
     public ProductStats stats() {
-        return products.computeStats();
+        ProductStats.Totals totals = products.computeTotals();
+        List<ProductStats.StockItem> lowStock = products
+                .findByActiveTrue(PageRequest.of(
+                        0, 5, Sort.by(Sort.Order.asc("stockOnHand"), Sort.Order.asc("name"), Sort.Order.asc("id"))))
+                .stream()
+                .map(ProductStats.StockItem::from)
+                .toList();
+        List<ProductStats.StockItem> topStock = products
+                .findByActiveTrue(PageRequest.of(
+                        0, 5, Sort.by(Sort.Order.desc("stockOnHand"), Sort.Order.asc("name"), Sort.Order.asc("id"))))
+                .stream()
+                .map(ProductStats.StockItem::from)
+                .toList();
+        return new ProductStats(
+                totals.totalProducts(),
+                totals.activeProducts(),
+                totals.inactiveProducts(),
+                totals.outOfStockProducts(),
+                totals.totalUnitsOnHand(),
+                lowStock,
+                topStock);
     }
 
     @Transactional

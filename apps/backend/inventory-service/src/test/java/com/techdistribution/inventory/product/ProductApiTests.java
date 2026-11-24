@@ -270,7 +270,9 @@ class ProductApiTests extends IntegrationTest {
     void computesStats() throws Exception {
         mockMvc.perform(authorized(get(PRODUCTS + "/stats")))
                 .andExpect(jsonPath("$.data.totalProducts").value(0))
-                .andExpect(jsonPath("$.data.totalUnitsOnHand").value(0));
+                .andExpect(jsonPath("$.data.totalUnitsOnHand").value(0))
+                .andExpect(jsonPath("$.data.lowStockProducts").isEmpty())
+                .andExpect(jsonPath("$.data.topStockProducts").isEmpty());
 
         create("A1", "A", 10);
         create("A2", "B", 0);
@@ -284,7 +286,11 @@ class ProductApiTests extends IntegrationTest {
                 .andExpect(jsonPath("$.data.activeProducts").value(2))
                 .andExpect(jsonPath("$.data.inactiveProducts").value(1))
                 .andExpect(jsonPath("$.data.outOfStockProducts").value(1))
-                .andExpect(jsonPath("$.data.totalUnitsOnHand").value(15));
+                .andExpect(jsonPath("$.data.totalUnitsOnHand").value(15))
+                .andExpect(jsonPath("$.data.lowStockProducts.length()").value(2))
+                .andExpect(jsonPath("$.data.lowStockProducts[0].sku").value("A2"))
+                .andExpect(jsonPath("$.data.topStockProducts.length()").value(2))
+                .andExpect(jsonPath("$.data.topStockProducts[0].sku").value("A1"));
     }
 
     // --- Contrato del evento ----------------------------------------------

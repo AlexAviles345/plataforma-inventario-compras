@@ -31,7 +31,7 @@ Verificar JWT completo de PURCHASES y RBAC. Usuario conocido inactivo: 403. Prod
 | Endpoint | Comportamiento |
 | --- | --- |
 | `GET /api/purchases/orders` | Listado paginado; agente solo sus órdenes |
-| `GET /api/purchases/orders/stats` | Estadísticas agregadas (`totalOrders`, `draftOrders`, `submittedOrders`, `cancelledOrders`, `submittedAmount`, `draftAmount`, `currency`); agente acotado a sus propias órdenes y ADMIN global |
+| `GET /api/purchases/orders/stats` | Estadísticas agregadas (`totalOrders`, `draftOrders`, `submittedOrders`, `cancelledOrders`, `submittedAmount`, `draftAmount`, `currency`, `topSuppliers`); agente acotado a sus propias órdenes y ADMIN global |
 | `POST /api/purchases/orders` | Crear DRAFT con Idempotency-Key; 201 |
 | `PUT /api/purchases/orders/{id}` | Editar DRAFT con expectedVersion |
 | `POST /api/purchases/orders/{id}/submit` | Congelar orden DRAFT; key y versión obligatorias |

@@ -93,6 +93,12 @@ export interface PaginatedPurchaseOrders {
   meta: PaginationMeta;
 }
 
+export interface TopSupplierStat {
+  supplierName: string;
+  orderCount: number;
+  totalAmount: string;
+}
+
 export interface PurchaseOrdersStats {
   totalOrders: number;
   draftOrders: number;
@@ -101,4 +107,5 @@ export interface PurchaseOrdersStats {
   submittedAmount: string;
   draftAmount: string;
   currency: 'MXN';
+  topSuppliers?: TopSupplierStat[];
 }

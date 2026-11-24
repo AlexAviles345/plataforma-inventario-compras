@@ -688,6 +688,7 @@ class PurchaseOrderEndpointsTests(TestCase):
         self.assertEqual(stats_other.status_code, 200)
         self.assertEqual(stats_other.json()["data"]["totalOrders"], 0)
         self.assertEqual(stats_other.json()["data"]["draftAmount"], "0.00")
+        self.assertEqual(stats_other.json()["data"]["topSuppliers"], [])
 
         stats_admin = self.client.get(
             "/api/purchases/orders/stats",
@@ -697,6 +698,16 @@ class PurchaseOrderEndpointsTests(TestCase):
         self.assertEqual(stats_admin.json()["data"]["totalOrders"], 1)
         self.assertEqual(stats_admin.json()["data"]["draftOrders"], 1)
         self.assertEqual(stats_admin.json()["data"]["draftAmount"], "500.00")
+        self.assertEqual(
+            stats_admin.json()["data"]["topSuppliers"],
+            [
+                {
+                    "supplierName": "Proveedor Agente 1",
+                    "orderCount": 1,
+                    "totalAmount": "500.00",
+                }
+            ],
+        )
 
         cancel_admin = self.client.post(
             f"/api/purchases/orders/{order_id}/cancel",

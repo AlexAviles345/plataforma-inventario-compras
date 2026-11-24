@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   AlertCircle,
   ArrowRight,
+  BarChart3,
   Boxes,
   CheckCircle2,
   FileSpreadsheet,
@@ -9,6 +10,7 @@ import {
   Plus,
   ShieldCheck,
   ShoppingCart,
+  TrendingUp,
   Users,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -23,11 +25,13 @@ import {
   listProducts,
 } from '@modules/inventory/products/services/products.service';
 import { productQueryKeys } from '@modules/inventory/products/hooks/product-query-keys';
+import type { ProductStockStatItem } from '@modules/inventory/products/types/products.types';
 import {
   getPurchaseOrdersStats,
   listPurchaseOrders,
 } from '@modules/purchases/orders/services/purchase-orders.service';
 import { orderQueryKeys } from '@modules/purchases/orders/hooks/order-query-keys';
+import type { TopSupplierStat } from '@modules/purchases/orders/types/purchase-orders.types';
 import { StatusBadge } from '@shared/components/data-display/StatusBadge';
 import { Badge } from '@shared/components/ui/badge';
 import { Button } from '@shared/components/ui/button';
@@ -59,6 +63,37 @@ const SYSTEM_LABELS: Record<string, string> = {
   INVENTORY: 'Inventario',
   PURCHASES: 'Compras',
 };
+
+function DistributionBar({
+  segments,
+}: {
+  segments: { value: number; className: string; label: string }[];
+}) {
+  const total = segments.reduce((acc, item) => acc + item.value, 0);
+  if (total <= 0) {
+    return <div className="h-2 w-full rounded-full bg-muted" />;
+  }
+
+  return (
+    <div
+      className="flex h-2 w-full overflow-hidden rounded-full bg-muted"
+      aria-label="Distribución proporcional"
+    >
+      {segments.map((segment) => {
+        if (segment.value <= 0) return null;
+        const pct = Math.max((segment.value / total) * 100, 4);
+        return (
+          <div
+            key={segment.label}
+            style={{ width: `${pct}%` }}
+            title={`${segment.label}: ${segment.value}`}
+            className={`h-full transition-all ${segment.className}`}
+          />
+        );
+      })}
+    </div>
+  );
+}
 
 export function OperationalOverviewSection() {
   const sessions = useAuthSessionStore((state) => state.sessions);
@@ -117,6 +152,58 @@ export function OperationalOverviewSection() {
   const recentProducts = productsQuery.data?.products ?? [];
   const recentUsers = usersQuery.data?.users ?? [];
 
+  const topSuppliers: TopSupplierStat[] = (() => {
+    if (ordersStatsQuery.data?.topSuppliers?.length) {
+      return ordersStatsQuery.data.topSuppliers;
+    }
+    const grouped = new Map<string, { orderCount: number; amount: number }>();
+    for (const order of recentOrders) {
+      if (order.status === 'CANCELLED') continue;
+      const current = grouped.get(order.supplierName) ?? {
+        orderCount: 0,
+        amount: 0,
+      };
+      grouped.set(order.supplierName, {
+        orderCount: current.orderCount + 1,
+        amount: current.amount + Number(order.totalAmount || 0),
+      });
+    }
+    return Array.from(grouped.entries())
+      .map(([supplierName, val]) => ({
+        supplierName,
+        orderCount: val.orderCount,
+        totalAmount: val.amount.toFixed(2),
+      }))
+      .sort((a, b) => Number(b.totalAmount) - Number(a.totalAmount))
+      .slice(0, 5);
+  })();
+
+  const maxSupplierAmount = Math.max(
+    ...topSuppliers.map((item) => Number(item.totalAmount) || 0),
+    1,
+  );
+
+  const stockChartItems: ProductStockStatItem[] = (() => {
+    if (productsStatsQuery.data?.topStockProducts?.length) {
+      return productsStatsQuery.data.topStockProducts;
+    }
+    return recentProducts
+      .filter((product) => product.active)
+      .map((product) => ({
+        id: product.id,
+        sku: product.sku,
+        name: product.name,
+        stockOnHand: product.stockOnHand,
+      }))
+      .sort((a, b) => b.stockOnHand - a.stockOnHand)
+      .slice(0, 5);
+  })();
+
+  const maxProductStock = Math.max(
+    ...stockChartItems.map((item) => item.stockOnHand),
+    1,
+  );
+
   return (
     <div className="space-y-8">
       <section className="space-y-4">
@@ -172,6 +259,25 @@ export function OperationalOverviewSection() {
                         Órdenes registradas
                       </p>
                     </div>
+                    <DistributionBar
+                      segments={[
+                        {
+                          label: 'Enviadas',
+                          value: ordersStatsQuery.data.submittedOrders,
+                          className: 'bg-blue-600 dark:bg-blue-400',
+                        },
+                        {
+                          label: 'Borrador',
+                          value: ordersStatsQuery.data.draftOrders,
+                          className: 'bg-amber-500 dark:bg-amber-400',
+                        },
+                        {
+                          label: 'Canceladas',
+                          value: ordersStatsQuery.data.cancelledOrders,
+                          className: 'bg-slate-400 dark:bg-slate-600',
+                        },
+                      ]}
+                    />
                     <div className="grid grid-cols-3 gap-2 rounded-xl bg-muted/50 p-3 text-center">
                       <div>
                         <p className="text-sm font-semibold text-blue-600 dark:text-blue-400">
@@ -256,6 +362,29 @@ export function OperationalOverviewSection() {
                         Productos en catálogo
                       </p>
                     </div>
+                    <DistributionBar
+                      segments={[
+                        {
+                          label: 'Con existencias',
+                          value: Math.max(
+                            productsStatsQuery.data.activeProducts -
+                              productsStatsQuery.data.outOfStockProducts,
+                            0,
+                          ),
+                          className: 'bg-teal-600 dark:bg-teal-400',
+                        },
+                        {
+                          label: 'Sin stock',
+                          value: productsStatsQuery.data.outOfStockProducts,
+                          className: 'bg-amber-500 dark:bg-amber-400',
+                        },
+                        {
+                          label: 'Inactivos',
+                          value: productsStatsQuery.data.inactiveProducts,
+                          className: 'bg-slate-400 dark:bg-slate-600',
+                        },
+                      ]}
+                    />
                     <div className="grid grid-cols-3 gap-2 rounded-xl bg-muted/50 p-3 text-center">
                       <div>
                         <p className="text-sm font-semibold text-teal-600 dark:text-teal-400">
@@ -332,6 +461,20 @@ export function OperationalOverviewSection() {
                         inactivas)
                       </p>
                     </div>
+                    <DistributionBar
+                      segments={[
+                        {
+                          label: 'Activos',
+                          value: usersStatsQuery.data.activeUsers,
+                          className: 'bg-indigo-600 dark:bg-indigo-400',
+                        },
+                        {
+                          label: 'Inactivos',
+                          value: usersStatsQuery.data.inactiveUsers,
+                          className: 'bg-slate-400 dark:bg-slate-600',
+                        },
+                      ]}
+                    />
                     <div className="grid grid-cols-3 gap-2 rounded-xl bg-muted/50 p-3 text-center">
                       <div>
                         <p className="text-sm font-semibold text-teal-600 dark:text-teal-400">
@@ -376,6 +519,164 @@ export function OperationalOverviewSection() {
           )}
         </div>
       </section>
+
+      {(hasPurchases || hasInventory) && (
+        <section className="grid gap-6 lg:grid-cols-2">
+          {hasPurchases && (
+            <Card className="flex flex-col">
+              <CardHeader className="flex flex-row items-start justify-between gap-4">
+                <div className="space-y-1">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <TrendingUp className="size-4 text-blue-600 dark:text-blue-400" />
+                    Principales proveedores por importe
+                  </CardTitle>
+                  <CardDescription>
+                    Distribución del monto de compras en órdenes activas.
+                  </CardDescription>
+                </div>
+              </CardHeader>
+              <CardContent className="flex-1">
+                {ordersStatsQuery.isLoading && ordersQuery.isLoading ? (
+                  <div className="space-y-4">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                ) : ordersStatsQuery.isError && ordersQuery.isError ? (
+                  <div className="flex items-center gap-3 rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
+                    <AlertCircle className="size-4 shrink-0" />
+                    Información no disponible por el momento.
+                  </div>
+                ) : topSuppliers.length === 0 ? (
+                  <div className="rounded-xl border border-dashed p-5 text-sm text-muted-foreground">
+                    Registra órdenes de compra para visualizar la comparativa
+                    por proveedor.
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {topSuppliers.map((supplier) => {
+                      const amount = Number(supplier.totalAmount) || 0;
+                      const widthPct = Math.max(
+                        Math.round((amount / maxSupplierAmount) * 100),
+                        6,
+                      );
+                      return (
+                        <div
+                          key={supplier.supplierName}
+                          className="space-y-1.5"
+                        >
+                          <div className="flex items-center justify-between gap-3 text-sm">
+                            <span className="truncate font-medium">
+                              {supplier.supplierName}
+                            </span>
+                            <span className="shrink-0 font-mono text-xs font-semibold">
+                              {formatMxn(supplier.totalAmount)}{' '}
+                              <span className="font-sans font-normal text-muted-foreground">
+                                ({supplier.orderCount}{' '}
+                                {supplier.orderCount === 1
+                                  ? 'orden'
+                                  : 'órdenes'}
+                                )
+                              </span>
+                            </span>
+                          </div>
+                          <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted">
+                            <div
+                              style={{ width: `${widthPct}%` }}
+                              className="h-full rounded-full bg-blue-600 transition-all dark:bg-blue-400"
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {hasInventory && (
+            <Card className="flex flex-col">
+              <CardHeader className="flex flex-row items-start justify-between gap-4">
+                <div className="space-y-1">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <BarChart3 className="size-4 text-teal-600 dark:text-teal-400" />
+                    Existencias por producto en almacén
+                  </CardTitle>
+                  <CardDescription>
+                    Comparativa de unidades disponibles por producto activo.
+                  </CardDescription>
+                </div>
+              </CardHeader>
+              <CardContent className="flex-1">
+                {productsStatsQuery.isLoading && productsQuery.isLoading ? (
+                  <div className="space-y-4">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                ) : productsStatsQuery.isError && productsQuery.isError ? (
+                  <div className="flex items-center gap-3 rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
+                    <AlertCircle className="size-4 shrink-0" />
+                    Información no disponible por el momento.
+                  </div>
+                ) : stockChartItems.length === 0 ? (
+                  <div className="rounded-xl border border-dashed p-5 text-sm text-muted-foreground">
+                    Da de alta productos en el catálogo para visualizar el nivel
+                    de existencias.
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {stockChartItems.map((product) => {
+                      const widthPct =
+                        product.stockOnHand <= 0
+                          ? 3
+                          : Math.max(
+                              Math.round(
+                                (product.stockOnHand / maxProductStock) * 100,
+                              ),
+                              6,
+                            );
+                      const isCritical = product.stockOnHand === 0;
+                      const isLow =
+                        product.stockOnHand > 0 && product.stockOnHand <= 5;
+                      return (
+                        <div key={product.id} className="space-y-1.5">
+                          <div className="flex items-center justify-between gap-3 text-sm">
+                            <div className="min-w-0 truncate">
+                              <span className="font-medium">
+                                {product.name}
+                              </span>{' '}
+                              <span className="font-mono text-xs text-muted-foreground">
+                                ({product.sku})
+                              </span>
+                            </div>
+                            <span className="shrink-0 font-mono text-xs font-semibold">
+                              {product.stockOnHand.toLocaleString('es-MX')} uds.
+                            </span>
+                          </div>
+                          <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted">
+                            <div
+                              style={{ width: `${widthPct}%` }}
+                              className={`h-full rounded-full transition-all ${
+                                isCritical
+                                  ? 'bg-destructive'
+                                  : isLow
+                                    ? 'bg-amber-500 dark:bg-amber-400'
+                                    : 'bg-teal-600 dark:bg-teal-400'
+                              }`}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </section>
+      )}
 
       <section className="grid gap-6 lg:grid-cols-2">
         {hasPurchases && (

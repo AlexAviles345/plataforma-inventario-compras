@@ -175,6 +175,12 @@ class PurchaseOrderHistoryEnvelopeDocSerializer(serializers.Serializer):
     data = PurchaseOrderHistoryReadDocSerializer(many=True)
 
 
+class TopSupplierStatDocSerializer(serializers.Serializer):
+    supplierName = serializers.CharField()
+    orderCount = serializers.IntegerField()
+    totalAmount = serializers.CharField()
+
+
 class PurchaseOrderStatsReadDocSerializer(serializers.Serializer):
     totalOrders = serializers.IntegerField()
     draftOrders = serializers.IntegerField()
@@ -183,6 +189,7 @@ class PurchaseOrderStatsReadDocSerializer(serializers.Serializer):
     submittedAmount = serializers.CharField()
     draftAmount = serializers.CharField()
     currency = serializers.CharField()
+    topSuppliers = TopSupplierStatDocSerializer(many=True)
 
 
 class PurchaseOrderStatsEnvelopeDocSerializer(serializers.Serializer):
